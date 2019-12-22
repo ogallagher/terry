@@ -51,6 +51,7 @@ Now that the model is built and inputs are set up to be processed, the mdl and f
 
 ```
 steps/online/nnet3/decode.sh --nj 1 --acwt 1.0 --post-decode-acwt 10.0 \
+    --online-config exp/tdnn_7b_chain_online/conf/online.conf \
     exp/tdnn_7b_chain_online/graph \
     . \
     lattice_output
@@ -59,7 +60,9 @@ steps/online/nnet3/decode.sh --nj 1 --acwt 1.0 --post-decode-acwt 10.0 \
 Lastly, to make these results useful, walk throught the lattices and pick the most likely word at each position to create the sequenced transcript:
 
 ```
-lattice-best-path \
-    ark:'gunzip -c lattice_ouput/lat.1.gz |' \
-    'ark,t: | int2sym.pl -f 2- exp/tdnn_7b_chain_online/graph/words.txt > transcription.txt'
+../../../src/latbin/lattice-best-path \
+    ark:'gunzip -c lattice_output/lat.1.gz |' \
+    'ark,t:| ./int2sym.pl -f 2- exp/tdnn_7b_chain_online/graph/words.txt > transcription.txt'
 ```
+
+_NOTE: int2sym.pl was not in $PATH, but I ended up finding it in another `kaldi/egs/` project, so I just copied and pasted for the above code to work._
