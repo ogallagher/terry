@@ -15,6 +15,6 @@ pip3 install six
 
 Download the command-line binding for osx with `python3 util/taskcluster.py --arch osx --target .` The executable file `deepspeech` is now in the current directory.
 
-Example use: `./deepspeech --model models/output_graph.pbmm --lm models/lm.binary --trie models/trie --stream 320 --audio /Users/owengallagher/Documents/juniata/2019_senior/cs_seminar/deepspeech/audio/owen_not_accurate.wav`. The `--stream` parameter allows the results to be generated continuously until the end of the audio file is reached.
+Example use: `./deepspeech --model models/output_graph.pbmm --lm models/lm.binary --trie models/trie --stream 320 --beam_width 28 --audio audio/owen_transcribe_this.wav`. The `--stream` parameter allows the results to be generated continuously until the end of the audio file is reached. `beam_width` defines how much accuracy/speed tradeoff there is.
 
-To use the `deepspeech` executable binary file, you just need to keep `models/` and the `deepspeechlib.so` file.
+To use the `deepspeech` executable binary file, you just need to keep `models/{output_graph.pbmm,lm.binary,trie}` and the `deepspeechlib.so` file.
