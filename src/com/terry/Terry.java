@@ -11,10 +11,10 @@ public class Terry {
 	public static Prompter prompter;
 
 	public static void main(String[] args) {
+		Logger.init();
+		
 		prompter = new Prompter();
 		prompter.init(args);
-		
-		Logger.init();
 		
 		try {
 			Driver.init();

@@ -16,7 +16,7 @@ public class Logger {
 	private static FileWriter fileWriter;
 	
 	public static void init() {
-		
+		log = new LinkedList<String>();
 	}
 	
 	public static void logError(String error) {
@@ -39,5 +39,8 @@ public class Logger {
 		//print entry
 		
 		//say entry
+		
+		//testing only
+		System.out.println(entry);
 	}
 }
