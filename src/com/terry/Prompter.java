@@ -3,12 +3,16 @@ package com.terry;
 import java.awt.MouseInfo;
 import java.awt.Point;
 
+import com.terry.Scribe.ScribeException;
+
 import javafx.application.Application;
 import javafx.embed.swing.JFXPanel;
+import javafx.event.EventHandler;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.Label;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -18,8 +22,6 @@ public class Prompter extends Application {
 	@SuppressWarnings("unused")
 	private static JFXPanel dummyPanel = new JFXPanel();	//This prevents "Java Toolkit Not Initialized Error". 
 															//I don't really get it, but an extra line doesn't do much harm anyway.
-	
-	private static final String RES_PATH = "res/";
 	
 	private static Stage intercom;
 	private static final int INTERCOM_WIDTH = 75;
@@ -48,14 +50,14 @@ public class Prompter extends Application {
 		intercomRoot.setId("intercom_root");
 		
 		//load icon
-		ImageView icon = new ImageView(Terry.class.getResource(RES_PATH + "terry_150.png").toString());
+		ImageView icon = new ImageView(Terry.class.getResource(Terry.RES_PATH + "terry_150.png").toString());
 		icon.setPreserveRatio(true);
 		icon.setFitWidth(ICON_WIDTH);
 		intercomRoot.getChildren().add(icon);
 		
 		Scene intercomScene = new Scene(intercomRoot);
 		intercomScene.setFill(Color.TRANSPARENT);
-		intercomScene.getStylesheets().add(Terry.class.getResource(RES_PATH + "style.css").toString());
+		intercomScene.getStylesheets().add(Terry.class.getResource(Terry.RES_PATH + "style.css").toString());
 		
 		intercom.setScene(intercomScene);
 		intercom.centerOnScreen();
@@ -64,9 +66,32 @@ public class Prompter extends Application {
 		intercom.setMaxHeight(INTERCOM_WIDTH);
 		intercom.show();
 		
-		testThread = new TestThread(primaryStage);
-		testThread.setDaemon(false);
-		testThread.start();
+		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent event) {
+				try {
+					switch (Scribe.state) {
+						case Scribe.STATE_IDLE:
+							Scribe.start();
+							break;
+							
+						case Scribe.STATE_RECORDING:
+							Scribe.stop();
+							break;
+							
+						case Scribe.STATE_TRANSCRIBING:
+							Logger.log("waiting for scribe to finish transcription...");
+							break;
+							
+						default:
+							Logger.logError("scribe in unknown state");
+							break;
+					}
+				} 
+				catch (ScribeException e) {
+					Logger.logError(e.getMessage());
+				}
+			}
+		});
 	}
 	
 	@Override

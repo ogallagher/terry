@@ -4,6 +4,8 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.util.LinkedList;
 
+import javafx.application.Platform;
+
 public class Logger {
 	private static final int LOG_MAX = 200;
 	private static final String FILE_NAME = "log_";
