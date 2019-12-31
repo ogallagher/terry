@@ -24,8 +24,12 @@ public class Prompter extends Application {
 															//I don't really get it, but an extra line doesn't do much harm anyway.
 	
 	private static Stage intercom;
-	private static final int INTERCOM_WIDTH = 75;
-	private static final int ICON_WIDTH = 75;
+	private static final int INTERCOM_WIDTH = 200;
+	private static final int GLASSES_WIDTH = 150;
+	private static final int MIC_WIDTH = 75;
+	
+	private static final String INTERCOM_PATH = "img/terry_150.png";
+	private static final String MIC_PATH = "img/mic_75.png";
 	
 	private static TestThread testThread;
 	
@@ -49,11 +53,12 @@ public class Prompter extends Application {
 		StackPane intercomRoot = new StackPane();
 		intercomRoot.setId("intercom_root");
 		
-		//load icon
-		ImageView icon = new ImageView(Terry.class.getResource(Terry.RES_PATH + "terry_150.png").toString());
-		icon.setPreserveRatio(true);
-		icon.setFitWidth(ICON_WIDTH);
-		intercomRoot.getChildren().add(icon);
+		//load icons
+		IntercomIcon glasses = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + INTERCOM_PATH).toString(), GLASSES_WIDTH);
+		intercomRoot.getChildren().add(glasses);
+		
+		IntercomIcon mic = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + MIC_PATH).toString(), MIC_WIDTH);
+		intercomRoot.getChildren().add(mic);
 		
 		Scene intercomScene = new Scene(intercomRoot);
 		intercomScene.setFill(Color.TRANSPARENT);
@@ -61,6 +66,7 @@ public class Prompter extends Application {
 		
 		intercom.setScene(intercomScene);
 		intercom.centerOnScreen();
+		intercom.setMinWidth(INTERCOM_WIDTH);
 		intercom.setMaxWidth(INTERCOM_WIDTH);
 		intercom.setMinHeight(INTERCOM_WIDTH);
 		intercom.setMaxHeight(INTERCOM_WIDTH);
