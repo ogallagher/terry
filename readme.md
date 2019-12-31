@@ -1,3 +1,5 @@
+<img align="right" src="https://raw.githubusercontent.com/ogallagher/terry/master/src/com/terry/res/img/terry_150.png" alt="terry glasses icon"/>
+
 # Terry
 
 Terry is a virtual assistant that uses a composite robot learning approach to perform tasks on a computer using the same interface that a person would use. This interface is the operating system graphical user interface (OS GUI), including the peripherals needed to interact with it (the mouse and keyboard). 
