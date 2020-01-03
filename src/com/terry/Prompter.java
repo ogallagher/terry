@@ -29,9 +29,11 @@ public class Prompter extends Application {
 	private static final int INTERCOM_WIDTH = 200;
 	private static final int GLASSES_WIDTH = 150;
 	private static final int MIC_WIDTH = 75;
+	private static final int LOADING_WIDTH = 75;
 	
 	private static final String INTERCOM_PATH = "img/terry_150.png";
 	private static final String MIC_PATH = "img/mic_75.png";
+	private static final String LOADING_PATH = "img/loading_75.png";
 	
 	private static TestThread testThread;
 	
@@ -56,11 +58,12 @@ public class Prompter extends Application {
 		intercomRoot.setId("intercom_root");
 		
 		//load icons
-		IntercomIcon glasses = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + INTERCOM_PATH).toString(), GLASSES_WIDTH);
-		intercomRoot.getChildren().add(glasses);
-		
+		IntercomIcon glasses = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + INTERCOM_PATH).toString(), GLASSES_WIDTH);		
 		IntercomIcon mic = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + MIC_PATH).toString(), MIC_WIDTH, 0);
-		intercomRoot.getChildren().add(mic);
+		IntercomIcon loading = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + LOADING_PATH).toString(), LOADING_WIDTH);
+		loading.setVisible(false);
+		
+		intercomRoot.getChildren().addAll(glasses,mic,loading);
 		
 		Scene intercomScene = new Scene(intercomRoot);
 		intercomScene.setFill(Color.TRANSPARENT);
@@ -108,12 +111,27 @@ public class Prompter extends Application {
 				switch (newValue) {
 					case Scribe.STATE_IDLE:						
 						glasses.animate(1);
+						
 						mic.animate(0);
+						
+						loading.animate(-1,-1,0,-1,200);
+						
 						break;
 						
 					case Scribe.STATE_RECORDING:						
 						mic.animate(1);
+						
 						glasses.animate(0);
+						
+						break;
+						
+					case Scribe.STATE_TRANSCRIBING:
+						mic.animate(0);
+						
+						loading.setScaleX(1);
+						loading.setScaleY(1);
+						loading.setVisible(true);
+						loading.animate(-1, -1, -1, 360, -2000);
 						break;
 						
 					default:

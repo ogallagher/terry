@@ -1,5 +1,6 @@
 package com.terry;
 
+import javafx.animation.Animation;
 import javafx.animation.RotateTransition;
 import javafx.animation.ScaleTransition;
 import javafx.animation.TranslateTransition;
@@ -33,17 +34,26 @@ public class IntercomIcon extends ImageView {
 		}
 	}
 	
-	public void animate(double tx, double ty, double s, double r) {
-		animator = new AnimateThread(tx,ty,s,r,this);
+	public void animate(double tx, double ty, double s, double r, int duration) {
+		if (animator != null) {
+			animator.quit();
+		}
+		animator = new AnimateThread(tx,ty,s,r,this,duration);
 		animator.start();
 	}
 	
 	public void animate(double s, double r) {
-		animate(-1,-1,s,r);
+		animate(-1,-1,s,r,500);
 	}
 	
 	public void animate(double s) {
-		animate(-1,-1,s,-1);
+		animate(-1,-1,s,-1,500);
+	}
+	
+	public void stop() {
+		if (animator != null) {
+			animator.quit();
+		}
 	}
 	
 	private static class AnimateThread extends Thread {
@@ -52,31 +62,41 @@ public class IntercomIcon extends ImageView {
 		private RotateTransition rotater = null;
 		
 		private BooleanProperty ivisible = null;
-		
-		private static final double DURATION = 500;
-		
-		public AnimateThread(double tx, double ty, double s, double r, IntercomIcon i) {
+				
+		public AnimateThread(double tx, double ty, double s, double r, IntercomIcon i, int duration) {
 			if (tx != -1) {
-				translater = new TranslateTransition(Duration.millis(DURATION),i);
+				translater = new TranslateTransition(Duration.millis(Math.abs(duration)),i);
 				translater.setByX(tx);
 				translater.setByY(ty);
+				
+				if (duration < 0) {
+					translater.setCycleCount(Animation.INDEFINITE);
+				}
 			}
 			
 			if (s != -1) {
 				i.setVisible(true);
 				
-				scaler = new ScaleTransition(Duration.millis(DURATION),i);
+				scaler = new ScaleTransition(Duration.millis(Math.abs(duration)),i);
 				scaler.setByX(s - i.getScaleX());
 				scaler.setByY(s - i.getScaleY());
 				
 				if (s == 0) {
 					ivisible = i.visibleProperty();
 				}
+				
+				if (duration < 0) {
+					scaler.setCycleCount(Animation.INDEFINITE);
+				}
 			}
 			
 			if (r != -1) {
-				rotater = new RotateTransition(Duration.millis(DURATION),i);
-				rotater.setByAngle(r - i.getRotate());
+				rotater = new RotateTransition(Duration.millis(Math.abs(duration)),i);
+				rotater.setByAngle(r + i.getRotate());
+				
+				if (duration < 0) {
+					rotater.setCycleCount(Animation.INDEFINITE);
+				}
 			}
 		}
 		
