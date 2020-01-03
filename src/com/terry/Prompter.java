@@ -6,6 +6,8 @@ import java.awt.Point;
 import com.terry.Scribe.ScribeException;
 
 import javafx.application.Application;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
 import javafx.geometry.Pos;
@@ -57,7 +59,7 @@ public class Prompter extends Application {
 		IntercomIcon glasses = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + INTERCOM_PATH).toString(), GLASSES_WIDTH);
 		intercomRoot.getChildren().add(glasses);
 		
-		IntercomIcon mic = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + MIC_PATH).toString(), MIC_WIDTH);
+		IntercomIcon mic = new IntercomIcon(Terry.class.getResource(Terry.RES_PATH + MIC_PATH).toString(), MIC_WIDTH, 0);
 		intercomRoot.getChildren().add(mic);
 		
 		Scene intercomScene = new Scene(intercomRoot);
@@ -75,13 +77,15 @@ public class Prompter extends Application {
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
 				try {
-					switch (Scribe.state) {
+					switch (Scribe.state.get()) {
 						case Scribe.STATE_IDLE:
 							Scribe.start();
+							
 							break;
 							
 						case Scribe.STATE_RECORDING:
 							Scribe.stop();
+							
 							break;
 							
 						case Scribe.STATE_TRANSCRIBING:
@@ -95,6 +99,25 @@ public class Prompter extends Application {
 				} 
 				catch (ScribeException e) {
 					Logger.logError(e.getMessage());
+				}
+			}
+		});
+		
+		Scribe.state.addListener(new ChangeListener<Character>() {
+			public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+				switch (newValue) {
+					case Scribe.STATE_IDLE:						
+						glasses.animate(1);
+						mic.animate(0);
+						break;
+						
+					case Scribe.STATE_RECORDING:						
+						mic.animate(1);
+						glasses.animate(0);
+						break;
+						
+					default:
+						break;
 				}
 			}
 		});

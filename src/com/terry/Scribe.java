@@ -48,10 +48,10 @@ public class Scribe {
 	public static final char STATE_IDLE = 0;
 	public static final char STATE_RECORDING = 1;
 	public static final char STATE_TRANSCRIBING = 2;
-	public static char state = STATE_IDLE;
+	public static CharProperty state = new CharProperty(STATE_IDLE);
 	
 	public static void init() throws ScribeException {
-		state = STATE_IDLE;
+		state = new CharProperty(STATE_IDLE);
 		
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, FORMAT_WAV); // format is an AudioFormat object
 		Logger.log(info.toString());
@@ -128,7 +128,7 @@ public class Scribe {
 			
 			try {
 				Logger.log("scribe started listening");
-				state = STATE_RECORDING;
+				state.set(STATE_RECORDING);
 				AudioSystem.write(speechStream, AudioFileFormat.Type.WAVE, speechFile);
 			}
 			catch (IOException e) {
@@ -143,7 +143,7 @@ public class Scribe {
 		public void quit() {
 			microphone.stop();
 			Logger.log("scribe stopped listening");
-			state = STATE_TRANSCRIBING;
+			state.set(STATE_TRANSCRIBING);
 			
 			//recording finished, pass to deepspeech to get transcription
 			transcriber = new TranscribeThread();
@@ -248,7 +248,7 @@ public class Scribe {
 				}
 			}
 			
-			state = STATE_IDLE;
+			state.set(STATE_IDLE);
 		}
 	}
 	

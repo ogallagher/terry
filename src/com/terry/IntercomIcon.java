@@ -1,134 +1,120 @@
 package com.terry;
 
+import javafx.animation.RotateTransition;
+import javafx.animation.ScaleTransition;
+import javafx.animation.TranslateTransition;
 import javafx.beans.property.BooleanProperty;
-import javafx.beans.property.DoubleProperty;
+import javafx.event.ActionEvent;
+import javafx.event.EventHandler;
 import javafx.scene.image.ImageView;
+import javafx.util.Duration;
 
 public class IntercomIcon extends ImageView {
 	private int width;
 	
+	private AnimateThread animator;
+	
 	public IntercomIcon(String url, int w) {
+		this(url,w,1);
+	}
+	
+	public IntercomIcon(String url, int w, int s) {
 		super(url);
 		
 		width = w;
 		
 		setPreserveRatio(true);
 		setFitWidth(width);
+		
+		setScaleX(s);
+		setScaleY(s);
+		if (s == 0) {
+			setVisible(false);
+		}
 	}
 	
 	public void animate(double tx, double ty, double s, double r) {
-		AnimateThread animator = new AnimateThread(tx,ty,s,r,this);
+		animator = new AnimateThread(tx,ty,s,r,this);
 		animator.start();
 	}
 	
 	public void animate(double s, double r) {
-		AnimateThread animator = new AnimateThread(-1,-1,s,r,this);
-		animator.start();
+		animate(-1,-1,s,r);
+	}
+	
+	public void animate(double s) {
+		animate(-1,-1,s,-1);
 	}
 	
 	private static class AnimateThread extends Thread {
-		private boolean translates = false;
-		private boolean scales = false;
-		private boolean rotates = false;
+		private TranslateTransition translater = null;
+		private ScaleTransition scaler = null;
+		private RotateTransition rotater = null;
 		
-		private DoubleProperty ix;
-		private DoubleProperty iy;
-		private DoubleProperty iw;
-		private DoubleProperty ih;
-		private DoubleProperty ir;
-		private BooleanProperty iv;
+		private BooleanProperty ivisible = null;
 		
-		private double tx,ty,s,r;
-		private double d;
-		
-		private static final double EASING = 0.1;
-		private static final double MIN_DIFF = 5; //px difference between current transform and dest transform when animation is considered finished
+		private static final double DURATION = 500;
 		
 		public AnimateThread(double tx, double ty, double s, double r, IntercomIcon i) {
 			if (tx != -1) {
-				translates = true;
-				
-				ix = i.translateXProperty();
-				iy = i.translateYProperty();
-				
-				this.tx = tx;
-				this.ty = ty;
+				translater = new TranslateTransition(Duration.millis(DURATION),i);
+				translater.setByX(tx);
+				translater.setByY(ty);
 			}
 			
 			if (s != -1) {
-				scales = true;
-				
-				iw = i.scaleXProperty();
-				ih = i.scaleYProperty();
-				
-				this.s = s;
-				
 				i.setVisible(true);
-				iv = i.visibleProperty();
+				
+				scaler = new ScaleTransition(Duration.millis(DURATION),i);
+				scaler.setByX(s - i.getScaleX());
+				scaler.setByY(s - i.getScaleY());
+				
+				if (s == 0) {
+					ivisible = i.visibleProperty();
+				}
 			}
 			
 			if (r != -1) {
-				rotates = true;
-				
-				ir = i.rotateProperty(); //in degrees
-				
-				this.r = r;
+				rotater = new RotateTransition(Duration.millis(DURATION),i);
+				rotater.setByAngle(r - i.getRotate());
 			}
 		}
 		
 		@Override
 		public void run() {
-			boolean got = true, gos = true, gor = true;
-			
-			while (!isInterrupted() && (got || gos || gor)) {
-				if (translates) {
-					//TODO tx,ty
-				}
-				else {
-					got = false;
-				}
-				
-				if (scales) {
-					//sx,sy
-					d = iw.get();
-					d = d + EASING * (s - d);
-					
-					if (d < MIN_DIFF) {
-						if (s == 0) {
-							iv.set(false);
-						}
-						else {
-							iw.set(s);
-							iy.set(s);
-						}
-						
-						gos = false;
-					}
-					else {
-						iw.set(d);
-						iy.set(d);
-					}
-				}
-				else {
-					gos = false;
-				}
-				
-				if (rotates) {
-					d = ir.get();
-					d = d + EASING * (r - d);
-					
-					if (d < MIN_DIFF) {
-						ir.set(r);
-						gor = false;
-					}
-					else {
-						ir.set(d);
-					}
-				}
-				else {
-					gor = false;
-				}
+			if (translater != null) {
+				translater.play();
 			}
+			
+			if (scaler != null) {
+				scaler.play();
+				
+				scaler.setOnFinished(new EventHandler<ActionEvent>() {
+					public void handle(ActionEvent event) {
+						if (ivisible != null) {
+							ivisible.setValue(false);
+						}
+					}
+				});
+			}
+			
+			if (rotater != null) {
+				rotater.play();
+			}
+		}
+		
+		public void quit() {
+			if (translater != null) {
+				translater.stop();
+			}
+			if (scaler != null) {
+				scaler.stop();
+			}
+			if (rotater != null) {
+				rotater.stop();
+			}
+			
+			interrupt();
 		}
 	}
 }
