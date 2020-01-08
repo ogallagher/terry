@@ -81,7 +81,7 @@ public class Terry {
 		*/
 		
 		LanguageMapping lm = new LanguageMapping();
-		lm.setPattern("aa ?ff ?gg) ?|dd,ee,))) hh");
+		lm.setPattern("terry |[find_@query_?online)],[|[search_?for)],[look_up],)_@query],) ?and @cmd)");
 		System.out.println(lm.patternDiagram());
 		
 		prompter = new Prompter();

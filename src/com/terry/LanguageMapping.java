@@ -1,6 +1,7 @@
 package com.terry;
 
 import java.io.Serializable;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Stack;
@@ -41,7 +42,7 @@ public class LanguageMapping implements Serializable {
 	
 	/*
 	 * Valid expressions are inspired by BNF and regex, but these use prefix notation, like so:
-	 * apple ?banana |cinnamon,donut,@egg_@muffin,)) *flapjack grape) hazelnut icecream
+	 * apple ?banana |cinnamon,donut,[@egg_@muffin],)) *flapjack grape) hazelnut icecream
 	 */
 	private static class LanguagePattern {
 		private static final char spc = ' '; //token delimiter
@@ -52,6 +53,8 @@ public class LanguageMapping implements Serializable {
 		private static final char pop = '|'; //selection
 		private static final char aop = '@'; //arg id
 		private static final char cma = ','; //delimiter for options in selection
+		private static final char lbr = '['; //begin option with underscores
+		private static final char rbr = ']'; //end option with underscores
 		private static final char usr = '_'; //token delimiter for selection
 		
 		private String expression;
@@ -59,7 +62,7 @@ public class LanguageMapping implements Serializable {
 		
 		public LanguagePattern(String expr) {
 			expression = expr;
-			graph = PatternNode.newGraph(expr);
+			graph = PatternNode.newGraph(expr.toCharArray());
 		}
 		
 		/*
@@ -77,57 +80,45 @@ public class LanguageMapping implements Serializable {
 			private LinkedList<PatternNode> followers;
 			private boolean isArg; //true if token is an id
 			
-			private PatternNode(String tok) {
-				token = tok;
+			private static int DIAGRAM_DEPTH = 20;
+			
+			private PatternNode() {
+				token = null;
 				followers = new LinkedList<PatternNode>();
 				isArg = false;
 			}
 			
-			private PatternNode() {
-				this(null);
-			}
-			
-			private void setTokens(String val) {
-				String[] vals = val.split("_");
-				
-				if (vals.length > 1) {
-					token = vals[0];
-					
-					@SuppressWarnings("unchecked")
-					LinkedList<PatternNode> ends = (LinkedList<PatternNode>) followers.clone();
-					followers.clear();
-					
-					PatternNode leader = this;
-					PatternNode follower = null;
-					for (int v=1; v<vals.length; v++) {
-						follower = new PatternNode();
-						follower.token = vals[v];
-						
-						leader.followers.add(follower);
-						leader = follower;
-					}
-					
-					follower.followers = ends;
+			private void setToken(String tok) {
+				if (tok.startsWith("@")) {
+					token = tok.substring(1);
+					isArg = true;
 				}
 				else {
-					token = val;
+					if (tok.equals("")) {
+						token = null;
+					}
+					else {
+						token = tok;
+					}
+					
+					isArg = false;
 				}
 			}
 			
-			public static PatternNode newGraph(String expr) {
+			public static PatternNode newGraph(char[] expr) {
 				PatternNode root = new PatternNode();
-				graph(expr.toCharArray(), 0, root, new Stack<PatternNode>());
+				PatternNode node = root;
+				Stack<PatternNode> last = new Stack<PatternNode>();
 				
-				return root;
-			}
-			
-			public static void graph(char[] expr, int i, PatternNode node, Stack<PatternNode> last) {
+				LinkedList<PatternNode> nully = new LinkedList<PatternNode>();
+				nully.add(root);
+				
+				int i=0;
 				char c;
-				int a = i;
+				int a=0;
 				int n = expr.length;
-				boolean go = true;
 				
-				while (go) {
+				while (i < n) {
 					c = expr[i];
 					
 					if (c == qop) {			//? = optional
@@ -139,8 +130,11 @@ public class LanguageMapping implements Serializable {
 						last.push(out);
 						
 						i++;
-						graph(expr, i, in, last);
-						go = false;
+						node = in;
+						a = i;
+						
+						nully.add(in);
+						nully.add(out);
 					}
 					else if (c == sop) {	//* = 0 or more
 						PatternNode in = new PatternNode();
@@ -152,8 +146,11 @@ public class LanguageMapping implements Serializable {
 						last.push(out);
 						
 						i++;
-						graph(expr, i, in, last);
-						go = false;
+						node = in;
+						a = i;
+						
+						nully.add(in);
+						nully.add(out);
 					}
 					else if (c == top) {	//+ = 1 or more
 						PatternNode in = new PatternNode();
@@ -164,89 +161,177 @@ public class LanguageMapping implements Serializable {
 						last.push(out);
 						
 						i++;
-						graph(expr, i, in, last);
-						go = false;
+						node = in;
+						a = i;
+
+						nully.add(in);
+						nully.add(out);
 					}
 					else if (c == pop) {	//| = selection
-						last.push(new PatternNode());
+						PatternNode out = new PatternNode();
+						last.push(out);
 						
 						i++;
-						graph(expr, i, node, last);
-						go = false;
+						a = i;
+						
+						nully.add(out);
 					}
 					else if (c == cma) {	//, = selection option
 						PatternNode option = new PatternNode();
 						option.followers.add(last.peek());
-						option.setTokens(String.copyValueOf(expr,a,i-a));
+						option.setToken(String.copyValueOf(expr,a,i-a));
 						
 						node.followers.add(option);
 						
 						i++;
 						if (expr[i] == rpr) {	//end selection
 							i++;
-							graph(expr, i, last.pop(), last);
+							node = last.pop();
 						}
-						else {
-							graph(expr, i, node, last);
-						}
-						go = false;
+						a = i;
+						
+						nully.add(option);
 					}
 					else if (c == rpr) {	//) = end group (non-selection)
 						String str = String.copyValueOf(expr,a,i-a);
 						if (str.length() != 0) {
-							node.token = str;
+							node.setToken(str);
 						}
 						
 						PatternNode tail = last.pop();
 						node.followers.add(tail);
 						
+						PatternNode next = new PatternNode();
+						tail.followers.add(next);
+						
 						i++;
-						graph(expr, i, tail, last);
-						go = false;
-					}
-					else if (c == aop) {	//@ = arg
-						node.isArg = true;
-						i++;
+						node = next;
+						a = i;
 					}
 					else if (c == spc) {	//space = finish this token, begin next token
 						String str = String.copyValueOf(expr,a,i-a);
 						
 						if (str.length() != 0) {
-							node.token = str;
+							node.setToken(str);
 							
 							PatternNode next = new PatternNode();
 							node.followers.add(next);
 							
 							i++;
-							graph(expr, i, next, last);
+							node = next;
 							
-							go = false;
+							nully.add(next);
 						}
 						else {
 							i++;
-							a = i;
 						}
+						a = i;
 					}
-					else if (i == n-1) {	//end of expr
-						node.token = String.copyValueOf(expr,a,n-a);
-						node.followers.clear();
-						go = false;
+					else if (c == lbr) {	//[ = begin composite option
+						last.push(node);
+						i++;			
+						a = i;
 					}
-					else {
+					else if (c == usr) {	//_ = space for selection
+						PatternNode next = new PatternNode();
+						next.setToken(String.copyValueOf(expr,a,i-a));
+						
+						node.followers.add(next);
+						
+						i++;
+						node = next;
+						a = i;
+						
+						nully.add(next);
+					}
+					else if (c == rbr) {	//] = end composite option
+						PatternNode leader = last.pop();
+						
+						PatternNode next = new PatternNode();
+						String str = String.copyValueOf(expr,a,i-a);
+						
+						if (str.length() != 0) {
+							next.setToken(str);
+							
+							node.followers.add(next);
+							next.followers.add(last.peek());
+							
+							nully.add(next);
+						}
+						else {
+							node.followers.add(last.peek());
+						}
+						
+						i += 2;
+						if (expr[i] == rpr) {	//end selection
+							i++;
+							node = last.pop();
+						}
+						else {
+							node = leader;
+						}
+						a = i;
+					}
+					else {						//token chars
 						i++;
 					}
 				}
-			}
-			
-			public LinkedList<PatternNode> getFollowers() {
-				return followers;
+				
+				//end of expr
+				node.setToken(String.copyValueOf(expr,a,n-a));
+				node.followers.clear();
+				
+				//remove single-parent nulls
+				Iterator<PatternNode> walker = nully.iterator();
+				while (walker.hasNext()) {
+					node = walker.next();
+					
+					if (node.token == null) {
+						PatternNode parent = null;
+						boolean orphan = true;
+						boolean multiparent = false;
+						
+						//get parent
+						for (PatternNode p : nully) {
+							if (p.followers.contains(node)) {
+								if (orphan) {
+									parent = p;
+									orphan = false;
+								}
+								else {
+									multiparent = true;
+								}
+							}
+						}
+						
+						if (!orphan && !multiparent) {
+							//pass followers to parent
+							for (PatternNode f : node.followers) {
+								if (!parent.followers.contains(f)) {
+									parent.followers.add(f);
+								}
+							}
+							
+							//remove null node
+							parent.followers.remove(node);
+						}
+					}
+				}
+				
+				return root;
 			}
 			
 			public String diagram(String indent) {
-				String diagram = indent + token;
+				String tok = token;
+				if (isArg) {
+					tok = "<" + tok + ">";
+				}
+				String diagram = indent + tok;
 				
-				for (PatternNode follower : followers) {
-					diagram += "\n" + follower.diagram(indent + "\t");
+				if (indent.length() < DIAGRAM_DEPTH) {
+					for (PatternNode follower : followers) {
+						diagram += "\n" + follower.diagram(indent + "\t");
+					}
 				}
 				
 				return diagram;
