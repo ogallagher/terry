@@ -41,13 +41,15 @@ public class Scribe {
 	
 	private static File speechDir;
 	private static File speechFile; //temporary wav file, deleted after successful transcription
-	private static final String TRANSCRIBE_PATH = "transcription/";
+	private static final String TRANSCRIBE_PATH = Terry.RES_PATH + "transcription/";
+	private static final String SPEECH_FILE = "speech.wav";
 	
 	private static String transcription;
 	
 	public static final char STATE_IDLE = 0;
 	public static final char STATE_RECORDING = 1;
 	public static final char STATE_TRANSCRIBING = 2;
+	public static final char STATE_DONE = 3;
 	public static CharProperty state = new CharProperty(STATE_IDLE);
 	
 	public static void init() throws ScribeException {
@@ -56,8 +58,8 @@ public class Scribe {
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, FORMAT_WAV); // format is an AudioFormat object
 		Logger.log(info.toString());
 		
-		speechDir = new File(Terry.class.getResource(Terry.RES_PATH + TRANSCRIBE_PATH).getPath());
-		speechFile = new File(speechDir,"speech.wav");
+		speechDir = new File(Terry.class.getResource(TRANSCRIBE_PATH).getPath());
+		speechFile = new File(speechDir,SPEECH_FILE);
 		
 		if (!AudioSystem.isLineSupported(info)) {
 		    throw new ScribeException("microphone not supported");
@@ -104,6 +106,10 @@ public class Scribe {
 	
 	public static void stop() {
 		recorder.quit();
+	}
+	
+	public static String getTranscription() {
+		return transcription;
 	}
 	
 	private static class RecordThread extends Thread {		
@@ -173,7 +179,7 @@ public class Scribe {
 				String pathDelim = "\\";
 			}
 			
-			cmdDir = new File(Terry.class.getResource(Terry.RES_PATH + TRANSCRIBE_PATH).getPath());
+			cmdDir = new File(Terry.class.getResource(TRANSCRIBE_PATH).getPath());
 			
 			cmd = cmd.replace("<deepspeech>", deepspeech)
 					 .replace("<model>", model)
@@ -216,7 +222,6 @@ public class Scribe {
 			else if (Terry.os == Terry.OS_WIN) {
 				Logger.logError("scribe does not support windows yet");
 			}
-			
 		}
 	}
 	
@@ -248,6 +253,7 @@ public class Scribe {
 				}
 			}
 			
+			state.set(STATE_DONE); //trigger prompter to pass transcription to next module
 			state.set(STATE_IDLE);
 		}
 	}

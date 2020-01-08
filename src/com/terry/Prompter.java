@@ -92,6 +92,7 @@ public class Prompter extends Application {
 							break;
 							
 						case Scribe.STATE_TRANSCRIBING:
+						case Scribe.STATE_DONE:
 							Logger.log("waiting for scribe to finish transcription...");
 							break;
 							
@@ -132,6 +133,11 @@ public class Prompter extends Application {
 						loading.setScaleY(1);
 						loading.setVisible(true);
 						loading.animate(-1, -1, -1, 360, -2000);
+						break;
+						
+					case Scribe.STATE_DONE:
+						InstructionClassifier.parse(Scribe.getTranscription());
+						
 						break;
 						
 					default:

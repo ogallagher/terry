@@ -9,6 +9,8 @@ public class Driver {
 	public static void init() throws DriverException {
 		try {
 			robot = new Robot();
+			
+			Logger.log("driver init success");
 		}
 		catch (AWTException e) {
 			throw new DriverException("could not connect to the device display");
@@ -16,6 +18,10 @@ public class Driver {
 		catch (SecurityException e) {
 			throw new DriverException("do not have permission to control the mouse and keyboard");
 		}
+	}
+	
+	public static abstract class DriverExecution {
+		public abstract void Method();
 	}
 	
 	public static class DriverException extends Exception {

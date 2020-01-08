@@ -1,11 +1,30 @@
 /*
  * Author:	Owen Gallagher
  * Start:	December 2019
+ * 
+ * Notes:
+ * 	- dictionary 
+ * 		- an entry is token paired with LangMapping ids whose patterns contain that token
+ * 		- only keywords and widgets can have entries; value args would not have entries
+ * 		- an entry is in the form: token ref_1 ref_2 ... ref_n
+ * 	- LanguageMapping/LangMap
+ * 		- superclass for lessons, actions and widgets, with a pattern and mappings for keywords and args
+ * 		- LangMap.id is a unique int id for each
+ * - Action
+ * 		- inherited member LangMap.value is an state name and value pairing as Entry<String,Object>
+ * 		- args define what widget to perform the action on and how to do the action
+ * - StateTransition
+ * 		- member state is a String
+ * 		- member execution is a DriverExecution: { abstract void Method() }
+ * - State implements Entry<String,Object>
+ * 		- member name is a String
+ * 		- member value is an Object (observable)
  */
 
 package com.terry;
 
 import com.terry.Driver.DriverException;
+import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
 public class Terry {
@@ -49,6 +68,21 @@ public class Terry {
 		catch (DriverException e) {
 			Logger.logError(e.getMessage());
 		}
+		
+		InstructionClassifier.init();
+		
+		/*
+		try {
+			Memory.init();
+		}
+		catch (MemoryException e) {
+			Logger.logError(e.getMessage());
+		}
+		*/
+		
+		LanguageMapping lm = new LanguageMapping();
+		lm.setPattern("aa ?ff ?gg) ?|dd,ee,))) hh");
+		System.out.println(lm.patternDiagram());
 		
 		prompter = new Prompter();
 		prompter.init(args);
