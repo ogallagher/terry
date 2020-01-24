@@ -18,7 +18,6 @@ import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
 
 import javafx.application.Platform;
-import javafx.stage.Stage;
 
 public class Scribe {
 	/*
@@ -239,9 +238,10 @@ public class Scribe {
 		public void run() {
 			while (!isInterrupted()) {
 				try {
-					transcription = reader.readLine();
+					String update = reader.readLine();
 					
-					if (transcription != null) {
+					if (update != null) {
+						transcription = update;
 						Logger.log("transcription = " + transcription);
 					}
 					else {

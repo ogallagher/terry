@@ -136,7 +136,7 @@ public class Prompter extends Application {
 						break;
 						
 					case Scribe.STATE_DONE:
-						InstructionClassifier.parse(Scribe.getTranscription());
+						InstructionClassifier.parse(Scribe.getTranscription()); //search associated language mapping
 						
 						break;
 						

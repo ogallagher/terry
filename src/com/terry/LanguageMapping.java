@@ -1,6 +1,5 @@
 package com.terry;
 
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -9,21 +8,27 @@ import java.util.Stack;
 /*
  * superclass for actions, widgets, and lessons
  */
-public class LanguageMapping implements Serializable {
-	private static final long serialVersionUID = 1216321362452886088L;
-
+public class LanguageMapping {
 	public static int count = 0;
 	
-	public static final char TYPE_ACTION = 1;
-	public static final char TYPE_LESSON = 2;
-	public static final char TYPE_WIDGET = 3;
+	public static final char TYPE_ACTION = 'a';
+	public static final char TYPE_LESSON = 'l';
+	public static final char TYPE_WIDGET = 'w';
+	public static final char TYPE_UNKNOWN = '?';
 	
-	private int id;
+	protected int id;
 	private char type;
-	private LanguagePattern pattern;
-	private Object value;
+	protected LanguagePattern pattern;
 	
-	public void setPattern(String expr) {
+	public static void init(int count) {
+		//update count
+		LanguageMapping.count = count;
+	}
+	
+	public LanguageMapping(char typ, String expr) {
+		id = count++;
+		type = typ;		
+		pattern = null;
 		pattern = new LanguagePattern(expr);
 	}
 	
@@ -38,6 +43,21 @@ public class LanguageMapping implements Serializable {
 	
 	public String patternDiagram() {
 		return pattern.diagram();
+	}
+	
+	@Override
+	public String toString() {
+		String string = type + '\t' + String.valueOf(id) + '\t' + pattern.expression;
+		
+		return string;
+	}
+	
+	public void fromString(String string) {
+		String[] fields = string.split("\t");
+		
+		id = Integer.parseInt(fields[0]);
+		type = fields[1].charAt(0);
+		pattern = new LanguagePattern(fields[2]);
 	}
 	
 	/*

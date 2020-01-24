@@ -1,0 +1,113 @@
+==================
+Pattern Expression
+==================
+
+apple ?banana |cinnamon,donut,[@egg_@muffin],)) *flapjack grape) hazelnut icecream
+
+===============
+Pattern Grammar
+===============
+
+The grammar ended up being a bit more convoluted than I originally planned, as I compromised between
+legibility and ease of implementation.
+
+Basically, an expression is a list of tokens delimited by spaces.
+
+@arg1 signifies that the token is an argument named arg1. Arguments are named to aid in mapping them.
+They won't be used with widgets, so in the case of actions the arguments will map to target widgets
+and types of controls.
+
+Quantity modifiers are done in prefix notation, and are inspired by :
+?...) = query = 0 or 1 times
+*...) = star = 0 or more times
++...) = plus = 1 or more times
+|a,b,) = pipe = a or b
+
+In the case of a pipe/selection, sub-expressions (including sequences otherwise delimited with spaces) are
+surrounded by brackets: [subexpr]. Also notice that there needs to be a trailing comma.
+
+In a bracketed subexpression, all spaces are replaced with underscores: [a_b].
+
+===============
+Pattern Diagram
+===============
+
+NOTES:
+	- ... means repetition
+	- null means the pattern graph required a null node to represent a selection or loop point, but which is not
+	  associated with any token
+	- this graph is a very primitive representation used only for debugging
+
+apple
+	banana
+		cinnamon
+			null
+				...
+					flapjack
+						grape
+							...
+								...
+									hazelnut
+										icecream
+							hazelnut
+								icecream
+					null
+						hazelnut
+							icecream
+		donut
+			null
+				...
+					flapjack
+						grape
+							...
+								...
+									hazelnut
+										icecream
+							hazelnut
+								icecream
+					null
+						hazelnut
+							icecream
+		<egg>
+			<muffin>
+				null
+					flapjack
+						grape
+							...
+								...
+									hazelnut
+										icecream
+							hazelnut
+								icecream
+					null
+						flapjack
+							grape
+								...
+									...
+										hazelnut
+											icecream
+								hazelnut
+									icecream
+						hazelnut
+							icecream
+	null
+		null
+			flapjack
+				grape
+					...
+						...
+							hazelnut
+								icecream
+					hazelnut
+						icecream
+			null
+				flapjack
+					grape
+						...
+							...
+								hazelnut
+									icecream
+						hazelnut
+							icecream
+				hazelnut
+					icecream

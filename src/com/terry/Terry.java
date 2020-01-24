@@ -71,18 +71,16 @@ public class Terry {
 		
 		InstructionClassifier.init();
 		
-		/*
 		try {
 			Memory.init();
 		}
 		catch (MemoryException e) {
 			Logger.logError(e.getMessage());
 		}
-		*/
 		
-		LanguageMapping lm = new LanguageMapping();
-		lm.setPattern("terry |[find_@query_?online)],[|[search_?for)],[look_up],)_@query],) ?and @cmd)");
-		System.out.println(lm.patternDiagram());
+		// testing start
+		
+		// testing stop
 		
 		prompter = new Prompter();
 		prompter.init(args);
