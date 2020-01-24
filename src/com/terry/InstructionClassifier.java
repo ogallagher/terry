@@ -38,24 +38,9 @@ public class InstructionClassifier {
 				Logger.log(token + " kept");
 				//handle punctuation
 				
-				/*
-				 * dictionary lookup 
-				 * 
-				 * If not found in dictionary, it's a typo, an argument, or an unknown word. To distinguish between
-				 * each, the lookup will compare the token with all entries and pick the closest match (lowest edit distance
-				 * score).
-				 * 
-				 * If the lowest distance is greater than Memory.EDIT_DIST_MAX, it's a typo. 
-				 * 
-				 * Else, if the token could be an argument based on the current possibilities, it's an argument. 
-				 * 
-				 * Otherwise it's an unknown word. Ideally, the prompter would then ask for a synonym definition, but the 
-				 * minimal prototype will just have to fail and log the unknown word.
-				 * 
-				 */
 				
 				//update instruction possibilities
-				
+				possibilities.resolve(token);
 			}
 			else {
 				Logger.log(token + " ignored");

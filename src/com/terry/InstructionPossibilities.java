@@ -12,6 +12,23 @@ public class InstructionPossibilities {
 		possibilities = new LinkedList<InstructionPossibility>();
 	}
 	
+	public void resolve(String token) {
+		if (possibilities.size() == 0) {
+			//first word, dictionary lookup
+			ArrayList<LanguageMapping> mappings = Memory.dictionaryLookup(token);
+			
+			if (mappings == null) { //no matching results
+				Logger.logError(token + " not recognized; skipping token");
+			}
+			else {
+				
+			}
+		}
+		else {
+			//subsequent words, check against followers
+		}
+	}
+	
 	private static class InstructionPossibility {
 		private String token;
 		private ArrayList<InstructionPossibility> children;
