@@ -39,13 +39,13 @@ public class InstructionClassifier {
 				//handle punctuation
 				
 				/*
-				 * Dictionary lookup. 
+				 * dictionary lookup 
 				 * 
 				 * If not found in dictionary, it's a typo, an argument, or an unknown word. To distinguish between
-				 * each, the lookup should return a probability between 0 and 1 based on edit distance between the token
-				 * and the dict entry. 
+				 * each, the lookup will compare the token with all entries and pick the closest match (lowest edit distance
+				 * score).
 				 * 
-				 * If the best probability is greater than MIN_MATCH, it's a typo. 
+				 * If the lowest distance is greater than Memory.EDIT_DIST_MAX, it's a typo. 
 				 * 
 				 * Else, if the token could be an argument based on the current possibilities, it's an argument. 
 				 * 

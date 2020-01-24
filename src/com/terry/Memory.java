@@ -8,7 +8,10 @@ import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Scanner;
+import java.util.Set;
 
 /*
  * trivials = word word...
@@ -24,6 +27,8 @@ public class Memory {
 	private static ArrayList<String> trivials; //unimportant words commonly encountered that can be quickly ignored
 	private static HashMap<String,ArrayList<LanguageMapping>> dictionary; //token,references
 	private static HashMap<Integer,LanguageMapping> mappings; //key,mapping (action/lesson/widget)
+	
+	private static final int EDIT_DIST_MAX = 4; //edit dist (insert,delete,replace) must be less than 4 to be considered
 	
 	public static void init() throws MemoryException {
 		File memDir = new File(Terry.class.getResource(MEMORY_PATH).getPath());
@@ -142,6 +147,91 @@ public class Memory {
 	
 	public static boolean isTrivial(String token) {
 		return trivials.contains(token);
+	}
+	
+	/*
+	 * Return either the entry for the exact token-key match, the entry for the match with the lowest edit distance,
+	 * or null if no match is found.
+	 */
+	public static ArrayList<LanguageMapping> dictionaryLookup(String token) {
+		ArrayList<LanguageMapping> entry = dictionary.get(token);
+		
+		//score keys if not found
+		if (entry == null) {
+			Set<String> keys = dictionary.keySet();
+			
+			int best = EDIT_DIST_MAX;
+			String match = null;
+			
+			/*
+			 * Check edit distance. 
+			 * Uses the Wagner-Fischer algorithm for Levenshtein edit distance.
+			 */
+			for (String key : keys) {
+				char[] t = token.toCharArray(); //token = first row
+				char[] k = key.toCharArray(); //key = first col
+				
+				int w = t.length+1;
+				int h = k.length+1;
+				
+				int[][] d = new int[h][w]; //matrix of substring distances
+				
+				for (int i=0; i<w; i++) { //init first row
+					d[0][i] = i;
+				}
+				for (int i=0; i<h; i++) { //init first col
+					d[i][0] = i;
+				}
+				
+				int sc; //substitution cost
+				int mc; //min cost (between insert, delete, substitute)
+				int c;	//temp cost var for comparison
+				
+				int dist = 0; //running count of current edit distance
+				
+				//compute distance, keeping in mind best distance so far
+				for (int y=1; y<h && dist < best; y++) {
+					for (int x=1; x<w; x++) {
+						if (t[x-1] == k[y-1]) {
+							sc = 0;
+						}
+						else {
+							sc = 1;
+						}
+						
+						mc = d[y][x-1];
+						c = d[y-1][x];
+						if (c < mc) {
+							mc = c;
+						}
+						c = d[y-1][x-1] + sc;
+						if (c < mc) {
+							mc = c;
+						}
+						
+						d[y][x] = mc;
+						if (x == y || y == h-1 || x == w-1) {
+							dist = mc;
+						}
+					}
+				}
+				
+				if (dist < best) {
+					match = key;
+				}
+			}
+			
+			if (match == null) {
+				//no results found
+				return null;
+			}
+			else {
+				//return closest match
+				return dictionary.get(match);
+			}
+		}
+		
+		return entry;
 	}
 	
 	public static class MemoryException extends Exception {
