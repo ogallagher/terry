@@ -9,7 +9,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
-import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -52,6 +51,7 @@ public class Memory {
 		}
 		
 		mappings = new HashMap<Integer,LanguageMapping>();
+		int lastId = 0; //int for generating unique ids
 		File mapsFile = new File(memDir, MAPS_FILE);
 		if (mapsFile.exists()) {
 			try {
@@ -59,6 +59,7 @@ public class Memory {
 				Scanner mapsReader = new Scanner(mapsFile);
 				String line;
 				char type;
+				int id;
 				
 				while (mapsReader.hasNextLine()) {
 					line = mapsReader.nextLine();
@@ -66,10 +67,15 @@ public class Memory {
 					
 					try {
 						ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(line.getBytes(StandardCharsets.UTF_8)));
-
 						switch (type) {
 							case LanguageMapping.TYPE_ACTION:
 								Action action = (Action) stream.readObject();
+								
+								id = action.getId();
+								if (id > lastId) {
+									lastId = id;
+								}
+								
 								mappings.put(action.getId(), action);
 								
 								break;
@@ -102,6 +108,8 @@ public class Memory {
 				throw new MemoryException("could not create blank maps file at " + mapsFile.getAbsolutePath());
 			}
 		}
+		
+		LanguageMapping.init(lastId);
 		
 		dictionary = new HashMap<String,ArrayList<LanguageMapping>>();
 		
@@ -151,11 +159,12 @@ public class Memory {
 	 * Return either the entry for the exact token-key match, the entries with the lowest edit distance,
 	 * or null if no match is found.
 	 */
-	public static ArrayList<LanguageMapping> dictionaryLookup(String token) {
-		ArrayList<LanguageMapping> mappings = dictionary.get(token);
+	public static ArrayList<Lookup> dictionaryLookup(String token) {
+		ArrayList<Lookup> mappings = new ArrayList<Lookup>();
+		Lookup exact = new Lookup(token, dictionary.get(token));
 		
 		//score keys if not found
-		if (mappings == null) {
+		if (exact.mappings == null) {
 			Set<String> keys = dictionary.keySet();
 			
 			int best = token.length()/2; //edit dist (insert,delete,replace) must be less than token.length()/2
@@ -182,18 +191,35 @@ public class Memory {
 				return null;
 			}
 			else {
-				//return closest matches
-				mappings = new ArrayList<LanguageMapping>();
-				
+				//return closest matches				
 				for (String match : matches) {
-					mappings.addAll(dictionary.get(match));
+					mappings.add(new Lookup(match,dictionary.get(match)));
 				}
 				
 				return mappings;
 			}
 		}
+		else {
+			mappings.add(exact);
+			return mappings;
+		}
+	}
+	
+	public static void addMapping(LanguageMapping mapping) {
+		//update mappings
+		mappings.put(mapping.id, mapping);
 		
-		return mappings;
+		//TODO update dictionary
+	}
+	
+	public static class Lookup {
+		public String token;
+		public ArrayList<LanguageMapping> mappings;
+		
+		public Lookup(String tok, ArrayList<LanguageMapping> lms) {
+			token = tok;
+			mappings = lms;
+		}
 	}
 	
 	public static class MemoryException extends Exception {

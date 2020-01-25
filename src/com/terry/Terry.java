@@ -23,12 +23,18 @@
 
 package com.terry;
 
+import java.awt.geom.Point2D;
+import java.util.HashMap;
+
 import com.terry.Driver.DriverException;
+import com.terry.LanguageMapping.Arg;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
 public class Terry {
 	public static Prompter prompter;
+	
+	public static HashMap<String,State<?>> states = new HashMap<>();
 	
 	public static final String RES_PATH = "res/";
 	
@@ -72,10 +78,14 @@ public class Terry {
 		InstructionClassifier.init();
 		
 		try {
-			Memory.init();
+			Memory.init(); //calls LanguageMapping.init() from maps.txt file
 		}
 		catch (MemoryException e) {
 			Logger.logError(e.getMessage());
+		}
+		
+		if (LanguageMapping.empty()) {
+			createPrimitiveActions();
 		}
 		
 		// testing start
@@ -84,5 +94,67 @@ public class Terry {
 		
 		prompter = new Prompter();
 		prompter.init(args);
+	}
+	
+	private static void createPrimitiveActions() {
+		Logger.log("no mappings found; creating primitive actions corpus");
+		
+		//--- move mouse to screen location ---//
+		Action mouseToXY = new Action("?move) |mouse,cursor,pointer,) to ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why) @#y ?why)");
+		
+		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
+			private static final long serialVersionUID = -5509580894164954809L;
+			
+			public Point2D execute(Point2D stateOld, Arg[] args) {
+				Float x = new Float(0);
+				Float y = new Float(0);
+				
+				//map args
+				for (Arg arg : args) {
+					if (arg.name.equals("x")) {
+						x = (Float) arg.value;
+					}
+					else if (arg.name.equals("y")) {
+						y = (Float) arg.value;
+					}
+				}
+				
+				//direct driver
+				Driver.point(x.intValue(), y.intValue());
+				
+				//update state
+				return new Point2D.Float(x, y);
+			}
+		});
+		mouseToXY.addState(mouseat);
+		
+		Memory.addMapping(mouseToXY);
+		
+		//--- type string ---//
+		Action typeStr = new Action("type ?out) ?following string) @$str ?end quote)");
+		
+		State<String> typed = new State<String>("typed", "", new String[] {"str"}, new DriverExecution<String>() {
+			private static final long serialVersionUID = 6266250470624001432L;
+
+			public String execute(String stateOld, Arg[] args) {
+				String string = "";
+				
+				//map args
+				for (Arg arg : args) {
+					if (arg.name.equals("str")) {
+						string = (String) arg.value;
+					}
+				}
+				
+				//direct driver
+				Driver.type(string);
+				
+				//update state
+				return string;
+			}
+		});
+		typeStr.addState(typed);
+		
+		Memory.addMapping(typeStr);
 	}
 }

@@ -5,50 +5,88 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map.Entry;
 
+import com.terry.LanguageMapping.PatternNode;
+
 public class InstructionPossibilities {
-	private LinkedList<InstructionPossibility> possibilities;
+	private ArrayList<InstructionPossibility> possibilities;
 	
 	public InstructionPossibilities() {
-		possibilities = new LinkedList<InstructionPossibility>();
+		possibilities = null;
 	}
 	
 	public void resolve(String token) {
-		if (possibilities.size() == 0) {
+		if (possibilities == null) {
 			//first word, dictionary lookup
-			ArrayList<LanguageMapping> mappings = Memory.dictionaryLookup(token);
+			ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token);
 			
-			if (mappings == null) { //no matching results
+			if (entries == null) { //no matching results
 				Logger.logError(token + " not recognized; skipping token");
 			}
 			else {
-				
+				for (Memory.Lookup entry : entries) {
+					for (LanguageMapping lm : entry.mappings) {				
+						possibilities.add(new InstructionPossibility(entry.token, lm));
+					}					
+				}
 			}
 		}
 		else {
 			//subsequent words, check against followers
+			for (InstructionPossibility possibility : possibilities) {
+				if (possibility.resolve(token)) {
+					//possibility is still valid
+				}
+				else {
+					//possibility is no longer valid; remove it; etc
+				}
+			}
 		}
 	}
 	
 	private static class InstructionPossibility {
 		private String token;
+		private char type;
 		private ArrayList<InstructionPossibility> children;
+		private LanguageMapping mapping;
 		
-		public InstructionPossibility(Entry<String,ArrayList<LanguageMapping>> entry) {
-			token = entry.getKey();
+		//root constructor
+		public InstructionPossibility(String tok, LanguageMapping lm) {
+			token = tok;
+			type = lm.getLeader().getType();
+			mapping = lm;
 			
 			children = new ArrayList<InstructionPossibility>();
-			for (LanguageMapping lm : entry.getValue()) {
-				List<String> followers = lm.getFollowers(token);
-				
-				for (String follower : followers) {
-					children.add(new InstructionPossibility(follower));
-				}
+			for (PatternNode follower : mapping.getFollowers(token)) {
+				children.add(new InstructionPossibility(follower,mapping));
 			}
 		}
 		
-		public InstructionPossibility(String token) {
-			this.token = token;
+		//branch constructor
+		public InstructionPossibility(PatternNode pnode, LanguageMapping lm) {
+			token = pnode.token;
+			type = pnode.getType();
 			children = null;
+			mapping = lm;
+		}
+		
+		/*
+		 * Return true if this possibility can still accept the next token.
+		 * Else, return false.
+		 * 
+		 * TODO handle edit distance in LanguageMapping.getFollowers()? Would be an extra challenge.
+		 */
+		public boolean resolve(String next) {
+			children = new ArrayList<InstructionPossibility>();
+			
+			boolean resolved = false;
+			for (PatternNode pnode : mapping.getFollowers(next)) {
+				if (pnode.token.equals(next)) {
+					resolved = true;
+					children.add(new InstructionPossibility(pnode,mapping));
+				}
+			}
+			
+			return resolved;
 		}
 	}
 }

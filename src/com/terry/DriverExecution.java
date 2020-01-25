@@ -2,13 +2,10 @@ package com.terry;
 
 import java.io.Serializable;
 
-public abstract class DriverExecution implements Serializable {
+import com.terry.LanguageMapping.Arg;
+
+public abstract class DriverExecution<T> implements Serializable {
 	private static final long serialVersionUID = -4703545545934408077L;
 	
-	private Object args;
-	public abstract void execute(Object stateOld, Object stateNew);
-	
-	public void setArgs(Object args) {
-		this.args = args;
-	}
+	public abstract T execute(T stateOld, Arg[] args);
 }

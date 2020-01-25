@@ -1,15 +1,17 @@
 package com.terry;
 
+import java.awt.geom.Point2D;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.util.Map.Entry;
 
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 
-public abstract class State implements Entry<String,Object>, Serializable {
+import com.terry.LanguageMapping.Arg;
+
+public class State<T> implements Serializable {
 	private static final long serialVersionUID = -5257200053676112985L;
 	
 	private static final char TYPE_BOOL = 'b';	//boolean
@@ -19,51 +21,55 @@ public abstract class State implements Entry<String,Object>, Serializable {
 	
 	private String name;
 	private char type;
-	private SimpleObjectProperty<Object> value;
-	private DriverExecution transition;
+	private SimpleObjectProperty<T> value;
+	private String[] argNames;
+	private DriverExecution<T> transition;
 	
-	public State(String name, char type, DriverExecution transition) {
+	public State(String name, T value, String[] args, DriverExecution<T> transition) {
 		this.name = name;
-		this.type = type;
+		this.value.set(value);
+		argNames = args;
 		
-		value = new SimpleObjectProperty<Object>(null);
-		switch (type) {
-			case TYPE_BOOL:
-				value.set(false);
-				break;
-				
-			case TYPE_INT:
-				value.set(0);
-				break;
-				
-			case TYPE_STR:
-				value.set("");
-				break;
-				
-			case TYPE_PNT:
-				value.set(new int[] {0,0});
-				break;
-		} 
+		Class<?> typeClass = value.getClass();
+		if (typeClass == Boolean.class) {
+			type = TYPE_BOOL;
+		}
+		else if (typeClass == Integer.class) {
+			type = TYPE_INT;
+		}
+		else if (typeClass == String.class) {
+			type = TYPE_STR;
+		}
+		else if (typeClass == Point2D.class) {
+			type = TYPE_PNT;
+		}
 		
 		this.transition = transition;
 	}
-
-	@Override
-	public String getKey() {
+	
+	public String getName() {
 		return name;
 	}
-
-	@Override
-	public Object getValue() {
+	
+	public T getValue() {
 		return value.get();
 	}
 	
-	@Override
-	public Object setValue(Object newValue) {
-		transition.execute(value, newValue);
-		value.set(newValue);
-		
-		return newValue;
+	public String[] getArgNames() {
+		return argNames;
+	}
+	
+	/*
+	 * Updates value and executes transition. 
+	 * Call transition.setArgs() first.
+	 */
+	public void transition(Arg[] args) throws StateException {
+		if (args.length == argNames.length) {
+			value.set(transition.execute(value.get(), args));
+		}
+		else {
+			throw new StateException(name + " transition expects " + argNames.length + "args; got " + args.length);
+		}
 	}
 	
 	public void addListener(ChangeListener<Object> l) {
@@ -82,10 +88,30 @@ public abstract class State implements Entry<String,Object>, Serializable {
 		stream.writeObject(transition);
 	}
 	
+	@SuppressWarnings("unchecked")
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
 		name = (String) stream.readObject();
 		type = stream.readChar();
-		value.set(stream.readObject());
-		transition = (DriverExecution) stream.readObject();
+		value.set((T)stream.readObject());
+		transition = (DriverExecution<T>) stream.readObject();
+	}
+	
+	public static class StateException extends Exception {
+		private static final long serialVersionUID = 8027619357141849662L;
+		
+		private String message;
+		
+		public StateException(String message) {
+			this.message = message;
+		}
+		
+		public StateException() {
+			this.message = "state transition failed for unknown reason";
+		}
+		
+		@Override
+		public String getMessage() {
+			return message;
+		}
 	}
 }

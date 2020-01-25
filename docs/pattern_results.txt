@@ -2,7 +2,7 @@
 Pattern Expression
 ==================
 
-apple ?banana |cinnamon,donut,[@egg_@muffin],)) *flapjack grape) hazelnut icecream
+apple ?banana |cinnamon,donut,[@$egg_@$muffin],)) *flapjack grape) hazelnut icecream
 
 ===============
 Pattern Grammar
@@ -13,9 +13,9 @@ legibility and ease of implementation.
 
 Basically, an expression is a list of tokens delimited by spaces.
 
-@arg1 signifies that the token is an argument named arg1. Arguments are named to aid in mapping them.
-They won't be used with widgets, so in the case of actions the arguments will map to target widgets
-and types of controls.
+@$arg1 signifies that the token is an argument named arg1, of type string ($). Arguments are named to aid in mapping them, 
+and are typed so the instruction parsing can know what types of tokens to expect there. They won't be used with widgets, 
+so in the case of actions the arguments will map to target widgets and types of controls.
 
 Quantity modifiers are done in prefix notation, and are inspired by :
 ?...) = query = 0 or 1 times
