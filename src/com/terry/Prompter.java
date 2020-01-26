@@ -1,8 +1,11 @@
 package com.terry;
 
+import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.lang.reflect.Method;
 
+import com.terry.Driver.DriverThread;
 import com.terry.Scribe.ScribeException;
 
 import javafx.application.Application;
@@ -79,6 +82,7 @@ public class Prompter extends Application {
 		
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
+				/*
 				try {
 					switch (Scribe.state.get()) {
 						case Scribe.STATE_IDLE:
@@ -104,6 +108,29 @@ public class Prompter extends Application {
 				catch (ScribeException e) {
 					Logger.logError(e.getMessage());
 				}
+				*/
+				
+				//testing
+				new DriverThread() {
+					public void run() {
+						Logger.log("quitting via mouse...");
+						Driver.point(755, 899); //go to dock
+						
+						try {Thread.sleep(500);} catch (InterruptedException e) {}
+						
+						Driver.point(908, 860); //go to java
+						
+						Driver.clickRight(); //right-click menu
+						
+						try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
+						
+						Driver.point(934, 771); //close option
+						
+						try {Thread.sleep(500);} catch (InterruptedException e) {} //dramatic effect
+						
+						Driver.clickLeft();
+					}
+				}.start();
 			}
 		});
 		

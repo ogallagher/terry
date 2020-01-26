@@ -27,7 +27,7 @@ public class State<T> implements Serializable {
 	
 	public State(String name, T value, String[] args, DriverExecution<T> transition) {
 		this.name = name;
-		this.value.set(value);
+		this.value = new SimpleObjectProperty<T>(value);
 		argNames = args;
 		
 		Class<?> typeClass = value.getClass();
