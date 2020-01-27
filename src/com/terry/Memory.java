@@ -13,7 +13,7 @@ import java.util.Scanner;
 import java.util.Set;
 
 /*
- * trivials = word word...
+ * trivials = word word ...
  * dictionary = token lm1 lm2 ... lmn
  * mappings = type	id	expr<subclass-specific>
  */
@@ -112,8 +112,6 @@ public class Memory {
 		LanguageMapping.init(lastId);
 		
 		dictionary = new HashMap<String,ArrayList<LanguageMapping>>();
-		
-		//TODO init from dict files
 		File dictFile = new File(memDir, DICT_FILE);
 		if (dictFile.exists()) {
 			try {
@@ -209,7 +207,25 @@ public class Memory {
 		//update mappings
 		mappings.put(mapping.id, mapping);
 		
-		//TODO update dictionary
+		//update dictionary
+		LinkedList<String> tokens = mapping.getTokens();
+		ArrayList<LanguageMapping> entry = null;
+		
+		for (String token : tokens) {
+			entry = dictionary.get(token);
+			
+			if (entry == null) {
+				//add new word to dictionary
+				entry = new ArrayList<LanguageMapping>();
+				entry.add(mapping);
+				dictionary.put(token, entry);
+				Logger.log("added " + token + " to dictionary");
+			}
+			else {
+				//add mapping to existing word's dictionary entry
+				entry.add(mapping);
+			}
+		}
 	}
 	
 	public static class Lookup {

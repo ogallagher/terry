@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.security.AccessController;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
@@ -64,10 +65,13 @@ public class Scribe {
 		    throw new ScribeException("microphone not supported");
 		}
 		else {
+			AudioPermission audioPermission = new AudioPermission("record");
+			
 			try {
+				//AccessController.checkPermission(audioPermission); this does not work, always throws security exception
+				
 				//connect to microphone
 				microphone = (TargetDataLine) AudioSystem.getLine(info);
-				AudioPermission audioPermission = new AudioPermission("record");
 				
 				//init transcriber
 				TranscribeThread.init();

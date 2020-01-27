@@ -56,6 +56,11 @@ public class LanguageMapping {
 		return pattern.getFollowers(leader);
 	}
 	
+	//get all keywords that appear in the pattern, to be added to the dictionary
+	public LinkedList<String> getTokens() {
+		return pattern.getTokens(pattern.graph);
+	}
+	
 	public String patternDiagram() {
 		return pattern.diagram();
 	}
@@ -97,6 +102,25 @@ public class LanguageMapping {
 		
 		public LinkedList<PatternNode> getFollowers(String leader) {
 			return graph.getFollowers(leader);
+		}
+		
+		public LinkedList<String> getTokens(PatternNode node) {
+			LinkedList<String> tokens = new LinkedList<String>();
+			String token;
+			
+			if (node.type == PatternNode.notarg) {
+				token = node.token;
+				
+				if (token != null) {
+					tokens.add(token);
+				}
+			}
+			
+			for (PatternNode follower : node.followers) {
+				tokens.addAll(getTokens(follower));
+			}
+			
+			return tokens;
 		}
 	}
 	

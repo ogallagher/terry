@@ -1,6 +1,7 @@
 package com.terry;
 
 import java.awt.AWTException;
+import java.awt.AWTPermission;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
@@ -8,9 +9,8 @@ import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
-import java.awt.geom.Point2D;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
+import java.security.AccessControlException;
+import java.security.AccessController;
 
 public class Driver {
 	private static Robot robot;
@@ -27,7 +27,11 @@ public class Driver {
 		ITER_MAX = 50;
 		POINT_SIZE = 20;
 		
+		AWTPermission robotPermission = new AWTPermission("createRobot", null);
+		
 		try {
+			//AccessController.checkPermission(robotPermission); this does not work, always throws security exception
+			
 			robot = new Robot();
 			robot.setAutoDelay(10);
 			robot.setAutoWaitForIdle(true);
