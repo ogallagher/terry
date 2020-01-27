@@ -23,6 +23,7 @@
 
 package com.terry;
 
+import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
 import java.util.HashMap;
 
@@ -129,6 +130,38 @@ public class Terry {
 		mouseToXY.addState(mouseat);
 		
 		Memory.addMapping(mouseToXY);
+		
+		//--- click mouse button ---///
+		Action mouseClickBtn = new Action("");
+		
+		State<Integer> clickbtn = new State<Integer>("clickbtn", new Integer(0), new String[] {"btn"}, new DriverExecution<Integer>() {
+			private static final long serialVersionUID = -3163938142402546869L;
+
+			public Integer execute(Integer stateOld, Arg[] args) {
+		        Integer button = MouseEvent.BUTTON1;
+		        
+		        //map args
+		        for (Arg arg : args) {
+		        	if (arg.name.equals("btn")) {
+		        		button = (Integer) arg.value;
+		        	}
+		        }
+		        
+		        //direct driver
+		        if (button == MouseEvent.BUTTON1) {
+		            Driver.clickLeft();
+		        }
+		        else if (button == MouseEvent.BUTTON2) {
+		            Driver.clickRight();
+		        }
+		        
+		        //update state
+		        return button;
+		    }
+		});
+		mouseClickBtn.addState(clickbtn);
+		
+		Memory.addMapping(mouseClickBtn);
 		
 		//--- type string ---//
 		Action typeStr = new Action("type ?out) ?following string) @$str ?end quote)");

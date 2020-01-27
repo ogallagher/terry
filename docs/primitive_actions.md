@@ -1,6 +1,6 @@
 # Primitive Actions
 
-This lists all primitive actions included in Terry's initial corpus. `action.addState(State(name,value,argNum,transition))` defines what state transitions and associated driver executions occur when this action is called.
+This lists all primitive actions included in Terry's initial corpus. `action.addState(State(name,value,args,transition))` defines what state transitions and associated driver executions occur when this action is called.
 
 <hr>
 
@@ -17,10 +17,10 @@ Moves the mouse to screen coordinates (`x`,`y`), where both are integer numbers.
 ### States
 
 ```java
-new State<Point2D>("mouseat", new Point2D.Float(0,0), 2, new DriverExecution<Point2D>() {
+new State<Point2D>("mouseat", new Point2D.Float(0,0), new String[] {"x","y"}, new DriverExecution<Point2D>() {
     public Point2D execute(Point2D stateOld, Arg[] args) {
-        Float x = (Float) args[0];
-        Float y = (Float) args[1];
+        Float x = (Float) args[0].value;
+        Float y = (Float) args[1].value;
         Driver.point(x,y);
         return new Point2D.Float(x,y);
     }
@@ -42,11 +42,40 @@ Controls the keyboard to type a string `str`. Later on I want this to have a tim
 ### States
 
 ```java
-new State<String>("typed", "", 1, new DriverExecution<String>() {
-    public String execute(String stateOld, Object[] args) {
-        String string = (String) args[0];
+new State<String>("typed", "", new String[] {"str"}, new DriverExecution<String>() {
+    public String execute(String stateOld, Arg[] args) {
+        String string = (String) args[0].value;
         Driver.type(string);
         return string;
+    }
+});
+```
+
+<hr>
+
+## mouseClickBtn
+
+### Description
+
+Clicks a mouse button (left or right) specified by the `btn` argument.
+
+### Pattern
+
+`?|left,right,)) click`
+
+### States
+
+```java
+new State<Integer>("clickbtn", new Integer(), new String[] {"btn"}, new DriverExecution<Integer>() {
+    public Integer execute(Integer stateOld, Arg[] args) {
+        Integer button = (Integer) args[0].value;
+        if (button == MouseEvent.BUTTON1) {
+            Driver.clickLeft();
+        }
+        else if (button == MouseEvent.BUTTON2) {
+            Driver.clickRight();
+        }
+        return button;
     }
 });
 ```
