@@ -139,6 +139,7 @@ public class LanguageMapping {
 		public static final char wigarg = 'w';		//widget
 		public static final char colarg = 'c';		//color
 		public static final char spdarg = '>';		//speed
+		public static final char dirarg = '+';		//direction
 		
 		private static int DIAGRAM_DEPTH = 20;
 		
@@ -413,10 +414,5 @@ public class LanguageMapping {
 			
 			return diagram;
 		}
-	}
-	
-	public static class Arg {
-		public String name;
-		public Object value;
 	}
 }

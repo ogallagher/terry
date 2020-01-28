@@ -9,8 +9,6 @@ import java.io.Serializable;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 
-import com.terry.LanguageMapping.Arg;
-
 public class State<T> implements Serializable {
 	private static final long serialVersionUID = -5257200053676112985L;
 	

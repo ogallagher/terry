@@ -11,6 +11,8 @@ import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
 import java.security.AccessControlException;
 import java.security.AccessController;
+import java.util.Iterator;
+import java.util.LinkedList;
 
 public class Driver {
 	private static Robot robot;
@@ -86,8 +88,9 @@ public class Driver {
 	}
 	
 	public static void type(String str) {
-		char[] chars = str.toCharArray();
-		int key;
+		char[] chars = str.toLowerCase().toCharArray();
+		int key = 0;
+		char[] alias = new char[3];
 		
 		try {
 			for (int c=0; c<chars.length; c++) {
@@ -96,9 +99,72 @@ public class Driver {
 				if (key == KeyEvent.VK_UNDEFINED) {
 					Logger.logError("unknown keycode for char " + chars[c]);
 				}
-				else {
+				else if ((key >= KeyEvent.VK_0 && key <= KeyEvent.VK_9) || (key >= KeyEvent.VK_A && key <= KeyEvent.VK_Z)) { 
+					//alphanumeric
 					robot.keyPress(key);
 					robot.keyRelease(key);
+				}
+				else if ((key == KeyEvent.VK_NUMBER_SIGN)) {
+					//control chars that cannot be expressed as chars in a string are escaped and given codes. ex: #cmd+del) #shf) #up)
+					c++; //skip hashtag
+					
+					char chr = '#';
+					boolean go = true;
+					LinkedList<Integer> keys = new LinkedList<Integer>();
+					
+					for (int i=0; c<chars.length && go; c++) {
+						chr = chars[c];
+						
+						if (chr == '+') {
+							//key in combo, including shifts
+							keys.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
+							
+							i=0;
+						}
+						else if (chr == ')') {
+							//keys done
+							keys.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
+							
+							Iterator<Integer> iterator = keys.iterator();
+							while (iterator.hasNext()) {
+								robot.keyPress(iterator.next());
+							}
+							iterator = keys.descendingIterator();
+							while (iterator.hasNext()) {
+								robot.keyRelease(iterator.next());
+							}
+							
+							go = false;
+							c--; //otherwise incremented twice by outer loop
+						}
+						else {
+							alias[i] = chr;
+							i++;
+						}
+					}
+				}
+				else { 
+					//control, punctuation
+					switch (key) {
+						case KeyEvent.VK_SPACE:
+						case KeyEvent.VK_PERIOD:
+						case KeyEvent.VK_COMMA:
+						case KeyEvent.VK_SLASH:
+						case KeyEvent.VK_SEMICOLON:
+						case KeyEvent.VK_QUOTE:
+						case KeyEvent.VK_OPEN_BRACKET:
+						case KeyEvent.VK_CLOSE_BRACKET:
+						case KeyEvent.VK_BACK_SLASH:
+						case KeyEvent.VK_BACK_QUOTE:
+						case KeyEvent.VK_EQUALS:
+						case KeyEvent.VK_ENTER:
+						case KeyEvent.VK_ACCEPT:
+						case KeyEvent.VK_TAB:
+						case KeyEvent.VK_MINUS:
+							robot.keyPress(key);
+							robot.keyRelease(key);
+							break;
+					}
 				}
 				
 				Thread.sleep(DELAY_TYPE);

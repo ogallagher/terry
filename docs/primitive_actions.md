@@ -79,3 +79,85 @@ new State<Integer>("clickbtn", new Integer(), new String[] {"btn"}, new DriverEx
     }
 });
 ```
+
+## shutdown
+
+### Description
+
+Shuts down (quits) Terry directly by invoking the intercom window's close event.
+
+### Pattern
+
+`|[shut_down],[turn_off],quit,)`
+
+### States
+
+```java
+new State<Boolean>("quitted", false, new String[] {}, new DriverExecution<Boolean>() {
+	public Boolean execute(Boolean stateOld, Arg[] args) {
+		//no args
+		//direct prompter
+		try {
+			prompter.stop();
+		} 
+		catch (Exception e) {
+			Logger.logError("shutdown failed");
+			Logger.logError(e.getMessage());
+		}
+		return true;
+	}
+});
+```
+
+## driverDemo1
+
+### Description
+
+Executes a hardcoded set of driver pointer and typer commands, showing full mouse control and keyboard support with alphanumeric keys, key-combos, and control keys.
+
+### Pattern
+
+`?do) ?driver) |demo,demonstration,) |one,won,run,)`
+
+### States
+
+```java
+new State<Integer>("demoed", 0, new String[] {}, new DriverExecution<Integer>() {
+	public Integer execute(Integer stateOld, Arg[] args) {
+		//no args
+		//direct driver
+		new DriverThread() {
+			public void run() {
+				Logger.log("typing in spotlight...");
+				Driver.point(930, 30); //go to eclipse
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				Driver.clickLeft(); //click window
+				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
+				Driver.point(1375, 12); //go to spotlight
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				Driver.clickLeft(); //click icon
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				Driver.type("#cmd+bck)"); //clear search
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				Driver.type("#cmd+bck)#esc)"); //clear search and exit
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				Logger.log("quitting via mouse...");
+				Driver.point(755, 899); //go to dock
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				Driver.point(908, 860); //go to java
+				Driver.clickRight(); //right-click menu
+				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
+				Driver.point(934, 771); //close option
+			}
+		}.start();
+		//update state
+		return 1;
+	}
+});
+```

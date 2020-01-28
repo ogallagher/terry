@@ -3,7 +3,7 @@ package com.terry;
 import java.util.LinkedList;
 import java.util.Scanner;
 
-public class InstructionClassifier {	
+public class InstructionParser {	
 	private static final char STATE_IDLE = 0;
 	private static final char STATE_PARSING = 1;
 	private static final char STATE_DONE = 2;
@@ -11,7 +11,7 @@ public class InstructionClassifier {
 	public static CharProperty state = new CharProperty(STATE_IDLE);
 	
 	public static void init() {
-		Logger.log("instruction classifier init success");
+		Logger.log("instruction parser init success");
 	}
 	
 	public static void parse(String tokens) {
@@ -41,6 +41,8 @@ public class InstructionClassifier {
 				
 				//update instruction possibilities
 				possibilities.resolve(token);
+				
+				//if possibilities have resolved into one mapping, execute the action or learn the lesson
 			}
 			else {
 				Logger.log(token + " ignored");

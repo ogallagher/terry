@@ -22,6 +22,7 @@ import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
+import javafx.stage.WindowEvent;
 
 public class Prompter extends Application {
 	@SuppressWarnings("unused")
@@ -82,7 +83,6 @@ public class Prompter extends Application {
 		
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
-				/*
 				try {
 					switch (Scribe.state.get()) {
 						case Scribe.STATE_IDLE:
@@ -108,29 +108,12 @@ public class Prompter extends Application {
 				catch (ScribeException e) {
 					Logger.logError(e.getMessage());
 				}
-				*/
-				
-				//testing
-				new DriverThread() {
-					public void run() {
-						Logger.log("quitting via mouse...");
-						Driver.point(755, 899); //go to dock
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {}
-						
-						Driver.point(908, 860); //go to java
-						
-						Driver.clickRight(); //right-click menu
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
-						
-						Driver.point(934, 771); //close option
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {} //dramatic effect
-						
-						Driver.clickLeft();
-					}
-				}.start();
+			}
+		});
+		
+		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
+			public void handle(WindowEvent event) {
+				primaryStage.close();
 			}
 		});
 		
@@ -163,7 +146,7 @@ public class Prompter extends Application {
 						break;
 						
 					case Scribe.STATE_DONE:
-						InstructionClassifier.parse(Scribe.getTranscription()); //search associated language mapping
+						InstructionParser.parse(Scribe.getTranscription()); //search associated language mapping
 						
 						break;
 						
@@ -178,8 +161,7 @@ public class Prompter extends Application {
 	public void stop() throws Exception {
 		//destroy terry-specific resources
 		testThread.quit();
-		
-		super.stop();
+		intercom.close();
 	}
 	
 	private static class TestThread extends Thread {
