@@ -51,11 +51,6 @@ public class LanguageMapping {
 		return pattern.graph;
 	}
 	
-	//get possible following tokens after leader token
-	public LinkedList<PatternNode> getFollowers(String leader) {
-		return pattern.getFollowers(leader);
-	}
-	
 	//get all keywords that appear in the pattern, to be added to the dictionary
 	public LinkedList<String> getTokens() {
 		LinkedList<String> tokens = new LinkedList<String>();
@@ -69,7 +64,7 @@ public class LanguageMapping {
 	
 	@Override
 	public String toString() {
-		String string = type + '\t' + String.valueOf(id) + '\t' + pattern.expression;
+		String string = type + "\t" + id + "\t" + pattern.expression;
 		
 		return string;
 	}
@@ -100,10 +95,6 @@ public class LanguageMapping {
 		 */
 		public String diagram() {			
 			return graph.diagram("");
-		}
-		
-		public LinkedList<PatternNode> getFollowers(String leader) {
-			return graph.getFollowers(leader);
 		}
 		
 		public void getTokens(LinkedList<String> tokens, PatternNode node) {
@@ -175,20 +166,8 @@ public class LanguageMapping {
 			return type;
 		}
 		
-		public LinkedList<PatternNode> getFollowers(String leader) {
-			if (token != null && token.equals(leader)) {
-				return followers;
-			}
-			else {
-				LinkedList<PatternNode> fs = null;
-				Iterator<PatternNode> iterator = followers.iterator();
-				
-				while (fs == null && iterator.hasNext()) {
-					fs = iterator.next().getFollowers(leader);
-				}
-				
-				return fs;
-			}
+		public LinkedList<PatternNode> getFollowers() {
+			return followers;
 		}
 		
 		public static PatternNode newGraph(char[] expr) {

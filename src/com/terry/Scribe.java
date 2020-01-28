@@ -88,6 +88,7 @@ public class Scribe {
 	}
 	
 	public static void start() throws ScribeException {
+		/*
 		try {
 			//open the line
 		    microphone.open(FORMAT_WAV); //opens input stream with default buffer size
@@ -105,6 +106,10 @@ public class Scribe {
 		catch (SecurityException e) {
 			throw new ScribeException("not allowed to use system mic");
 		}
+		*/
+		//testing
+		transcription = "gurck cursor to location five comma thirty";
+		state.set(STATE_DONE);
 	}
 	
 	public static void stop() {

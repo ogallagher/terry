@@ -38,11 +38,15 @@ public class InstructionParser {
 				Logger.log(token + " kept");
 				//handle punctuation
 				
-				
 				//update instruction possibilities
-				possibilities.resolve(token);
 				
-				//if possibilities have resolved into one mapping, execute the action or learn the lesson
+				if (possibilities.resolve(token)) {
+					/*
+					 * If possibilities have resolved into one mapping, fill in the rest of the tokens 
+					 * and execute the action or learn the lesson.
+					 */
+					Logger.log("mapping = " + possibilities.getMapping());
+				}
 			}
 			else {
 				Logger.log(token + " ignored");

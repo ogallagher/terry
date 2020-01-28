@@ -14,7 +14,7 @@ public class InstructionPossibilities {
 		possibilities = null;
 	}
 	
-	public void resolve(String token) {
+	public boolean resolve(String token) {
 		if (possibilities == null) {
 			//first word, dictionary lookup
 			possibilities = new ArrayList<InstructionPossibility>();
@@ -26,48 +26,94 @@ public class InstructionPossibilities {
 			else {
 				for (Memory.Lookup entry : entries) {
 					for (LanguageMapping lm : entry.mappings) {				
-						possibilities.add(new InstructionPossibility(entry.token, lm));
+						possibilities.add(new InstructionPossibility(lm));
 					}					
 				}
 			}
 		}
 		else {
 			//subsequent words, check against followers
-			for (InstructionPossibility possibility : possibilities) {
-				if (possibility.resolve(token)) {
-					//possibility is still valid
-				}
-				else {
-					//possibility is no longer valid; remove it; etc
+			int n = possibilities.size();
+			for (int i=0; i<n; i++) {
+				if (!possibilities.get(i).resolve(token)) { //possibility no longer possible
+					possibilities.remove(i);
+					i--;
+					n--;
 				}
 			}
 		}
+		
+		return (possibilities != null && possibilities.size() == 1);
+	}
+	
+	public LanguageMapping getMapping() {
+		return possibilities.get(0).mapping;
 	}
 	
 	private static class InstructionPossibility {
-		private String token;
-		private char type;
+		private PatternNode node;
 		private ArrayList<InstructionPossibility> children;
-		private LanguageMapping mapping;
+		
+		private LanguageMapping mapping;					//root has reference to mapping
+		private ArrayList<InstructionPossibility> leaves;	//root has links to leaves
 		
 		//root constructor
-		public InstructionPossibility(String tok, LanguageMapping lm) {
-			token = tok;
-			type = lm.getLeader().getType();
+		public InstructionPossibility(LanguageMapping lm) {
+			node = lm.getLeader();
+			
 			mapping = lm;
+			leaves = new ArrayList<InstructionPossibility>();
+			
+			ArrayList<PatternNode> nodes = new ArrayList<>(); 						//identify cycles
+			ArrayList<InstructionPossibility> possibilities = new ArrayList<>();	//close cycles
 			
 			children = new ArrayList<InstructionPossibility>();
-			for (PatternNode follower : mapping.getFollowers(token)) {
-				children.add(new InstructionPossibility(follower,mapping));
+			for (PatternNode follower : node.getFollowers()) {
+				if (!nodes.contains(follower)) {
+					Logger.log("added possibility " + mapping);
+					InstructionPossibility possibility = new InstructionPossibility(follower);
+					
+					nodes.add(follower);
+					possibilities.add(possibility);
+					
+					children.add(possibility);
+					leaves.add(possibility);
+					
+					possibility.extend(nodes, possibilities);
+				}
 			}
 		}
 		
 		//branch constructor
-		public InstructionPossibility(PatternNode pnode, LanguageMapping lm) {
-			token = pnode.token;
-			type = pnode.getType();
-			children = null;
-			mapping = lm;
+		public InstructionPossibility(PatternNode pnode) {
+			node = pnode;
+			children = new ArrayList<InstructionPossibility>();
+		}
+		
+		public void extend(ArrayList<PatternNode> nodes, ArrayList<InstructionPossibility> possibilities) {
+			for (PatternNode follower : node.getFollowers()) {
+				int i = nodes.indexOf(follower);
+				
+				if (i == -1) {
+					//extend tree
+					InstructionPossibility possibility = new InstructionPossibility(follower);
+					
+					nodes.add(follower);
+					possibilities.add(possibility);
+					
+					children.add(possibility);
+					
+					possibility.extend(nodes, possibilities);
+				}
+				else {
+					//create cycle
+					children.add(possibilities.get(i));
+				}
+			}
+		}
+		
+		public char getType() {
+			return node.getType();
 		}
 		
 		/*
@@ -77,14 +123,24 @@ public class InstructionPossibilities {
 		 * TODO handle edit distance in LanguageMapping.getFollowers()? Would be an extra challenge.
 		 */
 		public boolean resolve(String next) {
-			children = new ArrayList<InstructionPossibility>();
-			
 			boolean resolved = false;
-			for (PatternNode pnode : mapping.getFollowers(next)) {
-				if (pnode.token.equals(next)) {
+			
+			InstructionPossibility leaf = null;
+			int i=0;
+			int n=leaves.size();
+			while (i < n) {
+				leaf = leaves.get(0);
+				
+				if (leaf.node.token.equals(next)) {
 					resolved = true;
-					children.add(new InstructionPossibility(pnode,mapping));
+					
+					for (InstructionPossibility newLeaf : leaf.children) {
+						leaves.add(newLeaf);
+					}
 				}
+				
+				leaves.remove(0);
+				i++;
 			}
 			
 			return resolved;

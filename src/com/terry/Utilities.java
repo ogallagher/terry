@@ -33,7 +33,7 @@ public class Utilities {
 		int dist = 0; //running count of current edit distance
 		
 		//compute distance, keeping in mind best distance so far
-		for (int y=1; y<h && dist < maxDist; y++) {
+		for (int y=1; y<h && dist!=-1; y++) {
 			for (int x=1; x<w; x++) {
 				if (t[x-1] == k[y-1]) {
 					sc = 0;
@@ -42,8 +42,8 @@ public class Utilities {
 					sc = 1;
 				}
 				
-				mc = d[y][x-1];
-				c = d[y-1][x];
+				mc = d[y][x-1] + 1;
+				c = d[y-1][x] + 1;
 				if (c < mc) {
 					mc = c;
 				}
@@ -53,15 +53,27 @@ public class Utilities {
 				}
 				
 				d[y][x] = mc;
-				if (x == y || y == h-1 || x == w-1) {
+				if (x == y || (y == h-1 && x > y) || (x == w-1 && y > x)) {
 					dist = mc;
 				}
 			}
+			
+			if (dist > maxDist) {
+				dist = -1;
+			}
 		}
 		
-		Logger.log(token + " -> " + key + " = " + dist);
+		String matrix = "";
+		for (int i=0; i<h; i++) {
+			for (int j=0; j<w; j++) {
+				matrix += d[i][j] + " ";
+			}
+			matrix += "\n";
+		}
+		System.out.print(matrix);
 		
 		if (dist <= maxDist) {
+			Logger.log(dist + " -> " + key);
 			return dist;
 		}
 		else {
