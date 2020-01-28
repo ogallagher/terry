@@ -1,0 +1,17 @@
+#console_root {
+	-fx-background-color: black;
+}
+
+#console_out {
+	-fx-background-color: #383276 /* purple */
+}
+
+.console_out_cell {
+	-fx-background-color: #1F1959; /* darker purple */
+	-fx-text-fill: #cccccc; /* gray */
+	-fx-font-size: 14px;
+}
+
+.console_out_cell:selected {
+	-fx-background-color: #383276 /* purple */
+}

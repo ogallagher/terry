@@ -12,6 +12,7 @@ public class Logger {
 	private static final String FILE_EXT = ".txt";
 	
 	private static LinkedList<String> log;
+	private static LinkedList<String> backlog;
 	private static int logLen;
 	
 	private static FileReader fileReader;
@@ -19,6 +20,7 @@ public class Logger {
 	
 	public static void init() {
 		log = new LinkedList<String>();
+		backlog = new LinkedList<String>();
 	}
 	
 	public static void logError(String error) {
@@ -39,10 +41,23 @@ public class Logger {
 		}
 		
 		//print entry
+		if (Terry.prompter != null) {
+			Terry.prompter.consoleLog(entry);
+		}
+		else {
+			backlog.add(entry);
+		}
 		
 		//say entry
 		
 		//testing only
 		System.out.println(entry);
+	}
+	
+	public static void emptyBacklog() {
+		while (!backlog.isEmpty()) {
+			log(backlog.getFirst());
+			backlog.removeFirst();
+		}
 	}
 }

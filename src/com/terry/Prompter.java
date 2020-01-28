@@ -3,26 +3,31 @@ package com.terry;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
-import java.lang.reflect.Method;
 
-import com.terry.Driver.DriverThread;
 import com.terry.Scribe.ScribeException;
 
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+import javafx.collections.ObservableListBase;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
-import javafx.geometry.Pos;
 import javafx.scene.Scene;
-import javafx.scene.control.Label;
-import javafx.scene.image.ImageView;
+import javafx.scene.control.ListCell;
+import javafx.scene.control.ListView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.layout.Background;
+import javafx.scene.layout.BackgroundFill;
+import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.stage.WindowEvent;
+import javafx.util.Callback;
 
 public class Prompter extends Application {
 	@SuppressWarnings("unused")
@@ -38,6 +43,13 @@ public class Prompter extends Application {
 	private static final String INTERCOM_PATH = "img/terry_150.png";
 	private static final String MIC_PATH = "img/mic_75.png";
 	private static final String LOADING_PATH = "img/loading_75.png";
+	
+	private static Stage console;
+	private static final int CONSOLE_WIDTH = 500;
+	private static final int CONSOLE_HEIGHT = 800;
+	
+	private static ObservableList<String> consoleOut;
+	private static ListView<String> consoleOutView;
 	
 	private static TestThread testThread;
 	
@@ -71,7 +83,7 @@ public class Prompter extends Application {
 		
 		Scene intercomScene = new Scene(intercomRoot);
 		intercomScene.setFill(Color.TRANSPARENT);
-		intercomScene.getStylesheets().add(Terry.class.getResource(Terry.RES_PATH + "style.css").toString());
+		intercomScene.getStylesheets().add(Terry.class.getResource(Terry.RES_PATH + "style_intercom.css").toString());
 		
 		intercom.setScene(intercomScene);
 		intercom.centerOnScreen();
@@ -117,6 +129,50 @@ public class Prompter extends Application {
 			}
 		});
 		
+		//launch console window
+		console = new Stage();
+		console.initStyle(StageStyle.DECORATED);
+		
+		BorderPane consoleRoot = new BorderPane();
+		
+		consoleOut = FXCollections.observableArrayList();
+		
+		consoleOutView = new ListView<String>(consoleOut);
+		consoleOutView.setEditable(false);
+		consoleOutView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
+			public ListCell<String> call(ListView<String> param) {
+				return new ListCell<String>() {
+					@Override
+					public void updateItem(String item, boolean empty) {
+			            super.updateItem(item, empty);
+			            setText(item);
+			            getStyleClass().add("console_out_cell");			            
+			        }
+				};
+			}
+		});
+		consoleOutView.setId("console_out");
+		
+		consoleRoot.setId("console_root");
+		consoleRoot.setCenter(consoleOutView);
+		
+		Scene consoleScene = new Scene(consoleRoot);
+		console.setScene(consoleScene);
+		consoleScene.getStylesheets().add(Terry.class.getResource(Terry.RES_PATH + "style_console.css").toString());
+		
+		//console dimensions
+		console.setWidth(CONSOLE_WIDTH);
+		console.setMinWidth(CONSOLE_WIDTH);
+		console.setHeight(CONSOLE_HEIGHT);
+		console.setMinHeight(CONSOLE_HEIGHT);
+		
+		//console location
+		Dimension screen = Driver.getScreen();
+		console.setX(screen.width - CONSOLE_WIDTH);
+		console.setY(screen.height - CONSOLE_HEIGHT);
+		console.show();
+		consoleRoot.requestFocus();
+		
 		Scribe.state.addListener(new ChangeListener<Character>() {
 			public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 				switch (newValue) {
@@ -155,6 +211,9 @@ public class Prompter extends Application {
 				}
 			}
 		});
+		
+		//tell logger that prompter is ready for logs
+		Logger.emptyBacklog();
 	}
 	
 	@Override
@@ -162,6 +221,12 @@ public class Prompter extends Application {
 		//destroy terry-specific resources
 		testThread.quit();
 		intercom.close();
+	}
+	
+	public void consoleLog(String entry) {
+		int last = consoleOut.size();
+		consoleOut.add(entry);
+		consoleOutView.scrollTo(last);
 	}
 	
 	private static class TestThread extends Thread {
