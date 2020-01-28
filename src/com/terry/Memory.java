@@ -9,6 +9,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.Map.Entry;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -186,11 +187,13 @@ public class Memory {
 			
 			if (matches.isEmpty()) {
 				//no results found
+				Logger.log(token + " not in dictionary");
 				return null;
 			}
 			else {
 				//return closest matches				
 				for (String match : matches) {
+					Logger.log(token + " returned possible match " + match);
 					mappings.add(new Lookup(match,dictionary.get(match)));
 				}
 				
@@ -198,6 +201,11 @@ public class Memory {
 			}
 		}
 		else {
+			Logger.log(token + " returned " + exact.mappings.size() + " exact matches: ");
+			for (LanguageMapping lm : exact.mappings) {
+				Logger.log("\t" + lm.id);
+			}
+			
 			mappings.add(exact);
 			return mappings;
 		}
@@ -226,6 +234,22 @@ public class Memory {
 				entry.add(mapping);
 			}
 		}
+	}
+	
+	public static String printDictionary() {
+		String string = "";
+		
+		for (Entry<String, ArrayList<LanguageMapping>> entry : dictionary.entrySet()) {
+			string += entry.getKey() + ": ";
+			
+			for (LanguageMapping lm : entry.getValue()) {
+				string += lm.id + " ";
+			}
+			
+			string += "\n";
+		}
+		
+		return string;
 	}
 	
 	public static class Lookup {

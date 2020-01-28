@@ -58,7 +58,9 @@ public class LanguageMapping {
 	
 	//get all keywords that appear in the pattern, to be added to the dictionary
 	public LinkedList<String> getTokens() {
-		return pattern.getTokens(pattern.graph);
+		LinkedList<String> tokens = new LinkedList<String>();
+		pattern.getTokens(tokens, pattern.graph);
+		return tokens;
 	}
 	
 	public String patternDiagram() {
@@ -104,23 +106,29 @@ public class LanguageMapping {
 			return graph.getFollowers(leader);
 		}
 		
-		public LinkedList<String> getTokens(PatternNode node) {
-			LinkedList<String> tokens = new LinkedList<String>();
+		public void getTokens(LinkedList<String> tokens, PatternNode node) {
 			String token;
+			boolean go = true;
 			
 			if (node.type == PatternNode.notarg) {
 				token = node.token;
 				
 				if (token != null) {
-					tokens.add(token);
+					if (tokens.contains(token)) {
+						go = false;
+					}
+					else {
+						Logger.log("added " + token + " to tokens");
+						tokens.add(token);
+					}
 				}
 			}
 			
-			for (PatternNode follower : node.followers) {
-				tokens.addAll(getTokens(follower));
+			if (go) {
+				for (PatternNode follower : node.followers) {
+					getTokens(tokens, follower);
+				}
 			}
-			
-			return tokens;
 		}
 	}
 	
@@ -168,7 +176,7 @@ public class LanguageMapping {
 		}
 		
 		public LinkedList<PatternNode> getFollowers(String leader) {
-			if (token.equals(leader)) {
+			if (token != null && token.equals(leader)) {
 				return followers;
 			}
 			else {

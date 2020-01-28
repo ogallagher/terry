@@ -122,6 +122,7 @@ public class Terry {
 		
 		if (LanguageMapping.empty()) {
 			createPrimitiveActions();
+			Logger.log(Memory.printDictionary());
 		}
 		
 		// testing start

@@ -17,6 +17,7 @@ public class InstructionPossibilities {
 	public void resolve(String token) {
 		if (possibilities == null) {
 			//first word, dictionary lookup
+			possibilities = new ArrayList<InstructionPossibility>();
 			ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token);
 			
 			if (entries == null) { //no matching results

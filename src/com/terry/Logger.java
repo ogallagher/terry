@@ -42,7 +42,7 @@ public class Logger {
 		
 		//print entry
 		if (Terry.prompter != null) {
-			Terry.prompter.consoleLog(entry);
+			Platform.runLater(new ConsoleLogger(entry));
 		}
 		else {
 			backlog.add(entry);
@@ -58,6 +58,19 @@ public class Logger {
 		while (!backlog.isEmpty()) {
 			log(backlog.getFirst());
 			backlog.removeFirst();
+		}
+	}
+	
+	private static class ConsoleLogger extends Thread {
+		String news = null;
+		
+		public ConsoleLogger(String news) {
+			this.news = news;
+		}
+		
+		@Override
+		public void run() {
+			Terry.prompter.consoleLog(news);
 		}
 	}
 }

@@ -59,6 +59,8 @@ public class Utilities {
 			}
 		}
 		
+		Logger.log(token + " -> " + key + " = " + dist);
+		
 		if (dist <= maxDist) {
 			return dist;
 		}

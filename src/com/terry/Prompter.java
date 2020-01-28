@@ -50,9 +50,7 @@ public class Prompter extends Application {
 	
 	private static ObservableList<String> consoleOut;
 	private static ListView<String> consoleOutView;
-	
-	private static TestThread testThread;
-	
+		
 	/*
 	 * (non-Javadoc)
 	 * @see javafx.application.Application#init()
@@ -219,7 +217,6 @@ public class Prompter extends Application {
 	@Override
 	public void stop() throws Exception {
 		//destroy terry-specific resources
-		testThread.quit();
 		intercom.close();
 	}
 	
@@ -227,40 +224,5 @@ public class Prompter extends Application {
 		int last = consoleOut.size();
 		consoleOut.add(entry);
 		consoleOutView.scrollTo(last);
-	}
-	
-	private static class TestThread extends Thread {
-		Stage primaryStage;
-		
-		TestThread(Stage primaryStage) {
-			this.primaryStage = primaryStage;
-		}
-		
-		@Override
-		public void run() {
-			while (!isInterrupted()) {
-				try {
-					Point cursor = MouseInfo.getPointerInfo().getLocation();
-					
-					if (cursor != null) {
-						primaryStage.setX(cursor.getX() - 0.5*INTERCOM_WIDTH);
-						primaryStage.setY(cursor.getY() - 0.5*INTERCOM_WIDTH);						
-					}
-					
-					sleep(50);
-				}
-				catch (InterruptedException e) {
-					//quit
-				}
-			}
-		}
-		
-		/*
-		 * quick way to allow other threads to interrupt this one without throwing
-		 * an access exception.
-		 */
-		public void quit() {
-			interrupt();
-		}
 	}
 }
