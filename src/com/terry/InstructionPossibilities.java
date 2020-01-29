@@ -69,17 +69,23 @@ public class InstructionPossibilities {
 		}
 		else {
 			Logger.log("finishing mapping");
+			String token;
+			
 			while (scanner.hasNext()) {
-				if (possibility.resolve(scanner.next())) { //possibility remains possible
+				token = scanner.next();
+				
+				if (possibility.resolve(token)) { //possibility remains possible
 					 if (possibility.complete()) { //all tokens are mapped
 						 return possibility;
 					 }
 				}
 				else {
+					Logger.logError("invalid instruction token " + token);
 					return null;
 				}
 			}
 			
+			Logger.logError("instruction expected more tokens");
 			return null;
 		}
 	}
@@ -89,7 +95,7 @@ public class InstructionPossibilities {
 	}
 	
 	public static class InstructionPossibility {
-		private PatternNode node;
+		private PatternNode node; //node.token cannot be null, because PatternNode.getFollowers() skips null nodes
 		private Arg arg;
 		private ArrayList<InstructionPossibility> children;
 		
@@ -110,9 +116,13 @@ public class InstructionPossibilities {
 			
 			children = new ArrayList<InstructionPossibility>();
 			for (PatternNode follower : node.getFollowers()) {
-				if (!nodes.contains(follower)) {
+				int i = nodes.indexOf(follower);
+				InstructionPossibility possibility;
+				
+				if (i == -1) {
+					//new node in graph
 					Logger.log("added possibility " + mapping.id + "." + follower.token);
-					InstructionPossibility possibility = new InstructionPossibility(follower);
+					possibility = new InstructionPossibility(follower);
 					
 					nodes.add(follower);
 					possibilities.add(possibility);
@@ -121,6 +131,14 @@ public class InstructionPossibilities {
 					leaves.add(possibility);
 					
 					possibility.extend(nodes, possibilities);
+				}
+				else {
+					//repeated node in graph; create cycle
+					Logger.log("added possibility " + mapping.id + "." + follower.token);
+					possibility = possibilities.get(i);
+					
+					children.add(possibility);
+					leaves.add(possibility);
 				}
 			}
 		}
@@ -177,7 +195,7 @@ public class InstructionPossibilities {
 				leaf = leaves.get(0);
 				argType = leaf.node.getType();
 				
-				Logger.log("checking " + next + " vs " + leaf.node.token);
+				//Logger.log("checking " + next + " vs " + leaf.node.token);
 				
 				if (argType == PatternNode.notarg) {
 					//is keyword
@@ -194,7 +212,7 @@ public class InstructionPossibilities {
 				}
 				else {
 					//is arg
-					arg = new Arg();
+					Arg arg = new Arg();
 					arg.name = leaf.node.token;
 					boolean argValid = true;
 					
@@ -248,6 +266,7 @@ public class InstructionPossibilities {
 					}
 					
 					if (argValid) {
+						leaf.arg = arg;
 						resolved = true;
 						
 						for (InstructionPossibility newLeaf : leaf.children) {
@@ -265,7 +284,7 @@ public class InstructionPossibilities {
 		
 		//the only possible version of this mapping has no more tokens expected
 		public boolean complete() {
-			return (leaves.size() == 1 && leaves.get(0).children.isEmpty());
+			return leaves.isEmpty() || (leaves.size() == 1 && leaves.get(0).children.isEmpty());
 		}
 		
 		/*
@@ -280,12 +299,14 @@ public class InstructionPossibilities {
 					InstructionPossibility p = this;
 					if (p.arg != null) {
 						argMap.put(p.arg.name, p.arg);
+						Logger.log(p.arg.name + " => " + ((Float)p.arg.value).toString());
 					}
 					
 					while (!p.children.isEmpty()) {
 						p = p.children.get(0);
 						if (p.arg != null) {
 							argMap.put(p.arg.name, p.arg);
+							Logger.log(p.arg.name + " = " + ((Float)p.arg.value).toString());
 						}
 					}
 					

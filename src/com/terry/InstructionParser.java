@@ -26,6 +26,7 @@ public class InstructionParser {
 		 * appended to the instruction graph, branches are collapsed and possibilities narrow until only one
 		 * possible mapping remains.  
 		 */
+		state.set(STATE_PARSING);
 		InstructionPossibilities possibilities = new InstructionPossibilities();
 		
 		Scanner scanner = new Scanner(tokens);
@@ -49,7 +50,7 @@ public class InstructionParser {
 					InstructionPossibility instruction = possibilities.finish(scanner);
 					
 					if (instruction == null) { //instruction did not match mapping
-						Logger.logError("invalid instruction token " + token);
+						//TODO handle failed instruction
 					}
 					else { //instruction is valid; follow through
 						instruction.compile();
@@ -62,5 +63,7 @@ public class InstructionParser {
 		}
 		
 		scanner.close();
+		state.set(STATE_DONE);
+		state.set(STATE_IDLE);
 	}
 }

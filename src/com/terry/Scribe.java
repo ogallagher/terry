@@ -107,8 +107,9 @@ public class Scribe {
 			throw new ScribeException("not allowed to use system mic");
 		}
 		*/
+		
 		//testing
-		transcription = "move cursor to location eighty comma ninety";
+		transcription = "move to eighty comma ninety why";
 		state.set(STATE_DONE);
 		state.set(STATE_IDLE);
 	}

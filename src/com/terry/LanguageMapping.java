@@ -179,6 +179,9 @@ public class LanguageMapping {
 			return type;
 		}
 		
+		/*
+		 * Returns possible follower nodes. Skips nulls!
+		 */
 		public LinkedList<PatternNode> getFollowers() {
 			LinkedList<PatternNode> nodes = new LinkedList<PatternNode>();
 			

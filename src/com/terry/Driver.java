@@ -54,7 +54,7 @@ public class Driver {
 		}
 	}
 	
-	public static void point(int x, int y) {
+	public static void point(int x, int y) {		
 		Point mouse = MouseInfo.getPointerInfo().getLocation();
 		int mx = mouse.x;
 		int my = mouse.y;
