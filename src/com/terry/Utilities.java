@@ -63,16 +63,7 @@ public class Utilities {
 			}
 		}
 		
-		String matrix = "";
-		for (int i=0; i<h; i++) {
-			for (int j=0; j<w; j++) {
-				matrix += d[i][j] + " ";
-			}
-			matrix += "\n";
-		}
-		System.out.print(matrix);
-		
-		if (dist <= maxDist) {
+		if (dist != -1 && dist <= maxDist) {
 			Logger.log(dist + " -> " + key);
 			return dist;
 		}

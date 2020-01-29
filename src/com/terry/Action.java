@@ -32,7 +32,9 @@ public class Action extends LanguageMapping implements Serializable {
 	/*
 	 * Each state accepts an array of objects as arguments.
 	 */
-	public void execute(HashMap<String,Arg> allArgs) throws StateException {		
+	public void execute(HashMap<String,Arg> allArgs) throws StateException {
+		Logger.log("executing " + pattern);
+		
 		State<?> state;
 		Arg[] args; //subset of allArgs for each state
 		String[] argNames;
@@ -45,6 +47,7 @@ public class Action extends LanguageMapping implements Serializable {
 			args = new Arg[argNames.length];
 			
 			for (int a=0; a<args.length; a++) {
+				Logger.log("mapping arg " + argNames[a]);
 				args[a] = allArgs.get(argNames[a]);
 			}
 			

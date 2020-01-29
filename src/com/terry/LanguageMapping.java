@@ -47,8 +47,17 @@ public class LanguageMapping {
 		pattern = new LanguagePattern(expr);
 	}
 	
-	public PatternNode getLeader() {
-		return pattern.graph;
+	public char getType() {
+		return type;
+	}
+	
+	public PatternNode getLeader(String token) {
+		if (pattern.graph.token == null) {
+			return pattern.graph.getFollower(token);
+		}
+		else {
+			return pattern.graph;
+		}
 	}
 	
 	//get all keywords that appear in the pattern, to be added to the dictionary
@@ -64,7 +73,7 @@ public class LanguageMapping {
 	
 	@Override
 	public String toString() {
-		String string = type + "\t" + id + "\t" + pattern.expression;
+		String string = type + "\t" + id + "\t" + pattern;
 		
 		return string;
 	}
@@ -109,7 +118,6 @@ public class LanguageMapping {
 						go = false;
 					}
 					else {
-						Logger.log("added " + token + " to tokens");
 						tokens.add(token);
 					}
 				}
@@ -120,6 +128,11 @@ public class LanguageMapping {
 					getTokens(tokens, follower);
 				}
 			}
+		}
+		
+		@Override
+		public String toString() {
+			return expression;
 		}
 	}
 	
@@ -167,7 +180,36 @@ public class LanguageMapping {
 		}
 		
 		public LinkedList<PatternNode> getFollowers() {
-			return followers;
+			LinkedList<PatternNode> nodes = new LinkedList<PatternNode>();
+			
+			for (PatternNode follower : followers) {
+				if (follower.token == null) {
+					nodes.addAll(follower.getFollowers());
+				}
+				else {
+					nodes.add(follower);
+				}
+			}
+			
+			return nodes;
+		}
+		
+		public PatternNode getFollower(String token) {
+			for (PatternNode node : followers) {
+				if (node.token == null) {
+					PatternNode follower = node.getFollower(token);
+					
+					if (follower != null) {
+						return follower;
+					}
+				}
+				else if (node.token.equals(token)) {
+					return node;
+				}
+			}
+			
+			//follower of given token not found
+			return null;
 		}
 		
 		public static PatternNode newGraph(char[] expr) {

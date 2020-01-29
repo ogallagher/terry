@@ -108,8 +108,9 @@ public class Scribe {
 		}
 		*/
 		//testing
-		transcription = "gurck cursor to location five comma thirty";
+		transcription = "move cursor to location eighty comma ninety";
 		state.set(STATE_DONE);
+		state.set(STATE_IDLE);
 	}
 	
 	public static void stop() {

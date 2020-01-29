@@ -3,6 +3,8 @@ package com.terry;
 import java.util.LinkedList;
 import java.util.Scanner;
 
+import com.terry.InstructionPossibilities.InstructionPossibility;
+
 public class InstructionParser {	
 	private static final char STATE_IDLE = 0;
 	private static final char STATE_PARSING = 1;
@@ -39,13 +41,19 @@ public class InstructionParser {
 				//handle punctuation
 				
 				//update instruction possibilities
-				
 				if (possibilities.resolve(token)) {
 					/*
 					 * If possibilities have resolved into one mapping, fill in the rest of the tokens 
 					 * and execute the action or learn the lesson.
 					 */
-					Logger.log("mapping = " + possibilities.getMapping());
+					InstructionPossibility instruction = possibilities.finish(scanner);
+					
+					if (instruction == null) { //instruction did not match mapping
+						Logger.logError("invalid instruction token " + token);
+					}
+					else { //instruction is valid; follow through
+						instruction.compile();
+					}
 				}
 			}
 			else {

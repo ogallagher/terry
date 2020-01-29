@@ -166,7 +166,7 @@ public class Memory {
 		if (exact.mappings == null) {
 			Set<String> keys = dictionary.keySet();
 			
-			int best = token.length()/2; //edit dist (insert,delete,replace) must be less than token.length()/2
+			int best = 2*token.length()/3; //edit dist (insert,delete,replace) must be less than token.length()/2
 			LinkedList<String> matches = new LinkedList<String>();
 			
 			//check edit distance
@@ -227,7 +227,6 @@ public class Memory {
 				entry = new ArrayList<LanguageMapping>();
 				entry.add(mapping);
 				dictionary.put(token, entry);
-				Logger.log("added " + token + " to dictionary");
 			}
 			else {
 				//add mapping to existing word's dictionary entry

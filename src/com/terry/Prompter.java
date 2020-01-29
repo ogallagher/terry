@@ -15,6 +15,7 @@ import javafx.collections.ObservableList;
 import javafx.collections.ObservableListBase;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
@@ -218,6 +219,9 @@ public class Prompter extends Application {
 	public void stop() throws Exception {
 		//destroy terry-specific resources
 		intercom.close();
+		console.close();
+		Platform.exit();
+		System.exit(0);
 	}
 	
 	public void consoleLog(String entry) {

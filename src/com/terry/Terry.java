@@ -82,6 +82,8 @@ public class Terry {
 	public static void main(String[] args) {
 		Logger.init();
 		
+		Arg.init();
+		
 		String osName = System.getProperty("os.name").toLowerCase();
 		if (osName.startsWith("win")) {
 			os = OS_WIN;
@@ -137,7 +139,7 @@ public class Terry {
 		Logger.log("no mappings found; creating primitive actions corpus");
 		
 		//--- move mouse to screen location ---//
-		Action mouseToXY = new Action("?move) |mouse,cursor,pointer,) |to,two,too,) ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why) @#y ?why)");
+		Action mouseToXY = new Action("?move) |mouse,cursor,pointer,) |to,two,too,) ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why,) @#y ?why)");
 		
 		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
 			private static final long serialVersionUID = -5509580894164954809L;
@@ -148,7 +150,10 @@ public class Terry {
 				
 				//map args
 				for (Arg arg : args) {
-					if (arg.name.equals("x")) {
+					if (arg == null) {
+						Logger.log("null arg");
+					}
+					else if (arg.name.equals("x")) {
 						x = (Float) arg.value;
 					}
 					else if (arg.name.equals("y")) {
