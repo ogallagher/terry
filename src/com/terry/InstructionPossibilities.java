@@ -23,8 +23,16 @@ public class InstructionPossibilities {
 			possibilities = new ArrayList<InstructionPossibility>();
 			ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token);
 			
-			if (entries == null) { //no matching results
-				Logger.logError(token + " not recognized; skipping token");
+			if (entries == null) { //no matching results; assume it's an argument
+				Logger.log(token + " not recognized; assumed arg");
+				
+				/*
+				for (LanguageMapping lm : Memory.getMappings()) {
+					PatternNode leader = lm.getLeader(null);
+					
+					
+				}
+				*/
 			}
 			else {
 				for (Memory.Lookup entry : entries) {
@@ -85,8 +93,8 @@ public class InstructionPossibilities {
 				}
 			}
 			
-			Logger.logError("instruction expected more tokens");
-			return null;
+			Logger.log("instruction could have taken more tokens");
+			return possibility;
 		}
 	}
 	
@@ -180,7 +188,7 @@ public class InstructionPossibilities {
 		 * Return true if this possibility can still accept the next token.
 		 * Else, return false.
 		 * 
-		 * TODO handle edit distance in LanguageMapping.getFollowers()? Would be an extra challenge.
+		 * TODO handle edit distance in LanguageMapping.getFollowers()
 		 */
 		public boolean resolve(String next) {
 			Logger.log("resolving " + next);
@@ -199,10 +207,13 @@ public class InstructionPossibilities {
 				
 				if (argType == PatternNode.notarg) {
 					//is keyword
-					if (leaf.node.token.equals(next)) {
+					int dist = Utilities.editDistance(leaf.node.token, next, leaf.node.token.length()*2/3);
+					
+					if (dist != -1) {
 						resolved = true;
 						
 						for (InstructionPossibility newLeaf : leaf.children) {
+							Logger.log("added leaf " + newLeaf.node.token);
 							leaves.add(newLeaf);
 						}
 					}
@@ -214,62 +225,14 @@ public class InstructionPossibilities {
 					//is arg
 					Arg arg = new Arg();
 					arg.name = leaf.node.token;
-					boolean argValid = true;
+					arg.value = Arg.getArgValue(leaf.node.getType(), next);
 					
-					switch (argType) {
-						case PatternNode.colarg:
-							arg.value = Arg.getColor(next);
-							if (arg.value == null) {
-								Logger.logError("invalid color " + next);
-								argValid = false;
-							}
-							break;
-							
-						case PatternNode.dirarg:
-							arg.value = Arg.getDirection(next);
-							if (arg.value == null) {
-								Logger.logError("invalid direction " + next);
-								argValid = false;
-							}
-							break;
-							
-						case PatternNode.numarg:
-							arg.value = Arg.getNumeric(next);
-							if (arg.value == null) {
-								Logger.logError("invalid number " + next);
-								argValid = false;
-							}
-							break;
-							
-						case PatternNode.spdarg:
-							arg.value = Arg.getSpeed(next);
-							if (arg.value == null) {
-								Logger.logError("invalid speed " + next);
-								argValid = false;
-							}
-							break;
-							
-						case PatternNode.strarg: //TODO handle multitoken strings
-							arg.value = next;
-							argValid = false;
-							break;
-							
-						case PatternNode.wigarg:
-							Logger.log("widgets not supported yet");
-							argValid = false;
-							break;
-							
-						default:
-							Logger.logError("unknown arg type " + argType);
-							argValid = false;
-							break;
-					}
-					
-					if (argValid) {
+					if (arg.value != null) {
 						leaf.arg = arg;
 						resolved = true;
 						
 						for (InstructionPossibility newLeaf : leaf.children) {
+							Logger.log("added leaf " + newLeaf.node.token);
 							leaves.add(newLeaf);
 						}
 					}

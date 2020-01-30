@@ -88,7 +88,7 @@ public class Scribe {
 	}
 	
 	public static void start() throws ScribeException {
-		/*
+		///*
 		try {
 			//open the line
 		    microphone.open(FORMAT_WAV); //opens input stream with default buffer size
@@ -106,12 +106,15 @@ public class Scribe {
 		catch (SecurityException e) {
 			throw new ScribeException("not allowed to use system mic");
 		}
-		*/
+		//*/
 		
 		//testing
-		transcription = "move to eighty comma ninety why";
+		/*
+		String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
+		transcription = instructions[(int)(Math.random() * instructions.length)];
 		state.set(STATE_DONE);
 		state.set(STATE_IDLE);
+		*/
 	}
 	
 	public static void stop() {
@@ -253,7 +256,6 @@ public class Scribe {
 					
 					if (update != null) {
 						transcription = update;
-						Logger.log("transcription = " + transcription);
 					}
 					else {
 						interrupt();
@@ -264,6 +266,7 @@ public class Scribe {
 				}
 			}
 			
+			Logger.log("transcription = " + transcription);
 			state.set(STATE_DONE); //trigger prompter to pass transcription to next module
 			state.set(STATE_IDLE);
 		}

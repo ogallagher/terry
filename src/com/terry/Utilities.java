@@ -6,7 +6,7 @@ import java.util.ArrayList;
 public class Utilities {
 	/*
 	 * Edit distance calculation uses the Wagner-Fischer algorithm for Levenshtein edit distance.
-	 * TODO <url here>
+	 * https://en.wikipedia.org/wiki/Wagner–Fischer_algorithm
 	 * 
 	 * Returns edit distance or -1 if greater than maxDist
 	 */
@@ -64,7 +64,6 @@ public class Utilities {
 		}
 		
 		if (dist != -1 && dist <= maxDist) {
-			Logger.log(dist + " -> " + key);
 			return dist;
 		}
 		else {

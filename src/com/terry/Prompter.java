@@ -48,8 +48,11 @@ public class Prompter extends Application {
 	private static Stage console;
 	private static final int CONSOLE_WIDTH = 500;
 	private static final int CONSOLE_HEIGHT = 800;
+	private static final int CONSOLE_HEIGHT_MIN = 300;
 	
 	private static ObservableList<String> consoleOut;
+	private static final int CONSOLE_OUT_MAX = 200;
+	
 	private static ListView<String> consoleOutView;
 		
 	/*
@@ -163,7 +166,7 @@ public class Prompter extends Application {
 		console.setWidth(CONSOLE_WIDTH);
 		console.setMinWidth(CONSOLE_WIDTH);
 		console.setHeight(CONSOLE_HEIGHT);
-		console.setMinHeight(CONSOLE_HEIGHT);
+		console.setMinHeight(CONSOLE_HEIGHT_MIN);
 		
 		//console location
 		Dimension screen = Driver.getScreen();
@@ -218,14 +221,24 @@ public class Prompter extends Application {
 	@Override
 	public void stop() throws Exception {
 		//destroy terry-specific resources
-		intercom.close();
-		console.close();
-		Platform.exit();
-		System.exit(0);
+		Platform.runLater(new Runnable() { //encapsulate in runLater() to send it to the JavaFX app thread
+			public void run() {
+				intercom.close();
+				console.close();
+				Platform.exit();
+				System.exit(0);
+			}
+		});
 	}
 	
 	public void consoleLog(String entry) {
 		int last = consoleOut.size();
+		
+		if (last > CONSOLE_OUT_MAX) {
+			consoleOut.remove(0);
+			last--;
+		}
+		
 		consoleOut.add(entry);
 		consoleOutView.scrollTo(last);
 	}

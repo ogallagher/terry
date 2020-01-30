@@ -3,6 +3,8 @@ package com.terry;
 import java.awt.Color;
 import java.util.ArrayList;
 
+import com.terry.LanguageMapping.PatternNode;
+
 public class Arg {
 	public String name;
 	public Object value = null;
@@ -107,23 +109,70 @@ public class Arg {
 		numargs.add("hundred");
 		numargs.add("thousand");
 		numargs.add("million");
+	}
+	
+	public static Object getArgValue(char argType, String next) {
+		Object argValue = null;
 		
+		switch (argType) {
+			case PatternNode.colarg:
+				argValue = Arg.getColor(next);
+				if (argValue == null) {
+					Logger.log("invalid color " + next);
+				}
+				break;
+				
+			case PatternNode.dirarg:
+				argValue = Arg.getDirection(next);
+				if (argValue == null) {
+					Logger.log("invalid direction " + next);
+				}
+				break;
+				
+			case PatternNode.numarg: //TODO handle multitoken numbers
+				argValue = Arg.getNumeric(next);
+				if (argValue == null) {
+					Logger.log("invalid number " + next);
+				}
+				break;
+				
+			case PatternNode.spdarg:
+				argValue = Arg.getSpeed(next);
+				if (argValue == null) {
+					Logger.log("invalid speed " + next);
+				}
+				break;
+				
+			case PatternNode.strarg: //TODO handle multitoken strings
+				argValue = next;
+				break;
+				
+			case PatternNode.wigarg:
+				Logger.log("widgets not supported yet");
+				break;
+				
+			default:
+				Logger.logError("unknown arg type " + argType);
+				break;
+		}
+		
+		return argValue;
 	}
 	
 	public static Color getColor(String color) {
-		if (color.equals(COLARG_RED)) {
+		if (color.equals(COLARG_RED) || color.equals("head")) {
 			return Color.red;
 		}
 		else if (color.equals(COLARG_GREEN)) {
 			return Color.green;
 		}
-		else if (color.equals(COLARG_BLUE)) {
+		else if (color.equals(COLARG_BLUE) || color.equals("lose")) {
 			return Color.blue;
 		}
 		else if (color.equals(COLARG_INDIGO)) {
 			return Color.blue;
 		}
-		else if (color.equals(COLARG_YELLOW)) {
+		else if (color.equals(COLARG_YELLOW) || color.equals("hello")) {
 			return Color.yellow;
 		}
 		else if (color.equals(COLARG_TURQUOISE)) {
@@ -144,16 +193,16 @@ public class Arg {
 		else if (color.equals(COLARG_ORANGE)) {
 			return Color.orange;
 		}
-		else if (color.equals(COLARG_WHITE)) {
+		else if (color.equals(COLARG_WHITE) || color.equals("wife")) {
 			return Color.white;
 		}
-		else if (color.equals(COLARG_BLACK)) {
+		else if (color.equals(COLARG_BLACK) || color.equals("back")) {
 			return Color.black;
 		}
 		else if (color.equals(COLARG_BROWN)) {
 			return new Color(180, 50, 90);
 		}
-		else if (color.equals(COLARG_GRAY)) {
+		else if (color.equals(COLARG_GRAY) || color.equals("ray")) {
 			return Color.gray;
 		}
 		else {
@@ -165,7 +214,7 @@ public class Arg {
 		if (direction.equals(DIRARG_UP)) {
 			return DIRARG_UP;
 		}
-		else if (direction.equals(DIRARG_RIGHT)) {
+		else if (direction.equals(DIRARG_RIGHT) || direction.equals("write")) {
 			return DIRARG_RIGHT;
 		}
 		else if (direction.equals(DIRARG_DOWN)) {
@@ -198,16 +247,16 @@ public class Arg {
 				if(str.equals("zero")) {
 					digit += 0;
 				}
-				else if(str.equals("one")) {
+				else if(str.equals("one") || str.equals("won")) {
 					digit += 1;
 				}
-				else if(str.equals("two")) {
+				else if(str.equals("two") || str.equals("to") || str.equals("too")) {
 					digit += 2;
 				}
 				else if(str.equals("three")) {
 					digit += 3;
 				}
-				else if(str.equals("four")) {
+				else if(str.equals("four") || str.equals("for")) {
 					digit += 4;
 				}
 				else if(str.equals("five")) {
@@ -296,7 +345,7 @@ public class Arg {
 			
 			number += digit;
 			digit=0;
-			Logger.log(numeric + " -> " + number);
+			Logger.log(numeric + " = " + number);
 		}
 		
 		return number;

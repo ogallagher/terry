@@ -7,6 +7,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map.Entry;
@@ -166,7 +167,7 @@ public class Memory {
 		if (exact.mappings == null) {
 			Set<String> keys = dictionary.keySet();
 			
-			int best = 2*token.length()/3; //edit dist (insert,delete,replace) must be less than token.length()/2
+			int best = token.length()*2/3; //edit dist (insert,delete,replace) must be less than token.length()/2
 			LinkedList<String> matches = new LinkedList<String>();
 			
 			//check edit distance
@@ -233,6 +234,10 @@ public class Memory {
 				entry.add(mapping);
 			}
 		}
+	}
+	
+	public static Collection<LanguageMapping> getMappings() {
+		return mappings.values();
 	}
 	
 	public static String printDictionary() {

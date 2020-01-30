@@ -24,7 +24,9 @@ package com.terry;
 
 import java.awt.event.MouseEvent;
 import java.awt.geom.Point2D;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map.Entry;
 
 import com.terry.Driver.DriverException;
 import com.terry.Driver.DriverThread;
@@ -135,11 +137,21 @@ public class Terry {
 		prompter.init(args);
 	}
 	
+	public static ArrayList<String> printState() {
+		ArrayList<String> list = new ArrayList<String>();
+		
+		for (Entry<String, State<?>> entry : states.entrySet()) {
+			list.add(entry.getValue().toString());
+		}
+		
+		return list;
+	}
+	
 	private static void createPrimitiveActions() {
 		Logger.log("no mappings found; creating primitive actions corpus");
 		
 		//--- move mouse to screen location ---//
-		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) |to,two,too,) ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why,) @#y ?why)");
+		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why,) @#y ?why)");
 		
 		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
 			private static final long serialVersionUID = -5509580894164954809L;
@@ -173,7 +185,7 @@ public class Terry {
 		Memory.addMapping(mouseToXY);
 		
 		//--- click mouse button ---///
-		Action mouseClickBtn = new Action("?|left,right,) click");
+		Action mouseClickBtn = new Action("?@+btn) click");
 		
 		State<Integer> clickbtn = new State<Integer>("clickbtn", 0, new String[] {"btn"}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = -3163938142402546869L;
@@ -183,8 +195,16 @@ public class Terry {
 		        
 		        //map args
 		        for (Arg arg : args) {
-		        	if (arg.name.equals("btn")) {
-		        		button = (Integer) arg.value;
+		        	if (arg == null) {
+						Logger.log("null arg");
+					}
+		        	else if (arg.name.equals("btn")) {
+		        		String direction = (String) arg.value;
+		        		
+		        		if (direction.equals("right")) {
+		        			button = MouseEvent.BUTTON2;
+		        		}
+		        		//else, assume button 1
 		        	}
 		        }
 		        
@@ -255,8 +275,28 @@ public class Terry {
 		
 		Memory.addMapping(shutdown);
 		
+		//--- show state ---//
+		Action showstate = new Action("|show,[what_is],log,) ?current) state");
+		
+		State<Boolean> stateshown = new State<Boolean>("stateshown", true, new String[] {}, new DriverExecution<Boolean>() {
+			private static final long serialVersionUID = -4961265132685762301L;
+
+			public Boolean execute(Boolean stateOld, Arg[] args) {
+				//no args
+				//direct controller
+				for (String state : Terry.printState()) {
+					Logger.log(state);
+				}
+				
+				return true;
+			}
+		});
+		showstate.addState(stateshown);
+		
+		Memory.addMapping(showstate);
+		
 		//--- demos ---//
-		Action driverDemo1 = new Action("?do) ?driver) |demo,demonstration,) |one,won,run,)");
+		Action driverDemo1 = new Action("?do) ?driver) |demo,demonstration,) one");
 		
 		State<Integer> demoed = new State<Integer>("demoed", 0, new String[] {}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = 7287040985627859604L;
