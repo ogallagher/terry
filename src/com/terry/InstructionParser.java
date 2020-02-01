@@ -1,6 +1,5 @@
 package com.terry;
 
-import java.util.LinkedList;
 import java.util.Scanner;
 
 import com.terry.InstructionPossibilities.InstructionPossibility;
@@ -11,8 +10,8 @@ public class InstructionParser {
 	private static final char STATE_DONE = 2;
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
-	
-	public static void init() {
+		
+	public static void init() {		
 		Logger.log("instruction parser init success");
 	}
 	
@@ -27,6 +26,9 @@ public class InstructionParser {
 		 * possible mapping remains.  
 		 */
 		state.set(STATE_PARSING);
+		
+		tokens = spellPunctuation(tokens);
+		
 		InstructionPossibilities possibilities = new InstructionPossibilities();
 		
 		Scanner scanner = new Scanner(tokens);
@@ -65,5 +67,92 @@ public class InstructionParser {
 		scanner.close();
 		state.set(STATE_DONE);
 		state.set(STATE_IDLE);
+	}
+	
+	/*
+	 * Replace punctuation symbols with names.
+	 * 
+	 * Ex: apple, banana. -> apple comma banana period
+	 */
+	private static String spellPunctuation(String string) {
+		char[] in = string.toCharArray();
+		String out = "";
+		
+		char b = 0; //previous
+		char c = 0; //current
+		char d = 0; //next
+		int n = in.length;
+		
+		for (int i=0; i<n; i++) {
+			c = in[i];
+			
+			if (i+1 < n) {
+				d = in[i+1];
+			}
+			
+			switch (c) {
+				case ',':
+					out += " comma";
+					break;
+					
+				case '.':
+					if (d == ' ') { //otherwise, 
+						out += " period";
+					}
+					else { //number with a decimal
+						out += c;
+					}
+					
+					break;
+					
+				case ';':
+					out += " semicolon";
+					break;
+					
+				case ':':
+					out += " colon";
+					break;
+					
+				case '“':
+					out += "begin quote ";
+					break;
+					
+				case '”':
+					out += " end quote";
+					break;
+					
+				case '"':
+					if (b == ' ') { //previous is space; start string
+						out += "begin quote ";
+					}
+					else if (c == ' ') { //next is space; end string
+						out += " end quote";
+					}
+					else { //mid-word
+						out += " double quote ";
+					}
+					
+				case '\'': //single quote
+				case '’': //apostrophe
+					if (b == ' ') { //previous is space; start string
+						out += "begin quote ";
+					}
+					else if (c == ' ') { //next is space; end string
+						out += " end quote";
+					}
+					else { //mid-word
+						//contraction apostrophe is ignored; don't -> dont
+					}
+					break;
+					
+				default:
+					out += c;
+					break;
+			}
+			
+			b = c;
+		}
+		
+		return out;
 	}
 }

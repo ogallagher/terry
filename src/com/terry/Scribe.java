@@ -121,7 +121,7 @@ public class Scribe {
 	}
 	
 	public static void start() throws ScribeException {
-		///*
+		/*
 		try {
 			//open the line
 		    microphone.open(FORMAT_WAV); //opens input stream with default buffer size
@@ -139,17 +139,25 @@ public class Scribe {
 		catch (SecurityException e) {
 			throw new ScribeException("not allowed to use system mic");
 		}
-		//*/
+		*/
 		
 		//testing
-		/*
+		///*
+		state.set(STATE_RECORDING);
+		
+		state.set(STATE_TRANSCRIBING);
+		
+		//gtranscriber = new GoogleTranscribeThread();
+		//gtranscriber.start();
+		
 		//String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
 		//transcription = instructions[(int)(Math.random() * instructions.length)];
-		state.set(STATE_RECORDING);
-		state.set(STATE_TRANSCRIBING);
-		gtranscriber = new GoogleTranscribeThread();
-		gtranscriber.start();
-		*/
+		transcription = "move to 80 x 90.5 y";
+		Logger.log(transcription);
+		
+		state.set(STATE_DONE);
+		state.set(STATE_IDLE);
+		//*/
 	}
 	
 	public static void stop() {

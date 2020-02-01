@@ -235,120 +235,127 @@ public class Arg {
 		float digit = 0;
 		float number = 0;
 		
-		if (numeric != null && numeric.length() > 0) {
-			numeric = numeric.replaceAll("-", " ").replaceAll(" and", " ");
-			String[] words = numeric.trim().split("\\s+");
+		try {
+			number = Float.parseFloat(numeric);
 			
-			for (String str : words) {
-				if (!numargs.contains(str)) {
-					return null;
+			return number;
+		}
+		catch (NumberFormatException e) {
+			if (numeric != null && numeric.length() > 0) {
+				numeric = numeric.replaceAll("-", " ").replaceAll(" and", " ");
+				String[] words = numeric.trim().split("\\s+");
+				
+				for (String str : words) {
+					if (!numargs.contains(str)) {
+						return null;
+					}
+					
+					if(str.equals("zero")) {
+						digit += 0;
+					}
+					else if(str.equals("one") || str.equals("won")) {
+						digit += 1;
+					}
+					else if(str.equals("two") || str.equals("to") || str.equals("too")) {
+						digit += 2;
+					}
+					else if(str.equals("three")) {
+						digit += 3;
+					}
+					else if(str.equals("four") || str.equals("for")) {
+						digit += 4;
+					}
+					else if(str.equals("five")) {
+						digit += 5;
+					}
+					else if(str.equals("six")) {
+						digit += 6;
+					}
+					else if(str.equals("seven")) {
+						digit += 7;
+					}
+					else if(str.equals("eight")) {
+						digit += 8;
+					}
+					else if(str.equals("nine")) {
+						digit += 9;
+					}
+					else if(str.equals("ten")) {
+						digit += 10;
+					}
+					else if(str.equals("eleven")) {
+						digit += 11;
+					}
+					else if(str.equals("twelve")) {
+						digit += 12;
+					}
+					else if(str.equals("thirteen")) {
+						digit += 13;
+					}
+					else if(str.equals("fourteen")) {
+						digit += 14;
+					}
+					else if(str.equals("fifteen")) {
+						digit += 15;
+					}
+					else if(str.equals("sixteen")) {
+						digit += 16;
+					}
+					else if(str.equals("seventeen")) {
+						digit += 17;
+					}
+					else if(str.equals("eighteen")) {
+						digit += 18;
+					}
+					else if(str.equals("nineteen")) {
+						digit += 19;
+					}
+					else if(str.equals("twenty")) {
+						digit += 20;
+					}
+					else if(str.equals("thirty")) {
+						digit += 30;
+					}
+					else if(str.equals("forty")) {
+						digit += 40;
+					}
+					else if(str.equals("fifty")) {
+						digit += 50;
+					}
+					else if(str.equals("sixty")) {
+						digit += 60;
+					}
+					else if(str.equals("seventy")) {
+						digit += 70;
+					}
+					else if(str.equals("eighty")) {
+						digit += 80;
+					}
+					else if(str.equals("ninety")) {
+						digit += 90;
+					}
+					else if(str.equals("hundred")) {
+						digit *= 100;
+					}
+					else if(str.equals("thousand")) {
+						digit *= 1000;
+						number += digit;
+						digit=0;
+					}
+					else if(str.equals("million")) {
+						digit *= 1000000;
+						number += digit;
+						digit=0;
+					}
 				}
 				
-				if(str.equals("zero")) {
-					digit += 0;
-				}
-				else if(str.equals("one") || str.equals("won")) {
-					digit += 1;
-				}
-				else if(str.equals("two") || str.equals("to") || str.equals("too")) {
-					digit += 2;
-				}
-				else if(str.equals("three")) {
-					digit += 3;
-				}
-				else if(str.equals("four") || str.equals("for")) {
-					digit += 4;
-				}
-				else if(str.equals("five")) {
-					digit += 5;
-				}
-				else if(str.equals("six")) {
-					digit += 6;
-				}
-				else if(str.equals("seven")) {
-					digit += 7;
-				}
-				else if(str.equals("eight")) {
-					digit += 8;
-				}
-				else if(str.equals("nine")) {
-					digit += 9;
-				}
-				else if(str.equals("ten")) {
-					digit += 10;
-				}
-				else if(str.equals("eleven")) {
-					digit += 11;
-				}
-				else if(str.equals("twelve")) {
-					digit += 12;
-				}
-				else if(str.equals("thirteen")) {
-					digit += 13;
-				}
-				else if(str.equals("fourteen")) {
-					digit += 14;
-				}
-				else if(str.equals("fifteen")) {
-					digit += 15;
-				}
-				else if(str.equals("sixteen")) {
-					digit += 16;
-				}
-				else if(str.equals("seventeen")) {
-					digit += 17;
-				}
-				else if(str.equals("eighteen")) {
-					digit += 18;
-				}
-				else if(str.equals("nineteen")) {
-					digit += 19;
-				}
-				else if(str.equals("twenty")) {
-					digit += 20;
-				}
-				else if(str.equals("thirty")) {
-					digit += 30;
-				}
-				else if(str.equals("forty")) {
-					digit += 40;
-				}
-				else if(str.equals("fifty")) {
-					digit += 50;
-				}
-				else if(str.equals("sixty")) {
-					digit += 60;
-				}
-				else if(str.equals("seventy")) {
-					digit += 70;
-				}
-				else if(str.equals("eighty")) {
-					digit += 80;
-				}
-				else if(str.equals("ninety")) {
-					digit += 90;
-				}
-				else if(str.equals("hundred")) {
-					digit *= 100;
-				}
-				else if(str.equals("thousand")) {
-					digit *= 1000;
-					number += digit;
-					digit=0;
-				}
-				else if(str.equals("million")) {
-					digit *= 1000000;
-					number += digit;
-					digit=0;
-				}
+				number += digit;
+				digit=0;
+				Logger.log(numeric + " = " + number);
 			}
 			
-			number += digit;
-			digit=0;
-			Logger.log(numeric + " = " + number);
+			return number;
 		}
-		
-		return number;
 	}
 	
 	public static String getSpeed(String speed) {

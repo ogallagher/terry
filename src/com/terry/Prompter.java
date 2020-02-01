@@ -19,6 +19,8 @@ import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
+import javafx.scene.control.MultipleSelectionModel;
+import javafx.scene.control.SelectionMode;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
@@ -141,6 +143,7 @@ public class Prompter extends Application {
 		
 		consoleOutView = new ListView<String>(consoleOut);
 		consoleOutView.setEditable(false);
+		consoleOutView.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 		consoleOutView.setCellFactory(new Callback<ListView<String>, ListCell<String>>() {
 			public ListCell<String> call(ListView<String> param) {
 				return new ListCell<String>() {
