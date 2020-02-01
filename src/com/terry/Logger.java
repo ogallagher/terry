@@ -43,15 +43,15 @@ public class Logger {
 		//print entry
 		if (Terry.prompter != null) {
 			Platform.runLater(new ConsoleLogger(entry));
+			
+			//testing only
+			System.out.println(entry);
 		}
 		else {
 			backlog.add(entry);
 		}
 		
 		//say entry
-		
-		//testing only
-		System.out.println(entry);
 	}
 	
 	public static void emptyBacklog() {

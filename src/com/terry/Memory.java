@@ -152,7 +152,7 @@ public class Memory {
 	}
 	
 	public static boolean isTrivial(String token) {
-		return trivials.contains(token);
+		return token.trim().length() == 0 || trivials.contains(token);
 	}
 	
 	/*

@@ -2,9 +2,12 @@ package com.terry;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.Files;
 import java.security.AccessController;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -17,6 +20,19 @@ import javax.sound.sampled.LineEvent;
 import javax.sound.sampled.LineListener;
 import javax.sound.sampled.LineUnavailableException;
 import javax.sound.sampled.TargetDataLine;
+
+import com.google.api.gax.core.CredentialsProvider;
+import com.google.api.gax.core.FixedCredentialsProvider;
+import com.google.auth.oauth2.ServiceAccountCredentials;
+import com.google.cloud.speech.v1.RecognitionAudio;
+import com.google.cloud.speech.v1.RecognitionConfig;
+import com.google.cloud.speech.v1.RecognitionConfig.AudioEncoding;
+import com.google.protobuf.ByteString;
+import com.google.cloud.speech.v1.RecognizeResponse;
+import com.google.cloud.speech.v1.SpeechClient;
+import com.google.cloud.speech.v1.SpeechRecognitionAlternative;
+import com.google.cloud.speech.v1.SpeechRecognitionResult;
+import com.google.cloud.speech.v1.SpeechSettings;
 
 import javafx.application.Platform;
 
@@ -36,8 +52,13 @@ public class Scribe {
 	private static int microphoneBufferSize; 
 	
 	private static RecordThread recorder;
-	private static TranscribeThread transcriber;
+	private static GoogleTranscribeThread gtranscriber;
+	private static DeepspeechTranscribeThread dtranscriber;
 	private static ReadThread reader;
+	
+	private static final char TRANSCRIBER_GOOGLE = 'g';
+	private static final char TRANSCRIBER_DEEPSPEECH = 'd';
+	private static char selectedTranscriber;
 	
 	private static File speechDir;
 	private static File speechFile; //temporary wav file, deleted after successful transcription
@@ -74,7 +95,19 @@ public class Scribe {
 				microphone = (TargetDataLine) AudioSystem.getLine(info);
 				
 				//init transcriber
-				TranscribeThread.init();
+				selectedTranscriber = TRANSCRIBER_GOOGLE;
+				
+				switch (selectedTranscriber) {
+					case TRANSCRIBER_GOOGLE:
+						GoogleTranscribeThread.init();
+						break;
+						
+					case TRANSCRIBER_DEEPSPEECH:
+					default:
+						DeepspeechTranscribeThread.init();
+						break;
+				}
+				
 				
 				Logger.log("scribe init success");
 			}
@@ -110,10 +143,12 @@ public class Scribe {
 		
 		//testing
 		/*
-		String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
-		transcription = instructions[(int)(Math.random() * instructions.length)];
-		state.set(STATE_DONE);
-		state.set(STATE_IDLE);
+		//String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
+		//transcription = instructions[(int)(Math.random() * instructions.length)];
+		state.set(STATE_RECORDING);
+		state.set(STATE_TRANSCRIBING);
+		gtranscriber = new GoogleTranscribeThread();
+		gtranscriber.start();
 		*/
 	}
 	
@@ -164,16 +199,111 @@ public class Scribe {
 			Logger.log("scribe stopped listening");
 			state.set(STATE_TRANSCRIBING);
 			
-			//recording finished, pass to deepspeech to get transcription
-			transcriber = new TranscribeThread();
-			transcriber.start();
+			//recording finished, pass to transcriber to get transcription
+			switch (selectedTranscriber) {
+				case TRANSCRIBER_GOOGLE:
+					gtranscriber = new GoogleTranscribeThread();
+					gtranscriber.start();
+					break;
+					
+				case TRANSCRIBER_DEEPSPEECH:
+				default:
+					dtranscriber = new DeepspeechTranscribeThread();
+					dtranscriber.start();
+					break;
+			}
 		}
 	}
 	
 	/*
-	 * Launches deepspeech to convert the speech audio file to a transcription via os/system command.
+	 * Sends a transcription request to google's cloud speech api using the provided google speech
+	 * and general api client libraries.
+	 * 
+	 * Current implementation only supports transcription of short audio files (duration less than 1 minute), since
+	 * it uses Synchronous Speech Recognition (instead of asynchronous). This should be all that is needed for Terry,
+	 * but the api can transcribe audio up to 1 hour in length for free if done asynchronously.
+	 * 
 	 */
-	private static class TranscribeThread extends Thread {
+	private static class GoogleTranscribeThread extends Thread {
+		private static File transcribeDir;
+		private static File audioFile;
+		private static SpeechClient speechClient;
+		
+		private static File gcloudCredentialsFile;
+		private static final String GCLOUD_CREDENTIALS_PATH = "google_speech_credentials.json";
+		
+		public static void init() throws ScribeException {
+			transcribeDir = new File(Terry.class.getResource(TRANSCRIBE_PATH).getPath());
+			
+			//load google cloud credentials
+			gcloudCredentialsFile = new File(transcribeDir,GCLOUD_CREDENTIALS_PATH);
+			try {
+				CredentialsProvider credentials = FixedCredentialsProvider.create(ServiceAccountCredentials.fromStream(new FileInputStream(gcloudCredentialsFile)));
+				SpeechSettings settings = SpeechSettings.newBuilder().setCredentialsProvider(credentials).build();
+				
+				//connect to speech file
+				audioFile = new File(transcribeDir,"speech.wav");
+				
+				//create speech api client
+				speechClient = SpeechClient.create(settings);
+				
+				Logger.log("google transcriber init success: " + "info");
+			} 
+			catch (FileNotFoundException e) {
+				throw new ScribeException("google transcriber failed to load cloud credentials");
+			} 
+			catch (IOException e) {
+				throw new ScribeException("google transcriber failed to create speech client: " + e.getMessage());
+			}
+		}
+		
+		@Override
+		public void run() {
+			try {
+				//InputStream audio = new FileInputStream(audioFile);
+				byte[] data = Files.readAllBytes(audioFile.toPath());
+				ByteString audio = ByteString.copyFrom(data);
+				
+				RecognitionAudio speech = RecognitionAudio
+											.newBuilder()
+											.setContent(audio)
+											.build();
+				
+				RecognitionConfig config = RecognitionConfig
+														.newBuilder()
+														.setLanguageCode("en-US")
+														.setMaxAlternatives(1)
+														.setModel("command_and_search")
+														.setEnableAutomaticPunctuation(false)
+														.build();
+				
+				Logger.log("scribe began transcribing");
+				RecognizeResponse response = speechClient.recognize(config, speech);
+				
+				String transcript = "";
+				for (SpeechRecognitionResult result : response.getResultsList()) {
+					transcript += result.getAlternatives(0).getTranscript() + " ";
+				}
+				
+				transcription = transcript; //no read stream needed since the call in synchronous and only updates once
+				Logger.log("transcription = " + transcription);
+			} 
+			catch (FileNotFoundException e) {
+				Logger.logError("scribe could not find audio file at " + audioFile.getAbsolutePath());
+			}
+			catch (IOException e) {
+				Logger.logError("scribe could not parse audio file: " + e);
+			}
+			
+			state.set(STATE_DONE); //trigger prompter to pass transcription to next module
+			state.set(STATE_IDLE);
+		}
+	}
+	
+	/*
+	 * Launches deepspeech to convert the speech audio file to a transcription via os/system call.
+	 */
+	private static class DeepspeechTranscribeThread extends Thread {
 		private static String cmd = "<deepspeech> --model <model> --lm <lm> --trie <trie> --stream <stream> --beam_width <beam_width> --audio <audio>";
 		private static String deepspeech = "./deepspeech_mac.sh";
 		private static String model = "models/output_graph.pbmm";
@@ -202,7 +332,7 @@ public class Scribe {
 					 .replace("<beam_width>", beamWidth)
 					 .replace("<audio>", audio);
 			
-			Logger.log("scribe transcriber init success: \n" + cmd + "\nexecuted in: " + cmdDir);
+			Logger.log("deepspeech transcriber init success: \n" + cmd + "\nexecuted in: " + cmdDir);
 		}
 		
 		@Override
@@ -244,8 +374,8 @@ public class Scribe {
 	private static class ReadThread extends Thread {
 		private BufferedReader reader;
 		
-		public ReadThread(InputStream stdout) {
-			reader = new BufferedReader(new InputStreamReader(stdout));
+		public ReadThread(InputStream transcriptUpdates) {
+			reader = new BufferedReader(new InputStreamReader(transcriptUpdates));
 		}
 		
 		@Override

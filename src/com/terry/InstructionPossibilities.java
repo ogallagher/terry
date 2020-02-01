@@ -82,14 +82,19 @@ public class InstructionPossibilities {
 			while (scanner.hasNext()) {
 				token = scanner.next();
 				
-				if (possibility.resolve(token)) { //possibility remains possible
-					 if (possibility.complete()) { //all tokens are mapped
-						 return possibility;
-					 }
+				if (!Memory.isTrivial(token)) {
+					if (possibility.resolve(token)) { //possibility remains possible
+						 if (possibility.complete()) { //all tokens are mapped
+							 return possibility;
+						 }
+					}
+					else {
+						Logger.logError("invalid instruction token " + token);
+						return null;
+					}
 				}
 				else {
-					Logger.logError("invalid instruction token " + token);
-					return null;
+					Logger.log(token + " ignored");
 				}
 			}
 			
