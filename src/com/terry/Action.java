@@ -60,8 +60,13 @@ public class Action extends LanguageMapping implements Serializable {
 		return id;
 	}
 	
+	/*
+	 * type   id   pattern   state_num   <states>
+	 */
 	private void writeObject(ObjectOutputStream stream) throws IOException {
-		stream.writeChars(super.toString());
+		System.out.println("serializing action " + id);
+		
+		stream.writeObject(super.toString());
 		stream.writeInt(states.size());
 		
 		for (State<?> state : states) {
@@ -73,8 +78,13 @@ public class Action extends LanguageMapping implements Serializable {
 		String lm = (String) stream.readObject();
 		fromString(lm);
 		
-		for (int s=0; s<stream.readInt(); s++) {
+		int ns = stream.readInt();
+		
+		states = new ArrayList<>();
+		for (int s=0; s<ns; s++) {
 			states.add((State<?>) stream.readObject());
 		}
+		
+		Logger.log("deserialized action " + id);
 	}
 }

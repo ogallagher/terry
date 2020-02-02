@@ -79,19 +79,22 @@ public class State<T> implements Serializable {
 		return name + ":" + type + "=" + value.get();
 	}
 	
+	/*
+	 * name type driver_execution
+	 */
 	private void writeObject(ObjectOutputStream stream) throws IOException {
-		stream.writeChars(name);
+		stream.writeObject(name);
 		stream.writeChar(type);
-		stream.writeObject(value.get());
 		stream.writeObject(transition);
+		stream.writeObject(argNames);
 	}
 	
 	@SuppressWarnings("unchecked")
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
 		name = (String) stream.readObject();
 		type = stream.readChar();
-		value.set((T)stream.readObject());
 		transition = (DriverExecution<T>) stream.readObject();
+		argNames = (String[]) stream.readObject();
 	}
 	
 	public static class StateException extends Exception {

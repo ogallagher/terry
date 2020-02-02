@@ -1,10 +1,16 @@
 package com.terry;
 
 import java.io.ByteArrayInputStream;
+import java.io.EOFException;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -23,14 +29,18 @@ public class Memory {
 	private static final String MEMORY_PATH = Terry.RES_PATH + "memory/";
 	private static final String TRIV_FILE = "triv.txt";
 	private static final String DICT_FILE = "dict.txt";
-	private static final String MAPS_FILE = "maps.txt";
+	private static final String ACTS_FILE = "acts.txt";
+	
+	private static File memDir, actsFile, dictFile;
 	
 	private static ArrayList<String> trivials; //unimportant words commonly encountered that can be quickly ignored
 	private static HashMap<String,ArrayList<LanguageMapping>> dictionary; //token,references
 	private static HashMap<Integer,LanguageMapping> mappings; //key,mapping (action/lesson/widget)
 	
+	public static boolean saved;
+	
 	public static void init() throws MemoryException {
-		File memDir = new File(Terry.class.getResource(MEMORY_PATH).getPath());
+		memDir = new File(Terry.class.getResource(MEMORY_PATH).getPath());
 		
 		trivials = new ArrayList<String>();
 		File trivFile = new File(memDir, TRIV_FILE);
@@ -54,67 +64,73 @@ public class Memory {
 		
 		mappings = new HashMap<Integer,LanguageMapping>();
 		int lastId = 0; //int for generating unique ids
-		File mapsFile = new File(memDir, MAPS_FILE);
-		if (mapsFile.exists()) {
+		
+		actsFile = new File(memDir, ACTS_FILE);
+		if (actsFile.exists()) {
 			try {
-				@SuppressWarnings("resource")
-				Scanner mapsReader = new Scanner(mapsFile);
-				String line;
-				char type;
-				int id;
+				FileInputStream actionStream = new FileInputStream(actsFile);
 				
-				while (mapsReader.hasNextLine()) {
-					line = mapsReader.nextLine();
-					type = line.charAt(0);
+				if (actionStream.available() != 0) {
+					Logger.log("deserializing actions");
+					ObjectInputStream deserializer = new ObjectInputStream(actionStream);
 					
+					Action action;
+					int id;
 					try {
-						ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(line.getBytes(StandardCharsets.UTF_8)));
-						switch (type) {
-							case LanguageMapping.TYPE_ACTION:
-								Action action = (Action) stream.readObject();
-								
+						while (true) {
+							try {
+								action = (Action) deserializer.readObject();
 								id = action.getId();
 								if (id > lastId) {
 									lastId = id;
 								}
 								
-								mappings.put(action.getId(), action);
+								mappings.put(id, action);
+							}
+							catch (ClassNotFoundException | InvalidClassException e) {
+								e.printStackTrace();
 								
-								break;
+								deserializer.close();
+								actionStream.close();
 								
-							case LanguageMapping.TYPE_LESSON:
-								//TODO deserialize lesson
-								break;
-								
-							case LanguageMapping.TYPE_WIDGET:
-								//TODO deserialize widget
-								break;
+								throw new MemoryException("failed to deserialize action");
+							}
 						}
-					} 
-					catch (IOException | ClassNotFoundException e) {
-						throw new MemoryException("failed to deserialize mapping " + line);
 					}
+					catch (EOFException e) {
+						Logger.log("no more actions found");
+					}
+					
+					deserializer.close();
 				}
 				
-				mapsReader.close();
+				actionStream.close();
 			}
 			catch (FileNotFoundException e) {
-				throw new MemoryException("maps file not found at " + mapsFile.getAbsolutePath());
+				throw new MemoryException("action file not found at " + actsFile.getAbsolutePath());
+			} 
+			catch (IOException e) {
+				throw new MemoryException("could not read from action file at " + actsFile.getAbsolutePath());
 			}
 		}
 		else {
 			try {
-				mapsFile.createNewFile();
+				actsFile.createNewFile();
+				Logger.log("created blank mappings file");
 			}
 			catch (IOException e) {
-				throw new MemoryException("could not create blank maps file at " + mapsFile.getAbsolutePath());
+				throw new MemoryException("could not create blank maps file at " + actsFile.getAbsolutePath());
 			}
 		}
+		
+		//TODO lessons
+		
+		//TODO widgets
 		
 		LanguageMapping.init(lastId);
 		
 		dictionary = new HashMap<String,ArrayList<LanguageMapping>>();
-		File dictFile = new File(memDir, DICT_FILE);
+		dictFile = new File(memDir, DICT_FILE);
 		if (dictFile.exists()) {
 			try {
 				Scanner dictReader = new Scanner(dictFile);
@@ -126,13 +142,17 @@ public class Memory {
 					line = dictReader.nextLine().split(" ");
 					token = line[0];
 					
-					ArrayList<LanguageMapping> refs = new ArrayList<LanguageMapping>();
-					for (int i=1; i<line.length; i++) {
-						ref = Integer.parseInt(line[i]);
-						refs.add(mappings.get(ref));
+					if (token != null && !token.isEmpty()) {
+						ArrayList<LanguageMapping> refs = new ArrayList<LanguageMapping>();
+						for (int i=1; i<line.length; i++) {
+							ref = Integer.parseInt(line[i]);
+							refs.add(mappings.get(ref));
+						}
+						
+						if (!refs.contains(null)) {
+							dictionary.put(token, refs);
+						}
 					}
-					
-					dictionary.put(token, refs);
 				}
 				
 				dictReader.close();
@@ -149,6 +169,9 @@ public class Memory {
 				throw new MemoryException("could not create blank dict file at " + dictFile.getAbsolutePath());
 			}
 		}
+		
+		saved = true;
+		Logger.log("memory init success");
 	}
 	
 	public static boolean isTrivial(String token) {
@@ -234,6 +257,8 @@ public class Memory {
 				entry.add(mapping);
 			}
 		}
+		
+		saved = false;
 	}
 	
 	public static Collection<LanguageMapping> getMappings() {
@@ -256,6 +281,68 @@ public class Memory {
 		return string;
 	}
 	
+	/*
+	 * Save data structures in their corresponding files.
+	 */
+	public static void save() throws MemoryException {
+		Logger.log("saving memory");
+		
+		//save dictionary
+		try {
+			FileWriter dictWriter = new FileWriter(dictFile);
+			String out = "";
+			
+			for (Entry<String, ArrayList<LanguageMapping>> entry : dictionary.entrySet()) {
+				//token
+				out += entry.getKey();
+				
+				//mappings
+				for (LanguageMapping lm : entry.getValue()) {
+					out += " " + lm.id;
+				}
+				
+				//next line
+				out += '\n';
+			}
+			
+			dictWriter.write(out);
+			dictWriter.close();
+		} 
+		catch (IOException e) {
+			dictFile.delete();
+			throw new MemoryException("failed to save dictionary");
+		}
+		
+		//save mappings
+		try {
+			FileOutputStream mapsWriter = new FileOutputStream(actsFile);
+			ObjectOutputStream serializer = new ObjectOutputStream(mapsWriter);
+			
+			for (LanguageMapping mapping : mappings.values()) {
+				switch (mapping.getType()) {
+					case LanguageMapping.TYPE_ACTION:
+						serializer.writeObject(mapping);
+						break;
+						
+					default:
+						Logger.logError("skipped save of mapping " + mapping);
+						break;
+				}
+			}
+			
+			serializer.close();
+			mapsWriter.close();
+		} 
+		catch (IOException | SecurityException e) {
+			actsFile.delete();
+			e.printStackTrace();
+			throw new MemoryException("failed to save mappings");
+		}
+		
+		saved = true;
+		Logger.log("memory save complete");
+	}
+	
 	public static class Lookup {
 		public String token;
 		public ArrayList<LanguageMapping> mappings;
@@ -270,8 +357,11 @@ public class Memory {
 		private static final long serialVersionUID = -5312985469881250543L;
 		private String message;
 		
+		public boolean vital = false;
+		
 		public MemoryException(String message) {
 			this.message = message;
+			this.vital = vital;
 		}
 		
 		public MemoryException() {

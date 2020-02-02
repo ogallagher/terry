@@ -28,22 +28,29 @@ public class LanguageMapping {
 	private static final char usr = '_'; //token delimiter for selection
 	
 	protected int id;
-	private char type;
+	protected char type;
 	protected LanguagePattern pattern;
 	
 	public static void init(int count) {
 		//update count
 		LanguageMapping.count = count + 1;
+		Logger.log("language mapping init success");
 	}
 	
 	public static boolean empty() {
 		return count == 1;
 	}
 	
+	//for child class deserialization
+	public LanguageMapping() {
+		id = count++;
+		type = TYPE_UNKNOWN;
+		pattern = null;
+	}
+	
 	public LanguageMapping(char typ, String expr) {
 		id = count++;
-		type = typ;		
-		pattern = null;
+		type = typ;
 		pattern = new LanguagePattern(expr);
 	}
 	
@@ -81,8 +88,8 @@ public class LanguageMapping {
 	public void fromString(String string) {
 		String[] fields = string.split("\t");
 		
-		id = Integer.parseInt(fields[0]);
-		type = fields[1].charAt(0);
+		type = fields[0].charAt(0);
+		id = Integer.parseInt(fields[1]);
 		pattern = new LanguagePattern(fields[2]);
 	}
 	

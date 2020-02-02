@@ -57,6 +57,9 @@ public class InstructionParser {
 					else { //instruction is valid; follow through
 						instruction.compile();
 					}
+					
+					//look for new instruction
+					possibilities = new InstructionPossibilities();
 				}
 			}
 			else {

@@ -33,6 +33,8 @@ import com.terry.Driver.DriverThread;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
+import javafx.application.Platform;
+
 public class Terry {
 	public static Prompter prompter;
 	
@@ -81,6 +83,8 @@ public class Terry {
 	public static final String KEY_GREATER = "gtr";
 	public static final String KEY_QUERY = "qry";
 	
+	public static final int EXITCODE_MEMORY = 1;
+	
 	public static void main(String[] args) {
 		Logger.init();
 		
@@ -121,17 +125,14 @@ public class Terry {
 			Memory.init(); //calls LanguageMapping.init() from maps.txt file
 		}
 		catch (MemoryException e) {
-			Logger.logError(e.getMessage());
+			e.printStackTrace();
+			System.exit(EXITCODE_MEMORY);
 		}
 		
 		if (LanguageMapping.empty()) {
 			createPrimitiveActions();
 			Logger.log(Memory.printDictionary());
 		}
-		
-		// testing start
-		
-		// testing stop
 		
 		prompter = new Prompter();
 		prompter.init(args);
@@ -260,6 +261,7 @@ public class Terry {
 			public Boolean execute(Boolean stateOld, Arg[] args) {
 				//no args
 				//direct prompter
+				
 				try {
 					prompter.stop();
 				} 

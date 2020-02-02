@@ -152,7 +152,7 @@ public class Scribe {
 		
 		//String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
 		//transcription = instructions[(int)(Math.random() * instructions.length)];
-		transcription = "move to 80 x 90.5 y";
+		transcription = "shut down";//"move to 80 x 90.5 y";
 		Logger.log(transcription);
 		
 		state.set(STATE_DONE);

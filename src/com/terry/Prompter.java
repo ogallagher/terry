@@ -3,7 +3,12 @@ package com.terry;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.util.Optional;
 
+import com.apple.eawt.AppEvent.QuitEvent;
+import com.apple.eawt.QuitHandler;
+import com.apple.eawt.QuitResponse;
+import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
 import javafx.application.Application;
@@ -17,6 +22,9 @@ import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.scene.Scene;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Alert.AlertType;
+import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.MultipleSelectionModel;
@@ -25,6 +33,7 @@ import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
+import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -68,6 +77,7 @@ public class Prompter extends Application {
 		launch(args);
 	}
 	
+	@SuppressWarnings("restriction")
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		//launch intercom window
@@ -95,7 +105,6 @@ public class Prompter extends Application {
 		intercom.setMaxWidth(INTERCOM_WIDTH);
 		intercom.setMinHeight(INTERCOM_WIDTH);
 		intercom.setMaxHeight(INTERCOM_WIDTH);
-		intercom.show();
 		
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
@@ -124,12 +133,6 @@ public class Prompter extends Application {
 				catch (ScribeException e) {
 					Logger.logError(e.getMessage());
 				}
-			}
-		});
-		
-		primaryStage.setOnCloseRequest(new EventHandler<WindowEvent>() {
-			public void handle(WindowEvent event) {
-				primaryStage.close();
 			}
 		});
 		
@@ -176,7 +179,9 @@ public class Prompter extends Application {
 		console.setX(screen.width - CONSOLE_WIDTH);
 		console.setY(screen.height - CONSOLE_HEIGHT);
 		console.show();
-		consoleRoot.requestFocus();
+		//consoleRoot.requestFocus();
+		
+		intercom.show();
 		
 		Scribe.state.addListener(new ChangeListener<Character>() {
 			public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
@@ -219,19 +224,63 @@ public class Prompter extends Application {
 		
 		//tell logger that prompter is ready for logs
 		Logger.emptyBacklog();
+		
+		//handle mac quit (otherwise, Prompter.stop() is never called)		
+		if (Terry.os == Terry.OS_MAC) {
+			com.apple.eawt.Application.getApplication().setQuitHandler(new QuitHandler() {
+				public void handleQuitRequestWith(QuitEvent qe, QuitResponse qr) {
+					try {
+						stop();
+						qr.cancelQuit();
+					} 
+					catch (Exception e) {}
+				}
+			});
+		}
 	}
 	
 	@Override
 	public void stop() throws Exception {
-		//destroy terry-specific resources
-		Platform.runLater(new Runnable() { //encapsulate in runLater() to send it to the JavaFX app thread
-			public void run() {
-				intercom.close();
-				console.close();
-				Platform.exit();
-				System.exit(0);
+		Logger.log("stopping");
+		
+		boolean go = true;
+		
+		//save memory
+		if (!Memory.saved) {
+			try {
+				Memory.save();
 			}
-		});
+			catch (MemoryException e) {
+				Logger.logError(e.getMessage());
+				
+				go = false;
+			}
+		}
+		
+		//destroy terry-specific resources
+		
+		if (!go && !confirmNoSave()) {
+			Logger.log("quit canceled");
+		}
+		else {
+			System.exit(0); //skip to the end of the app life cycle
+		}
+	}
+	
+	public boolean confirmNoSave() {
+		Alert alert = new Alert(AlertType.WARNING, "Unsaved Memory", ButtonType.CANCEL, ButtonType.YES);
+		alert.setTitle("Unsaved Memory");
+		alert.setHeaderText("Learned Memory Not Saved");
+		alert.setContentText("Some things that Terry learned this session could not be saved. Are you sure you want to quit?");
+		
+		Optional<ButtonType> response = alert.showAndWait();
+		
+		if (response.isPresent()) {
+			return response.get() == ButtonType.YES;
+		}
+		else {
+			return false;
+		}
 	}
 	
 	public void consoleLog(String entry) {
