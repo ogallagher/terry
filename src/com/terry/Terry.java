@@ -32,6 +32,7 @@ import com.terry.Driver.DriverException;
 import com.terry.Driver.DriverThread;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
+import com.terry.Widget.WidgetException;
 
 import javafx.application.Platform;
 
@@ -87,6 +88,13 @@ public class Terry {
 	
 	public static void main(String[] args) {
 		Logger.init();
+		
+		try {
+			Widget.init();
+		} 
+		catch (WidgetException e) {
+			Logger.logError(e.getMessage());
+		}
 		
 		Arg.init();
 		
