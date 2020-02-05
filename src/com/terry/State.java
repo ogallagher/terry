@@ -1,6 +1,7 @@
 package com.terry;
 
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,6 +17,7 @@ public class State<T> implements Serializable {
 	private static final char TYPE_INT = 'i';	//int
 	private static final char TYPE_STR = 's';	//string
 	private static final char TYPE_PNT = 'p';	//point int[2]
+	private static final char TYPE_IMG = 'g';	//buffered image
 	
 	private String name;
 	private char type;
@@ -41,6 +43,9 @@ public class State<T> implements Serializable {
 		else if (typeClass == Point2D.class) {
 			type = TYPE_PNT;
 		}
+		else if (typeClass == BufferedImage.class) {
+			type = TYPE_IMG;
+		}
 		
 		this.transition = transition;
 	}
@@ -53,6 +58,10 @@ public class State<T> implements Serializable {
 		return value.get();
 	}
 	
+	public SimpleObjectProperty<T> getProperty() {
+		return value;
+	}
+	
 	public String[] getArgNames() {
 		return argNames;
 	}
@@ -60,10 +69,19 @@ public class State<T> implements Serializable {
 	/*
 	 * Updates value and executes transition. 
 	 * Call transition.setArgs() first.
+	 * Always creates new thread so it can run in parallel to the application thread.
 	 */
 	public void transition(Arg[] args) throws StateException {
 		if (args.length == argNames.length) {
-			value.set(transition.execute(value.get(), args));
+			new StateTransitionThread() {
+				public void run() {
+					T stateDest = transition.execute(value.get(), args);
+					
+					if (stateDest != null) {
+						value.set(stateDest);
+					}
+				}
+			}.start();
 		}
 		else {
 			throw new StateException(name + " transition expects " + argNames.length + "args; got " + args.length);
@@ -95,6 +113,20 @@ public class State<T> implements Serializable {
 		type = stream.readChar();
 		transition = (DriverExecution<T>) stream.readObject();
 		argNames = (String[]) stream.readObject();
+		value = new SimpleObjectProperty<T>();
+	}
+	
+	public static abstract class StateTransitionThread extends Thread {
+		@Override
+		public abstract void run();
+		
+		/*
+		 * quick way to allow other threads to interrupt this one without throwing
+		 * an access exception.
+		 */
+		public void quit() {
+			interrupt();
+		}
 	}
 	
 	public static class StateException extends Exception {

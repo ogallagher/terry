@@ -1,7 +1,12 @@
 package com.terry;
 
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
+
+import javax.imageio.ImageIO;
 
 public class Utilities {
 	/*
@@ -199,5 +204,23 @@ public class Utilities {
 		}
 		
 		return keys;
+	}
+	
+	public static void saveImage(BufferedImage img, String dirPath, String filePath) {
+		File dirFile = new File(Terry.class.getResource(dirPath).getPath());
+		
+		if (dirFile.exists()) {
+			File imgFile = new File(dirFile,filePath);
+			
+			try {
+				ImageIO.write(img, "png", imgFile);
+			} 
+			catch (IOException e) {
+				Logger.logError("could not write image to " + dirPath + filePath);
+			}
+		}
+		else {
+			Logger.logError("could not find destination directory for image file " + filePath);
+		}
 	}
 }

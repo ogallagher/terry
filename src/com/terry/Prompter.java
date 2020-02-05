@@ -2,7 +2,7 @@ package com.terry;
 
 import java.awt.Dimension;
 import java.awt.MouseInfo;
-import java.awt.Point;
+import java.awt.geom.PathIterator;
 import java.util.Optional;
 
 import com.apple.eawt.AppEvent.QuitEvent;
@@ -22,6 +22,8 @@ import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
 import javafx.event.EventType;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
@@ -34,6 +36,7 @@ import javafx.scene.layout.Background;
 import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
@@ -46,7 +49,7 @@ public class Prompter extends Application {
 	private static JFXPanel dummyPanel = new JFXPanel();	//This prevents "Java Toolkit Not Initialized Error". 
 															//I don't really get it, but an extra line doesn't do much harm anyway.
 	
-	private static Stage intercom;
+	private static Stage intercom; //main window for recording instructions
 	private static final int INTERCOM_WIDTH = 200;
 	private static final int GLASSES_WIDTH = 150;
 	private static final int MIC_WIDTH = 75;
@@ -56,7 +59,7 @@ public class Prompter extends Application {
 	private static final String MIC_PATH = "img/mic_75.png";
 	private static final String LOADING_PATH = "img/loading_75.png";
 	
-	private static Stage console;
+	private static Stage console; //logging text output
 	private static final int CONSOLE_WIDTH = 500;
 	private static final int CONSOLE_HEIGHT = 800;
 	private static final int CONSOLE_HEIGHT_MIN = 300;
@@ -65,6 +68,11 @@ public class Prompter extends Application {
 	private static final int CONSOLE_OUT_MAX = 200;
 	
 	private static ListView<String> consoleOutView;
+	
+	private static Stage overlay; //transparent full-screen window for drawing over GUI. Hidden most of the time
+	private static int OVERLAY_WIDTH;
+	private static int OVERLAY_HEIGHT;
+	private static GraphicsContext graphics; //overlay graphics context
 		
 	/*
 	 * (non-Javadoc)
@@ -181,6 +189,36 @@ public class Prompter extends Application {
 		console.show();
 		//consoleRoot.requestFocus();
 		
+		//create overlay window
+		overlay = new Stage();
+		overlay.initStyle(StageStyle.TRANSPARENT);
+		
+		//overlay dimensions == screen dimensions
+		overlay.setX(0);
+		overlay.setY(0);
+		OVERLAY_WIDTH = screen.width;
+		OVERLAY_HEIGHT = screen.height;
+		overlay.setWidth(OVERLAY_WIDTH);
+		overlay.setHeight(OVERLAY_HEIGHT);
+		overlay.hide();
+		
+		Pane overlayRoot = new Pane();
+		overlayRoot.setId("overlay_root");
+		
+		Scene overlayScene = new Scene(overlayRoot);
+		overlayScene.setFill(Color.TRANSPARENT);
+		overlayScene.getStylesheets().add(Terry.class.getResource(Terry.RES_PATH + "style_overlay.css").toString());
+		overlay.setScene(overlayScene);
+		
+		//get graphics context for overlay pane
+		Canvas overlayCanvas = new Canvas();
+		overlayCanvas.setId("overlay_canvas");
+		overlayRoot.getChildren().add(overlayCanvas);
+		overlayCanvas.relocate(0, 0);
+		overlayCanvas.setWidth(OVERLAY_WIDTH);
+		overlayCanvas.setHeight(OVERLAY_HEIGHT);
+		graphics = overlayCanvas.getGraphicsContext2D();
+		
 		intercom.show();
 		
 		Scribe.state.addListener(new ChangeListener<Character>() {
@@ -230,8 +268,8 @@ public class Prompter extends Application {
 			com.apple.eawt.Application.getApplication().setQuitHandler(new QuitHandler() {
 				public void handleQuitRequestWith(QuitEvent qe, QuitResponse qr) {
 					try {
-						stop();
 						qr.cancelQuit();
+						stop();
 					} 
 					catch (Exception e) {}
 				}
@@ -256,7 +294,6 @@ public class Prompter extends Application {
 				go = false;
 			}
 		}
-		
 		//destroy terry-specific resources
 		
 		if (!go && !confirmNoSave()) {
@@ -267,8 +304,9 @@ public class Prompter extends Application {
 		}
 	}
 	
-	public boolean confirmNoSave() {
+	public static boolean confirmNoSave() {
 		Alert alert = new Alert(AlertType.WARNING, "Unsaved Memory", ButtonType.CANCEL, ButtonType.YES);
+		alert.initOwner(intercom);
 		alert.setTitle("Unsaved Memory");
 		alert.setHeaderText("Learned Memory Not Saved");
 		alert.setContentText("Some things that Terry learned this session could not be saved. Are you sure you want to quit?");
@@ -283,7 +321,102 @@ public class Prompter extends Application {
 		}
 	}
 	
-	public void consoleLog(String entry) {
+	// these stage controls must be run on the JavaFX app thread; hence platform.runlater
+	public static void hide() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				console.toBack();
+				intercom.toBack();
+				overlay.toBack();
+			}
+		});
+	}
+	
+	public static void show() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				overlay.toFront();
+				console.toFront();
+				intercom.toFront();
+			}
+		});
+	}
+	
+	public static void showOverlay() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				overlay.show();
+				overlay.toFront();
+				intercom.toFront();
+			}
+		});
+	}
+	
+	public static void hideOverlay() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				overlay.hide();
+			}
+		});
+	}
+	
+	public static void colorOverlay(Color fill, Color stroke) {
+		graphics.setFill(fill);
+		graphics.setStroke(stroke);
+	}
+	
+	public static void drawOverlay(PathIterator pi, boolean fill, boolean stroke) {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				double[] segment = new double[6];
+				int type;
+				graphics.beginPath();
+				while (!pi.isDone()) {
+					type = pi.currentSegment(segment);
+					
+					switch (type) {
+						case PathIterator.SEG_MOVETO:
+							graphics.moveTo(segment[0], segment[1]);
+							break;
+							
+						case PathIterator.SEG_LINETO:
+							graphics.lineTo(segment[0], segment[1]);
+							break;
+							
+						case PathIterator.SEG_QUADTO:
+							graphics.quadraticCurveTo(segment[0], segment[1], segment[2], segment[3]);
+							break;
+							
+						case PathIterator.SEG_CUBICTO:
+							graphics.bezierCurveTo(segment[0], segment[1], segment[2], segment[3], segment[4], segment[5]);
+							break;
+							
+						case PathIterator.SEG_CLOSE:
+							graphics.closePath();
+					}
+					
+					pi.next();
+				}
+				
+				if (stroke) {
+					graphics.stroke();
+				}
+				if (fill) {
+					graphics.fill();
+				}
+			}
+		});
+	}
+	
+	public static void clearOverlay() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				graphics.clearRect(0, 0, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+			}
+		});
+	}
+	
+	public static void consoleLog(String entry) {
 		int last = consoleOut.size();
 		
 		if (last > CONSOLE_OUT_MAX) {

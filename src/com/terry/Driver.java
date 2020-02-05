@@ -5,10 +5,12 @@ import java.awt.AWTPermission;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.util.Iterator;
@@ -189,21 +191,23 @@ public class Driver {
 	    robot.delay(DELAY_CLICK);
 	}
 	
-	public static Dimension getScreen() {
-		return screen;
+	public static BufferedImage captureScreen() throws DriverException {
+		try {
+			//BufferedImage capture = robot.createScreenCapture(new Rectangle(screen.width,screen.height));
+			BufferedImage capture = robot.createScreenCapture(new Rectangle(0,0,500,60)); //apple icon
+			
+			Widget testWidget = new Widget("test widget");
+			testWidget.setAppearance(capture);
+			
+			return capture;
+		}
+		catch (SecurityException e) {
+			throw new DriverException("not permitted to view the screen");
+		}
 	}
 	
-	public static abstract class DriverThread extends Thread {
-		@Override
-		public abstract void run();
-		
-		/*
-		 * quick way to allow other threads to interrupt this one without throwing
-		 * an access exception.
-		 */
-		public void quit() {
-			interrupt();
-		}
+	public static Dimension getScreen() {
+		return screen;
 	}
 	
 	public static class DriverException extends Exception {

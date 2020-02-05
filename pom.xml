@@ -9,20 +9,24 @@
   
   <dependencies>
   	<dependency>
-	  <groupId>com.google.cloud</groupId>
-	  <artifactId>google-cloud-speech</artifactId>
-	  <version>1.22.2</version>
+  		<!-- speech api client; used for transcription -->
+		<groupId>com.google.cloud</groupId>
+		<artifactId>google-cloud-speech</artifactId>
+		<version>1.22.2</version>
 	</dependency>
 	<dependency>
-	  <groupId>com.google.cloud</groupId>
-	  <artifactId>google-cloud-vision</artifactId>
-	  <version>1.99.1</version>
+		<!-- vision api client; used for visual text recognition -->
+		<groupId>com.google.cloud</groupId>
+		<artifactId>google-cloud-vision</artifactId>
+		<version>1.99.1</version>
 	</dependency>
 	<dependency>
+		<!-- subdependency for google cloud client libs -->
 		<groupId>io.grpc</groupId>
 		<artifactId>grpc-netty</artifactId>
 		<version>1.25.0</version>
 	</dependency>
+	<!-- javacv and subdependency jars are manually copied into lib-javacv -->
   </dependencies>
   
   <build>

@@ -16,5 +16,22 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
+	<classpathentry kind="lib" path="lib-javacv/javacpp.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://bytedeco.org/javacpp/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib-javacv/javacv.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="http://bytedeco.org/javacv/apidocs/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="lib-javacv/openblas.jar"/>
+	<classpathentry kind="lib" path="lib-javacv/opencv-macosx-x86_64.jar"/>
+	<classpathentry kind="lib" path="lib-javacv/opencv-windows-x86_64.jar"/>
+	<classpathentry kind="lib" path="lib-javacv/opencv.jar"/>
+	<classpathentry kind="lib" path="lib-javacv/openblas-macosx-x86_64.jar"/>
+	<classpathentry kind="lib" path="lib-javacv/openblas-windows-x86_64.jar"/>
+	<classpathentry kind="con" path="org.eclipse.fx.ide.jdt.core.JAVAFX_CONTAINER"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

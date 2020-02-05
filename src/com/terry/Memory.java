@@ -85,7 +85,11 @@ public class Memory {
 									lastId = id;
 								}
 								
+								//add to mappings
 								mappings.put(id, action);
+								
+								//add to states
+								action.addStates();
 							}
 							catch (ClassNotFoundException | InvalidClassException e) {
 								e.printStackTrace();

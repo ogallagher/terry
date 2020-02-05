@@ -13,28 +13,44 @@
  * - Action
  * 		- inherited member LangMap.value is an state name and value pairing as Entry<String,Object>
  * 		- args define what widget to perform the action on and how to do the action
- * - State implements Entry<String,Object>
+ * - State
  * 		- member name is a String
  * 		- member value is an Object (observable)
  * 		- member execution is a DriverExecution: { abstract T execute(T oldState, Arg[] args) }
  * 		- member transition() calls execution.execute()
+ * - Widget
+ * 		- member type is the widget interaction type (label, button, text area, etc)
+ * 		- member label is the string contained within the widget's bounds
+ * 		- member bounds is a rectangle to define the size and shape of the widget
+ * 		- member appearance is a collection of features (keypoint-descriptor pairs) for visual identification
  */
 
 package com.terry;
 
+import java.awt.Dimension;
+import java.awt.Rectangle;
 import java.awt.event.MouseEvent;
+import java.awt.geom.AffineTransform;
+import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.opencv.opencv_java;
+
 import com.terry.Driver.DriverException;
-import com.terry.Driver.DriverThread;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 import com.terry.Widget.WidgetException;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.scene.paint.Color;
 
 public class Terry {
 	public static Prompter prompter;
@@ -294,6 +310,7 @@ public class Terry {
 			public Boolean execute(Boolean stateOld, Arg[] args) {
 				//no args
 				//direct controller
+				Logger.log("states: ");
 				for (String state : Terry.printState()) {
 					Logger.log(state);
 				}
@@ -305,75 +322,162 @@ public class Terry {
 		
 		Memory.addMapping(showstate);
 		
-		//--- demos ---//
-		Action driverDemo1 = new Action("?do) ?driver) |demo,demonstration,) one");
+		//--- capture screen/take screenshot ---//
+		Action captureScreen = new Action("?create) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
 		
-		State<Integer> demoed = new State<Integer>("demoed", 0, new String[] {}, new DriverExecution<Integer>() {
+		State<BufferedImage> statecaptured = new State<BufferedImage>("statecaptured", new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), new String[] {}, new DriverExecution<BufferedImage>() {
+			private static final long serialVersionUID = 4607129019674379163L;
+
+			public BufferedImage execute(BufferedImage stateOld, Arg[] args) {
+				//no args
+				//direct driver and prompter
+				Prompter.hide();
+				
+				//make sure hide happens first
+				Platform.runLater(new Runnable() {
+					public void run() {
+						try {
+							BufferedImage capture = Driver.captureScreen();
+							
+							if (capture != null) {
+								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
+							}
+							
+							Prompter.show();
+						}
+						catch (DriverException e) {
+							Logger.logError(e.getMessage());
+						}
+					}
+				});
+				
+				return null;
+			}
+		});
+		captureScreen.addState(statecaptured);
+		
+		Memory.addMapping(captureScreen);
+		
+		//--- demos ---//
+		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");
+		
+		State<Integer> driverDemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = 7287040985627859604L;
 
 			public Integer execute(Integer stateOld, Arg[] args) {
 				//no args
 				//direct driver
-				new DriverThread() {
-					public void run() {
-						Logger.log("typing in spotlight...");
-						Driver.point(930, 30); //go to eclipse
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {}
-						
-						Driver.clickLeft(); //click window
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
-						
-						Driver.point(1375, 12); //go to spotlight
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {}
-						
-						Driver.clickLeft(); //click icon
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {}
-						
-						Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {}
-						
-						Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {}
-						
-						Driver.type("#cmd+bck)"); //clear search
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {}
-						
-						Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {}
-						
-						Driver.type("#cmd+bck)#esc)"); //clear search and exit
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {}
-						
-						Logger.log("quitting via mouse...");
-						Driver.point(755, 899); //go to dock
-						
-						try {Thread.sleep(500);} catch (InterruptedException e) {}
-						
-						Driver.point(908, 860); //go to java
-						
-						Driver.clickRight(); //right-click menu
-						
-						try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
-						
-						Driver.point(934, 771); //close option
-					}
-				}.start();
+				Logger.log("typing in spotlight...");
+				Driver.point(930, 30); //go to eclipse
+				
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				
+				Driver.clickLeft(); //click window
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
+				
+				Driver.point(1375, 12); //go to spotlight
+				
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				
+				Driver.clickLeft(); //click icon
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				
+				Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				
+				Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				
+				Driver.type("#cmd+bck)"); //clear search
+				
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				
+				Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				
+				Driver.type("#cmd+bck)#esc)"); //clear search and exit
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {}
+				
+				Logger.log("quitting via mouse...");
+				Driver.point(755, 899); //go to dock
+				
+				try {Thread.sleep(500);} catch (InterruptedException e) {}
+				
+				Driver.point(908, 860); //go to java
+				
+				Driver.clickRight(); //right-click menu
+				
+				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
+				
+				Driver.point(934, 771); //close option
 				
 				//update state
 				return 1;
 			}
 		});
-		driverDemo1.addState(demoed);
+		driverDemo1.addState(driverDemoed);
 		
 		Memory.addMapping(driverDemo1);
+		
+		Action overlayDemo1 = new Action("?do) overlay |demo,demonstration,) |one,1,)");
+		
+		State<Integer> overlayDemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new DriverExecution<Integer>() {
+			private static final long serialVersionUID = -7000513250778527982L;
+			
+			@SuppressWarnings("unchecked")
+			public Integer execute(Integer stateOld, Arg[] args) {
+				//no args
+				//direct prompter
+				Prompter.showOverlay();
+				Prompter.colorOverlay(Color.MEDIUMPURPLE, Color.PURPLE);
+				
+				Dimension screen = Driver.getScreen();
+				Ellipse2D ball = new Ellipse2D.Double(20,20,20,20);
+				AffineTransform t = new AffineTransform();
+				int vx = 1; int vy = 1;
+				
+				SimpleObjectProperty<Integer> overlaydemoed = (SimpleObjectProperty<Integer>) states.get("overlaydemoed").getProperty();
+				overlaydemoed.set(1);
+				
+				boolean go = true;
+				Logger.log("drawing overlay circle");
+				while (go && overlaydemoed.get().equals(1)) {
+					t.translate(vx, vy);
+					
+					if (t.getTranslateX() > screen.width || t.getTranslateX() < 0) {
+						vx = -vx;
+						t.translate(vx, 0);
+					}
+					if (t.getTranslateY() > screen.height || t.getTranslateY() < 0) {
+						vy = -vy;
+						t.translate(0, vy);
+					}
+					
+					Prompter.clearOverlay();
+					Prompter.drawOverlay(ball.getPathIterator(t), true, true);
+					
+					try {
+						Thread.sleep(10);
+					} 
+					catch (InterruptedException e) {
+						go = false;
+					}
+				}
+				Logger.log("drawing done");
+				Prompter.hideOverlay();
+				
+				//update state
+				return 1;
+			}
+		});
+		overlayDemo1.addState(overlayDemoed);
+		
+		Memory.addMapping(overlayDemo1);
 	}
 }

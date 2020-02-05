@@ -73,6 +73,8 @@ public class Scribe {
 	public static final char STATE_DONE = 3;
 	public static CharProperty state = new CharProperty(STATE_IDLE);
 	
+	static int testing = 0;
+	
 	public static void init() throws ScribeException {
 		state = new CharProperty(STATE_IDLE);
 		
@@ -150,9 +152,16 @@ public class Scribe {
 		//gtranscriber = new GoogleTranscribeThread();
 		//gtranscriber.start();
 		
-		//String[] instructions = new String[] {"move to eighty comma ninety","do driver demo one","show state"};
-		//transcription = instructions[(int)(Math.random() * instructions.length)];
-		transcription = "shut down";//"move to 80 x 90.5 y";
+		String[] instructions = new String[] {
+				"do overlay demo one",
+				"show state",
+				"move to eighty comma ninety",
+				"do driver demo one"};
+		transcription = instructions[testing++];
+		if (testing > instructions.length) {
+			testing = 0;
+		}
+		
 		Logger.log(transcription);
 		
 		state.set(STATE_DONE);

@@ -8,12 +8,27 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
+
+import org.bytedeco.javacpp.Loader;
+import org.bytedeco.javacv.Java2DFrameConverter;
+import org.bytedeco.javacv.OpenCVFrameConverter;
+import org.bytedeco.opencv.opencv_java;
+import org.opencv.core.CvType;
+import org.opencv.core.KeyPoint;
+import org.opencv.core.Mat;
+import org.opencv.core.MatOfKeyPoint;
+import org.opencv.features2d.DescriptorMatcher;
+import org.opencv.features2d.FastFeatureDetector;
+import org.opencv.features2d.Feature2D;
+import org.opencv.features2d.Features2d;
+import org.opencv.features2d.Params;
+import org.opencv.features2d.SimpleBlobDetector;
+import org.opencv.imgproc.Imgproc;
 
 import com.google.api.gax.core.CredentialsProvider;
 import com.google.api.gax.core.FixedCredentialsProvider;
@@ -21,13 +36,11 @@ import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.vision.v1.AnnotateImageRequest;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
 import com.google.cloud.vision.v1.EntityAnnotation;
-import com.google.cloud.vision.v1.Feature;
 import com.google.cloud.vision.v1.Feature.Type;
 import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.cloud.vision.v1.ImageAnnotatorSettings;
 import com.google.protobuf.ByteString;
-import com.terry.Scribe.ScribeException;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -49,6 +62,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	
 	public static void init() throws WidgetException {
 		TextFinderThread.init();
+		Appearance.init();
 		Logger.log("widget init success");
 	}
 	
@@ -66,7 +80,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	 * collection of features (keypoint-descriptor pairs), and normalizing them.
 	 */
 	public void setAppearance(BufferedImage img) {
-		
+		appearance = new Appearance(img);
 	}
 	
 	public void setType(char type) {
@@ -135,22 +149,109 @@ public class Widget extends LanguageMapping implements Serializable {
 		}
 	}
 	
+	/*
+	 * Appearance stores a collection of features (keypoint,descriptor pairs)
+	 */
 	private static class Appearance {
-		/*
-		 * TODO how will the visual representation of a widget be stored? It should be derived from screenshot images.
-		 * 
-		 * Check out compiled autoencoders (preferably java classes). One such network could be trained with a (very) limited dataset
-		 * to be able to recognize a widget.
-		 * 
-		 * Check out visual copyright detection algorithms. These specialize in searching for unique objects in images.
-		 * 
-		 * Check out image classifiers. They'll be trained to recognize probabilities of certain objects being contained in the image,
-		 * but I could use this list of recognized object probabilities as a signature for the widget.
-		 * 
-		 * Check out hough transforms for identifying characteristics.
-		 * 
-		 * Check out keypoints and descriptors for identifying image characteristics.
-		 */
+		private static Java2DFrameConverter toFrame; //BufferedImage to and from Frame 
+		private static OpenCVFrameConverter.ToOrgOpenCvCoreMat toMat; //Frame to and from Mat
+		
+		private ArrayList<Feature> features;
+		
+		public static void init() {
+			Loader.load(opencv_java.class);
+			toFrame = new Java2DFrameConverter();
+			toMat = new OpenCVFrameConverter.ToOrgOpenCvCoreMat();
+			Logger.log("widget appearance init success");
+		}
+		
+		public Appearance(BufferedImage src) {
+			int channels = src.getColorModel().getNumComponents();
+			
+			//convert to javacv image class
+			Mat original = toMat.convert(toFrame.convert(src));
+			
+			//convert to 8bit grayscale image
+			Mat grayscale = new Mat(original.size(), CvType.CV_8UC1);
+			if (channels == 4) { //rgba
+				Imgproc.cvtColor(original, grayscale, Imgproc.COLOR_RGBA2GRAY);
+			}
+			else if (channels == 3) { //rgb
+				Imgproc.cvtColor(original, grayscale, Imgproc.COLOR_RGB2GRAY);
+			}
+			
+			//create keypoints
+			MatOfKeyPoint keypoints = new MatOfKeyPoint();
+			FastFeatureDetector analyzer = FastFeatureDetector.create();
+			analyzer.detect(grayscale, keypoints);
+			KeyPoint[] kps = keypoints.toArray();
+			
+			//create descriptors and features
+			features = new ArrayList<>();
+			double[][] descriptors = new double[kps.length][6]; //r,g,b gradients in x,y directions 
+			int x,y;
+			double[][] pixels = new double[4][3]; //3x3 pixel frame around keypoint, excluding corners and middle
+			int w = original.width();
+			int h = original.height();
+			for (int i=0; i<kps.length; i++) {
+				x = (int) kps[i].pt.x;
+				y = (int) kps[i].pt.y;
+				
+				if (y > 0 && y < h && x > 0 && x < w) {
+					pixels[0] = original.get(y-1, x);
+					pixels[1] = original.get(y, x+1);
+					pixels[2] = original.get(y+1, x);
+					pixels[3] = original.get(y, x-1);
+					
+					descriptors[i][0] = pixels[1][0]-pixels[3][0]; //dx.r
+					descriptors[i][1] = pixels[1][1]-pixels[3][1]; //dx.g
+					descriptors[i][2] = pixels[1][2]-pixels[3][2]; //dx.b
+					
+					descriptors[i][3] = pixels[2][0]-pixels[0][0]; //dy.r
+					descriptors[i][4] = pixels[2][1]-pixels[0][1]; //dy.g
+					descriptors[i][5] = pixels[2][2]-pixels[0][2]; //dy.b
+					
+					//create feature
+					features.add(new Feature(kps[i], descriptors[i]));
+				}
+				//else, ignore edge keypoint
+			}
+			
+			Logger.log(this.toString());
+		}
+		
+		public String toString() {
+			String string = "appearance:";
+			
+			for (Feature f : features) {
+				string += "\n\t" + f;
+			}
+			
+			return string;
+		}
+		
+		public static BufferedImage MatToBufferedImage(Mat mat) {
+			return toFrame.convert(toMat.convert(mat));
+		}
+	}
+	
+	private static class Feature {
+		private KeyPoint keypoint;
+		private double[] descriptor;
+		
+		public Feature(KeyPoint kp, double[] desc) {
+			keypoint = kp;
+			descriptor = desc;
+		}
+		
+		public String toString() {
+			String string = "feature: p=(" + keypoint.pt.x + "," + keypoint.pt.x + ") size=" + (int)keypoint.size + " descriptor=";
+			
+			for (double d : descriptor) {
+				string += " " + d;
+			}
+			return string;
+		}
 	}
 	
 	private static class TextFinderThread extends Thread {
@@ -161,7 +262,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		private static final String GCLOUD_CREDENTIALS_PATH = "google_vision_credentials.json";
 		
 		private static ImageAnnotatorClient visionClient;
-		private static Feature imageFeature;
+		private static com.google.cloud.vision.v1.Feature imageFeature;
 		
 		private BufferedImage image = null;
 		private String text = null;
@@ -183,7 +284,7 @@ public class Widget extends LanguageMapping implements Serializable {
 				ImageAnnotatorSettings settings = ImageAnnotatorSettings.newBuilder().setCredentialsProvider(credentials).build();
 				visionClient = ImageAnnotatorClient.create(settings);
 				
-				imageFeature = Feature.newBuilder().setType(Type.TEXT_DETECTION).build();
+				imageFeature = com.google.cloud.vision.v1.Feature.newBuilder().setType(Type.TEXT_DETECTION).build();
 			} 
 			catch (FileNotFoundException e) {
 				throw new WidgetException("google text finder failed to load cloud credentials");

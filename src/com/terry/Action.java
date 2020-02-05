@@ -26,7 +26,15 @@ public class Action extends LanguageMapping implements Serializable {
 			Terry.states.put(state.getName(), state);
 		}
 		
-		states.add(state);
+		if (!states.contains(state)) {
+			states.add(state);
+		}
+	}
+	
+	public void addStates() {
+		for (State<?> state : states) {
+			Terry.states.put(state.getName(), state);
+		}
 	}
 	
 	/*

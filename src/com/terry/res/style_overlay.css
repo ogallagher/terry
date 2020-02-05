@@ -1,0 +1,11 @@
+#overlay_root {
+	-fx-padding: 0px;
+	-fx-border-style: none;
+	-fx-background-color: transparent;
+	-fx-fill: transparent;
+}
+
+#overlay_canvas {
+	-fx-fill: transparent;
+	-fx-border-style: none;
+}

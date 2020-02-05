@@ -70,7 +70,7 @@ public class Logger {
 		
 		@Override
 		public void run() {
-			Terry.prompter.consoleLog(news);
+			Prompter.consoleLog(news);
 		}
 	}
 }
