@@ -362,7 +362,7 @@ public class Terry {
 		Memory.addMapping(captureScreen);
 		
 		//--- find widget location in screen ---//
-		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget");
+		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget ?is)");
 		
 		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", null, new String[] {"widget"}, new DriverExecution<Point2D>() {
 			public Point2D execute(Point2D stateOld, Arg[] args) {
@@ -404,23 +404,34 @@ public class Terry {
 						try {
 							screenshot = Driver.captureScreen();
 							//direct widget to find itself
-							Rectangle2D zone = widget.findInScreen(screenshot);
+							widget.findInScreen(screenshot);
 							
-							if (zone != null ) {
-								Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
-								
-								//direct prompter to highlight found widget
-								Prompter.clearOverlay();
-								Prompter.showOverlay();
-								Prompter.colorOverlay(null, Color.RED);
-								Prompter.drawOverlay(zone.getPathIterator(null), false, true);
-								
-								//update state
-								return new Point2D.Double(zone.getCenterX(), zone.getCenterY());
-							}
-							else {
-								Logger.log("widget not found");
-							}
+							final Widget finalWidget = widget;
+							Point2D location = new Point2D.Double(-1,-1);
+							widget.state.addListener(new ChangeListener<Character>() {
+								public void changed(ObservableValue<? extends Character> observable, Character oldValue,
+										Character newValue) {
+									if (newValue == Widget.STATE_FOUND) {
+										Rectangle zone = finalWidget.getZone();
+										
+										Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
+										
+										//direct prompter to highlight found widget
+										Prompter.clearOverlay();
+										Prompter.showOverlay();
+										Prompter.colorOverlay(null, Color.RED);
+										Prompter.drawOverlay(zone.getPathIterator(null), false, true);
+										
+										//update state
+										location.setLocation(zone.getCenterX(), zone.getCenterY());
+									}
+									else if (newValue == Widget.STATE_NOT_FOUND) {
+										Logger.log("widget not found");
+									}
+								}
+							});
+							
+							return location;
 						} 
 						catch (DriverException e) {
 							Logger.logError("could not capture screen: " + e.getMessage());

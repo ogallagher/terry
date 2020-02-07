@@ -154,6 +154,7 @@ public class Scribe {
 		
 		String[] instructions = new String[] {
 				"eclipse is a label that says eclipse",
+				"show me where eclipse is",
 				"do overlay demo one",
 				"show state",
 				"move to eighty comma ninety",

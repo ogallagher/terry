@@ -67,6 +67,15 @@ public class Widget extends LanguageMapping implements Serializable {
 	private Point bounds;
 	private Appearance appearance;
 	
+	private Rectangle zone;
+	
+	public static final char STATE_IDLE = 0;
+	public static final char STATE_SEARCHING = 1;
+	public static final char STATE_FOUND = 2;
+	public static final char STATE_NOT_FOUND = 3;
+	
+	public CharProperty state;
+	
 	public static void init() throws WidgetException {
 		TextFinderThread.init();
 		Appearance.init();
@@ -80,10 +89,16 @@ public class Widget extends LanguageMapping implements Serializable {
 		label = null;
 		bounds = null;
 		appearance = null;
+		zone = null;
+		state = new CharProperty(STATE_IDLE);
 	}
 	
 	public String getName() {
 		return pattern.toString();
+	}
+	
+	public Rectangle getZone() {
+		return zone;
 	}
 	
 	/*
@@ -106,54 +121,65 @@ public class Widget extends LanguageMapping implements Serializable {
 		bounds = new Point(w,h);
 	}
 	
-	public Rectangle2D findInScreen(BufferedImage screen) throws WidgetException {
+	public void findInScreen(BufferedImage screen) throws WidgetException {
 		if (type == TYPE_LABEL || appearance == null) {
-			return findLabelInScreen(screen);
+			findLabelInScreen(screen);
 		}
 		else {
-			return findAppearanceInScreen(screen);
+			findAppearanceInScreen(screen);
 		}
 	}
 	
-	public Rectangle2D findAppearanceInScreen(BufferedImage screen) throws WidgetException {
+	public void findAppearanceInScreen(BufferedImage screen) throws WidgetException {
 		if (appearance != null) {
-			Rectangle2D bounds = null;
-			
-			return bounds;
+			Rectangle bounds = null;
 		}
 		else {
 			throw new WidgetException("widget " + id + " has no appearance and cannot be found");
 		}
 	}
 	
-	public Rectangle2D findLabelInScreen(BufferedImage screen) throws WidgetException {
-		if (label != null) {
-			Rectangle2D bounds = null;
-			
+	public void findLabelInScreen(BufferedImage screen) throws WidgetException {
+		if (label != null) {			
 			TextFinderThread textFinder = new TextFinderThread(screen,label);
+			
 			textFinder.state.addListener(new ChangeListener<Character>() {
 				public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 					switch (newValue.charValue()) {
 						case TextFinderThread.STATE_PARSING:
+							state.set(STATE_SEARCHING);
+							Logger.log("packing screen capture into api message");
 							break;
 							
 						case TextFinderThread.STATE_SEARCHING:
+							Logger.log("searching screen");
 							break;
 							
 						case TextFinderThread.STATE_FINDING:
+							Logger.log("analyzing text search results");
 							break;
 							
 						case TextFinderThread.STATE_DONE:
+							ArrayList<Rectangle> zones = textFinder.candidates;
+							Logger.log("finished text search; found " + zones.size() + " candidate zones");
+							
+							if (zones.size() != 0) {
+								zone = zones.get(0);
+								state.set(STATE_FOUND);
+							}
+							else {
+								zone = null;
+								state.set(STATE_NOT_FOUND);
+							}
 							break;
 							
 						case TextFinderThread.STATE_IDLE:
+							state.set(STATE_IDLE);
 							break;
 					}
 				}
 			});
-			textFinder.run();
-			
-			return bounds;
+			textFinder.run();			
 		}
 		else {
 			throw new WidgetException("widget " + id + " has no label and cannot be found");
