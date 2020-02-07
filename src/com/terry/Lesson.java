@@ -1,6 +1,10 @@
 package com.terry;
 
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class Lesson extends LanguageMapping implements Serializable {
@@ -24,16 +28,42 @@ public class Lesson extends LanguageMapping implements Serializable {
 	
 	public void learn(HashMap<String,Arg> allArgs) {
 		Logger.log("learning " + type + ": " + pattern);
-		definition.learn(allArgs);
+		
+		Arg[] args = new Arg[definition.argNames.length];
+		for (int i=0; i<args.length; i++) {
+			args[i] = allArgs.get(definition.argNames[i]);
+		}
+		definition.learn(args);
 	}
 	
-	private static abstract class Definition implements Serializable {
+	/*
+	 * type   id   pattern   lesson_type   definition
+	 */
+	private void writeObject(ObjectOutputStream stream) throws IOException {
+		System.out.println("serializing lesson " + id);
+		
+		stream.writeObject(super.toString());
+		stream.writeChar(type);
+		stream.writeObject(definition);
+	}
+	
+	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		fromString((String) stream.readObject());
+		type = stream.readChar();
+		definition = (Definition) stream.readObject();
+		
+		Logger.log("deserialized lesson " + id);
+	}
+	
+	public static abstract class Definition implements Serializable {
+		private static final long serialVersionUID = 129440776453380438L;
+		
 		private String[] argNames;
 		
 		public Definition(String[] args) {
 			argNames = args;
 		}
 		
-		public abstract void learn(HashMap<String,Arg> args);
+		public abstract void learn(Arg[] args);
 	}
 }

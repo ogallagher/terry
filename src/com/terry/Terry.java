@@ -33,6 +33,7 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
+import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import org.bytedeco.javacpp.Loader;
 import org.bytedeco.opencv.opencv_java;
 
 import com.terry.Driver.DriverException;
+import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 import com.terry.Widget.WidgetException;
@@ -155,6 +157,7 @@ public class Terry {
 		
 		if (LanguageMapping.empty()) {
 			createPrimitiveActions();
+			createLessons();
 			Logger.log(Memory.printDictionary());
 		}
 		
@@ -358,6 +361,86 @@ public class Terry {
 		
 		Memory.addMapping(captureScreen);
 		
+		//--- find widget location in screen ---//
+		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget");
+		
+		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", null, new String[] {"widget"}, new DriverExecution<Point2D>() {
+			public Point2D execute(Point2D stateOld, Arg[] args) {
+				//map args
+				String widgetName = null;
+				
+				for (Arg arg : args) {
+					if (arg != null && arg.name.equals("widget")) {
+						widgetName = (String) arg.value;
+					}
+				}
+				
+				//direct various modules
+				if (widgetName != null) {
+					//direct memory to find widget by name
+					ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(widgetName);
+					
+					Widget widget = null;
+					for (Memory.Lookup entry : entries) {
+						ArrayList<LanguageMapping> mappings = entry.mappings;
+						
+						for (LanguageMapping lm : mappings) {
+							if (lm.type == LanguageMapping.TYPE_WIDGET) {
+								widget = (Widget) lm; 
+								break;
+							}
+						}
+						
+						if (widget != null) {
+							break;
+						}
+					}
+					
+					if (widget != null) {
+						//direct driver to capture screen
+						Logger.log("preparing to locate widget " + widget.getName());
+						
+						BufferedImage screenshot;
+						try {
+							screenshot = Driver.captureScreen();
+							//direct widget to find itself
+							Rectangle2D zone = widget.findInScreen(screenshot);
+							
+							if (zone != null ) {
+								Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
+								
+								//direct prompter to highlight found widget
+								Prompter.clearOverlay();
+								Prompter.showOverlay();
+								Prompter.colorOverlay(null, Color.RED);
+								Prompter.drawOverlay(zone.getPathIterator(null), false, true);
+								
+								//update state
+								return new Point2D.Double(zone.getCenterX(), zone.getCenterY());
+							}
+							else {
+								Logger.log("widget not found");
+							}
+						} 
+						catch (DriverException e) {
+							Logger.logError("could not capture screen: " + e.getMessage());
+						} 
+						catch (WidgetException e) {
+							Logger.logError("widget search failed: " + e.getMessage());
+						}
+					}
+					else {
+						Logger.logError("could not search for unknown widget " + widgetName);
+					}
+					
+					return null;
+				}
+				else {
+					return null;
+				}
+			}
+		});
+		
 		//--- demos ---//
 		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");
 		
@@ -479,5 +562,47 @@ public class Terry {
 		overlayDemo1.addState(overlayDemoed);
 		
 		Memory.addMapping(overlayDemo1);
+	}
+	
+	public static void createLessons() {
+		Logger.log("creating lessons");
+		
+		//--- create widget with label ---//
+		Lesson newWidget = new Lesson("@$name is ?@ttype) |has,with,says,) @$label", Lesson.TYPE_WIDGET);
+		
+		Definition newwidget = new Definition(new String[] {"name","type","label"}) {
+			private static final long serialVersionUID = 7901389876329514500L;
+
+			public void learn(Arg[] args) {
+				String name = null;
+				char type = Widget.TYPE_BUTTON;
+				String label = null;
+				
+				//map args
+				for (Arg arg : args) {
+					if (arg != null) {
+						Logger.log("arg name is " + arg.name);
+						if (arg.name.equals("name")) {
+							name = (String) arg.value;
+						}
+						else if (arg.name.equals("type")) {
+							type = (char) arg.value;
+						}
+						else if (arg.name.equals("label")) {
+							label = (String) arg.value;
+						}
+					}
+				}
+				
+				//update memory
+				Widget widget = new Widget(name);
+				widget.setType(type);
+				widget.setLabel(label);
+				Memory.addMapping(widget);
+			}
+		};
+		newWidget.setDefinition(newwidget);
+		
+		Memory.addMapping(newWidget);
 	}
 }

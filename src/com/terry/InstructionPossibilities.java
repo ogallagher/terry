@@ -43,7 +43,7 @@ public class InstructionPossibilities {
 							Logger.log(entry.token + " is not a leader of " + lm.id);
 						}
 						else {
-							possibilities.add(new InstructionPossibility(lm, leader));
+							possibilities.add(new InstructionPossibility(lm, leader, token));
 						}
 					}					
 				}
@@ -116,10 +116,18 @@ public class InstructionPossibilities {
 		private ArrayList<InstructionPossibility> leaves;	//root has links to leaves
 		
 		//root constructor
-		public InstructionPossibility(LanguageMapping lm, PatternNode leader) {
+		public InstructionPossibility(LanguageMapping lm, PatternNode leader, String token) {
 			Logger.log("adding possibilities for " + lm);
 			node = leader;
-			arg = null;
+			
+			if (node.getType() == PatternNode.notarg) {
+				arg = null;
+			}
+			else {
+				arg = new Arg();
+				arg.name = leader.token;
+				arg.value = Arg.getArgValue(leader.getType(), token);
+			}
 			
 			mapping = lm;
 			leaves = new ArrayList<InstructionPossibility>();
@@ -260,41 +268,37 @@ public class InstructionPossibilities {
 		 * on the mapped lesson or action.
 		 */
 		public void compile() {
-			switch (mapping.getType()) {
-				case LanguageMapping.TYPE_ACTION:
-					HashMap<String,Arg> argMap = new HashMap<>();
-					
-					InstructionPossibility p = this;
+			char mappingType = mapping.getType();
+			
+			if (mappingType != LanguageMapping.TYPE_UNKNOWN) {
+				HashMap<String,Arg> argMap = new HashMap<>();
+				
+				InstructionPossibility p = this;
+				if (p.arg != null) {
+					argMap.put(p.arg.name, p.arg);
+				}
+				
+				while (!p.children.isEmpty()) {
+					p = p.children.get(0);
 					if (p.arg != null) {
 						argMap.put(p.arg.name, p.arg);
-						Logger.log(p.arg.name + " => " + ((Float)p.arg.value).toString());
 					}
-					
-					while (!p.children.isEmpty()) {
-						p = p.children.get(0);
-						if (p.arg != null) {
-							argMap.put(p.arg.name, p.arg);
-							Logger.log(p.arg.name + " = " + ((Float)p.arg.value).toString());
-						}
-					}
-					
+				}
+				
+				if (mappingType == LanguageMapping.TYPE_ACTION) {
 					try {
 						((Action) mapping).execute(argMap);
-					} 
+					}
 					catch (StateException e) {
 						Logger.logError(e.getMessage());
 					}
-					
-					break;
-					
-				case LanguageMapping.TYPE_LESSON:
-					Logger.log("lessons are not supported yet");
-					break;
-					
-				case LanguageMapping.TYPE_UNKNOWN:
-				default:
-					Logger.logError("unknown mapping type");
-					break;
+				}
+				else if (mappingType == LanguageMapping.TYPE_LESSON) {
+					((Lesson) mapping).learn(argMap);
+				}
+			}
+			else {
+				Logger.logError("unknown mapping type");
 			}
 		}
 	}

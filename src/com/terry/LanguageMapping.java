@@ -58,6 +58,10 @@ public class LanguageMapping {
 		return type;
 	}
 	
+	public int getId() {
+		return id;
+	}
+	
 	public PatternNode getLeader(String token) {
 		if (pattern.graph.token == null) {
 			return pattern.graph.getFollower(token);
@@ -97,7 +101,7 @@ public class LanguageMapping {
 	 * Valid expressions are inspired by BNF and regex, but these use prefix notation, like so:
 	 * apple ?banana |cinnamon,donut,[@$egg_@$muffin],)) *flapjack grape) hazelnut icecream
 	 */
-	private static class LanguagePattern {
+	public static class LanguagePattern {
 		private String expression;
 		private PatternNode graph;
 		
@@ -159,6 +163,7 @@ public class LanguageMapping {
 		public static final char colarg = 'c';		//color
 		public static final char spdarg = '>';		//speed
 		public static final char dirarg = '+';		//direction
+		public static final char wtparg = 't';		//widget type
 		
 		private static int DIAGRAM_DEPTH = 20;
 		

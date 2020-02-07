@@ -1,6 +1,5 @@
 package com.terry;
 
-import java.io.ByteArrayInputStream;
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import java.io.InvalidClassException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -30,8 +28,10 @@ public class Memory {
 	private static final String TRIV_FILE = "triv.txt";
 	private static final String DICT_FILE = "dict.txt";
 	private static final String ACTS_FILE = "acts.txt";
+	private static final String LESN_FILE = "lesn.txt";
+	private static final String WIGT_FILE = "wigt.txt";
 	
-	private static File memDir, actsFile, dictFile;
+	private static File memDir, actsFile, dictFile, lesnFile, wigtFile;
 	
 	private static ArrayList<String> trivials; //unimportant words commonly encountered that can be quickly ignored
 	private static HashMap<String,ArrayList<LanguageMapping>> dictionary; //token,references
@@ -127,9 +127,125 @@ public class Memory {
 			}
 		}
 		
-		//TODO lessons
+		//lessons
+		lesnFile = new File(memDir, LESN_FILE);
+		if (lesnFile.exists()) {
+			FileInputStream lessonStream;
+			try {
+				lessonStream = new FileInputStream(lesnFile);
+				
+				if (lessonStream.available() != 0) {
+					Logger.log("deserializing lessons");
+					ObjectInputStream deserializer = new ObjectInputStream(lessonStream);
+					
+					Lesson lesson;
+					int id;
+					try {
+						while (true) {
+							try {
+								lesson = (Lesson) deserializer.readObject();
+								
+								id = lesson.getId();
+								if (id > lastId) {
+									lastId = id;
+								}
+								
+								//add to mappings
+								mappings.put(id, lesson);
+							} 
+							catch (ClassNotFoundException | InvalidClassException e) {
+								e.printStackTrace();
+								
+								deserializer.close();
+								lessonStream.close();
+								
+								throw new MemoryException("failed to deserialize lesson");
+							}
+						}
+					}
+					catch (EOFException e) {
+						Logger.log("no more lessons found");
+					}
+				}
+				
+				lessonStream.close();
+			} 
+			catch (FileNotFoundException e) {
+				throw new MemoryException("lesson file not found at " + lesnFile.getAbsolutePath());
+			} 
+			catch (IOException e) {
+				throw new MemoryException("could not read from lesson file at " + lesnFile.getAbsolutePath());
+			}
+		}
+		else {
+			try {
+				lesnFile.createNewFile();
+				Logger.log("created blank lessons file");
+			}
+			catch (IOException e) {
+				throw new MemoryException("could not create blank lesson file at " + lesnFile.getAbsolutePath());
+			}
+		}
 		
-		//TODO widgets
+		//widgets
+		wigtFile = new File(memDir, WIGT_FILE);
+		if (wigtFile.exists()) {
+			FileInputStream widgetStream;
+			try {
+				widgetStream = new FileInputStream(wigtFile);
+				
+				if (widgetStream.available() != 0) {
+					Logger.log("deserializing widgets");
+					ObjectInputStream deserializer = new ObjectInputStream(widgetStream);
+					
+					Widget widget;
+					int id;
+					try {
+						while (true) {
+							try {
+								widget = (Widget) deserializer.readObject();
+								
+								id = widget.getId();
+								if (id > lastId) {
+									lastId = id;
+								}
+								
+								//add to mappings
+								mappings.put(id, widget);
+							} 
+							catch (ClassNotFoundException | InvalidClassException e) {
+								e.printStackTrace();
+								
+								deserializer.close();
+								widgetStream.close();
+								
+								throw new MemoryException("failed to deserialize widget");
+							}
+						}
+					}
+					catch (EOFException e) {
+						Logger.log("no more widgets found");
+					}
+				}
+				
+				widgetStream.close();
+			} 
+			catch (FileNotFoundException e) {
+				throw new MemoryException("widget file not found at " + wigtFile.getAbsolutePath());
+			} 
+			catch (IOException e) {
+				throw new MemoryException("could not read from widget file at " + wigtFile.getAbsolutePath());
+			}
+		}
+		else {
+			try {
+				wigtFile.createNewFile();
+				Logger.log("created blank widgets file");
+			}
+			catch (IOException e) {
+				throw new MemoryException("could not create blank widgets file at " + wigtFile.getAbsolutePath());
+			}
+		}
 		
 		LanguageMapping.init(lastId);
 		
@@ -319,13 +435,25 @@ public class Memory {
 		
 		//save mappings
 		try {
-			FileOutputStream mapsWriter = new FileOutputStream(actsFile);
-			ObjectOutputStream serializer = new ObjectOutputStream(mapsWriter);
+			FileOutputStream actsWriter = new FileOutputStream(actsFile);
+			ObjectOutputStream actsSerializer = new ObjectOutputStream(actsWriter);
+			FileOutputStream lesnWriter = new FileOutputStream(lesnFile);
+			ObjectOutputStream lesnSerializer = new ObjectOutputStream(lesnWriter);
+			FileOutputStream wigtWriter = new FileOutputStream(wigtFile);
+			ObjectOutputStream wigtSerializer = new ObjectOutputStream(wigtWriter);
 			
 			for (LanguageMapping mapping : mappings.values()) {
 				switch (mapping.getType()) {
 					case LanguageMapping.TYPE_ACTION:
-						serializer.writeObject(mapping);
+						actsSerializer.writeObject(mapping);
+						break;
+						
+					case LanguageMapping.TYPE_LESSON:
+						lesnSerializer.writeObject(mapping);
+						break;
+						
+					case LanguageMapping.TYPE_WIDGET:
+						wigtSerializer.writeObject(mapping);
 						break;
 						
 					default:
@@ -334,11 +462,17 @@ public class Memory {
 				}
 			}
 			
-			serializer.close();
-			mapsWriter.close();
+			actsSerializer.close();
+			actsWriter.close();
+			lesnSerializer.close();
+			lesnWriter.close();
+			wigtSerializer.close();
+			wigtWriter.close();
 		} 
 		catch (IOException | SecurityException e) {
 			actsFile.delete();
+			lesnFile.delete();
+			wigtFile.delete();
 			e.printStackTrace();
 			throw new MemoryException("failed to save mappings");
 		}

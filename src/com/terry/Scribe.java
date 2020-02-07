@@ -153,10 +153,12 @@ public class Scribe {
 		//gtranscriber.start();
 		
 		String[] instructions = new String[] {
+				"eclipse is a label that says eclipse",
 				"do overlay demo one",
 				"show state",
 				"move to eighty comma ninety",
-				"do driver demo one"};
+				"do driver demo one"
+				};
 		transcription = instructions[testing++];
 		if (testing > instructions.length) {
 			testing = 0;

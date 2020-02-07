@@ -53,19 +53,17 @@ public class Action extends LanguageMapping implements Serializable {
 			//prep args
 			argNames = state.getArgNames();
 			args = new Arg[argNames.length];
+			Arg arg;
 			
 			for (int a=0; a<args.length; a++) {
-				Logger.log("mapping arg " + argNames[a]);
-				args[a] = allArgs.get(argNames[a]);
+				arg = allArgs.get(argNames[a]);
+				Logger.log("mapping arg " + argNames[a] + " to " + arg);
+				args[a] = arg;
 			}
 			
 			//execute state transition
 			state.transition(args);
 		}
-	}
-	
-	public int getId() {
-		return id;
 	}
 	
 	/*

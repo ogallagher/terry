@@ -1,6 +1,8 @@
 package com.terry;
 
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.geom.Path2D;
 import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
@@ -8,6 +10,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
@@ -35,12 +39,15 @@ import com.google.api.gax.core.FixedCredentialsProvider;
 import com.google.auth.oauth2.ServiceAccountCredentials;
 import com.google.cloud.vision.v1.AnnotateImageRequest;
 import com.google.cloud.vision.v1.AnnotateImageResponse;
+import com.google.cloud.vision.v1.BoundingPoly;
 import com.google.cloud.vision.v1.EntityAnnotation;
 import com.google.cloud.vision.v1.Feature.Type;
 import com.google.cloud.vision.v1.Image;
 import com.google.cloud.vision.v1.ImageAnnotatorClient;
 import com.google.cloud.vision.v1.ImageAnnotatorSettings;
+import com.google.cloud.vision.v1.Vertex;
 import com.google.protobuf.ByteString;
+import com.terry.Lesson.Definition;
 
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -48,12 +55,12 @@ import javafx.beans.value.ObservableValue;
 public class Widget extends LanguageMapping implements Serializable {
 	private static final long serialVersionUID = 7635399172801274223L;
 	
-	private static final char TYPE_BUTTON = 'b';
-	private static final char TYPE_TEXTBOX = 't';
-	private static final char TYPE_LABEL = 'l';
-	private static final char TYPE_GRAPHIC = 'g';
-	private static final char TYPE_RADIO = 'r';
-	private static final char TYPE_CHECK = 'c';
+	public static final char TYPE_BUTTON = 'b';
+	public static final char TYPE_TEXTBOX = 't';
+	public static final char TYPE_LABEL = 'l';
+	public static final char TYPE_GRAPHIC = 'g';
+	public static final char TYPE_RADIO = 'r';
+	public static final char TYPE_CHECK = 'c';
 	
 	private char type;
 	private String label;
@@ -73,6 +80,10 @@ public class Widget extends LanguageMapping implements Serializable {
 		label = null;
 		bounds = null;
 		appearance = null;
+	}
+	
+	public String getName() {
+		return pattern.toString();
 	}
 	
 	/*
@@ -150,9 +161,59 @@ public class Widget extends LanguageMapping implements Serializable {
 	}
 	
 	/*
+	 * type   id   pattern   widget_type   label   bounds   appearance
+	 */
+	private void writeObject(ObjectOutputStream stream) throws IOException {
+		System.out.println("serializing widget " + id);
+		
+		stream.writeObject(super.toString());
+		stream.writeChar(type);
+		stream.writeObject(label);
+		
+		boolean nullBounds = (bounds == null);
+		stream.writeBoolean(nullBounds);
+		if (!nullBounds) {
+			stream.writeInt(bounds.x);
+			stream.writeInt(bounds.y);
+		}
+		
+		boolean nullAppearance = (appearance == null);
+		stream.writeBoolean(nullAppearance);
+		if (!nullBounds) {
+			stream.writeObject(appearance);
+		}
+	}
+	
+	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		fromString((String) stream.readObject());
+		type = stream.readChar();
+		label = (String) stream.readObject();
+		
+		boolean nullBounds = stream.readBoolean();
+		if (!nullBounds) {
+			bounds = new Point(stream.readInt(),stream.readInt());
+		}
+		else {
+			bounds = null;
+		}
+		
+		boolean nullAppearance = stream.readBoolean();
+		if (!nullAppearance) {
+			appearance = (Appearance) stream.readObject();
+		}
+		else {
+			appearance = null;
+		}
+		
+		Logger.log("deserialized widget " + id);
+	}
+	
+	/*
 	 * Appearance stores a collection of features (keypoint,descriptor pairs)
 	 */
-	private static class Appearance {
+	private static class Appearance implements Serializable {
+		private static final long serialVersionUID = -7252907290860821682L;
+		
 		private static Java2DFrameConverter toFrame; //BufferedImage to and from Frame 
 		private static OpenCVFrameConverter.ToOrgOpenCvCoreMat toMat; //Frame to and from Mat
 		
@@ -235,7 +296,9 @@ public class Widget extends LanguageMapping implements Serializable {
 		}
 	}
 	
-	private static class Feature {
+	private static class Feature implements Serializable {
+		private static final long serialVersionUID = 9106278574480066191L;
+		
 		private KeyPoint keypoint;
 		private double[] descriptor;
 		
@@ -254,7 +317,9 @@ public class Widget extends LanguageMapping implements Serializable {
 		}
 	}
 	
-	private static class TextFinderThread extends Thread {
+	private static class TextFinderThread extends Thread implements Serializable {
+		private static final long serialVersionUID = -7574636617579442887L;
+		
 		private static File visionDir;
 		private static final String VISION_PATH = Terry.RES_PATH + "vision/";
 		
@@ -273,6 +338,8 @@ public class Widget extends LanguageMapping implements Serializable {
 		public static final char STATE_FINDING = 3;
 		public static final char STATE_DONE = 4;
 		public CharProperty state;
+		
+		ArrayList<Rectangle> candidates;
 		
 		public static void init() throws WidgetException {
 			visionDir = new File(Terry.class.getResource(VISION_PATH).getPath());
@@ -298,6 +365,7 @@ public class Widget extends LanguageMapping implements Serializable {
 			this.image = image;
 			this.text = text;
 			state = new CharProperty(STATE_IDLE);
+			candidates = new ArrayList<>();
 		}
 		
 		public void run() {
@@ -330,7 +398,26 @@ public class Widget extends LanguageMapping implements Serializable {
 						
 						state.set(STATE_FINDING);
 						for (EntityAnnotation annotation : annotations) {
-							Logger.log("found text " + annotation.getDescription() + " at " + annotation.getBoundingPoly());
+							String text = annotation.getDescription();
+							BoundingPoly poly = annotation.getBoundingPoly();
+							Logger.log("found text " + text + " at " + poly);
+							
+							//compare to query label text
+							if (!text.equals("")) {
+								//convert to rectangle
+								List<Vertex> vertices = poly.getVerticesList();
+								Path2D.Double path = new Path2D.Double();
+								
+								Vertex vertex = vertices.get(0);
+								path.moveTo(vertex.getX(), vertex.getY());
+								for (int i=1; i<vertices.size(); i++) {
+									vertex = vertices.get(i);
+									path.lineTo(vertex.getX(), vertex.getY());
+								}
+								
+								//append to candidates
+								candidates.add(path.getBounds());
+							}
 						}
 						state.set(STATE_DONE);
 					}
@@ -346,7 +433,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		}
 	}
 	
-	public static class WidgetException extends Exception {
+	public static class WidgetException extends Exception implements Serializable {
 		private static final long serialVersionUID = -7383323102955403795L;
 		private String message;
 

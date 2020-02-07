@@ -43,7 +43,17 @@ public class Arg {
 	public static final String DIRARG_LEFT = "left";
 	public static ArrayList<String> dirargs;
 	
+	//number word arg values
 	public static ArrayList<String> numargs;
+	
+	//widget type arg values
+	public static final String WTPARG_BUTTON = "button";
+	public static final String WTPARG_LABEL = "label";
+	public static final String WTPARG_GRAPHIC = "graphic";
+	public static final String WTPARG_RADIO = "radio";
+	public static final String WTPARG_CHECKBOX = "checkbox";
+	public static final String WTPARG_TEXTBOX = "textbox";
+	public static ArrayList<String> wtpargs;
 	
 	public static void init() {
 		colargs = new ArrayList<>();
@@ -109,6 +119,19 @@ public class Arg {
 		numargs.add("hundred");
 		numargs.add("thousand");
 		numargs.add("million");
+		
+		wtpargs = new ArrayList<>();
+		wtpargs.add(WTPARG_BUTTON);
+		wtpargs.add(WTPARG_LABEL);
+		wtpargs.add(WTPARG_GRAPHIC);
+		wtpargs.add(WTPARG_RADIO);
+		wtpargs.add(WTPARG_CHECKBOX);
+		wtpargs.add(WTPARG_TEXTBOX);
+	}
+	
+	@Override
+	public String toString() {
+		return value.toString();
 	}
 	
 	public static Object getArgValue(char argType, String next) {
@@ -145,6 +168,13 @@ public class Arg {
 				
 			case PatternNode.strarg: //TODO handle multitoken strings
 				argValue = next;
+				break;
+				
+			case PatternNode.wtparg:
+				argValue = Arg.getWidgetType(next);
+				if (argValue == null) {
+					Logger.log("invalid widget type " + next);
+				}
 				break;
 				
 			case PatternNode.wigarg:
@@ -367,6 +397,30 @@ public class Arg {
 		}
 		else if (speed.equals(SPDARG_MEDIUM)) {
 			return SPDARG_MEDIUM;
+		}
+		else {
+			return null;
+		}
+	}
+	
+	public static Character getWidgetType(String type) {
+		if (type.equals(WTPARG_LABEL)) {
+			return Widget.TYPE_LABEL;
+		}
+		else if (type.equals(WTPARG_BUTTON)) {
+			return Widget.TYPE_BUTTON;
+		}
+		else if (type.equals(WTPARG_GRAPHIC)) {
+			return Widget.TYPE_GRAPHIC;
+		}
+		else if (type.equals(WTPARG_RADIO)) {
+			return Widget.TYPE_RADIO;
+		}
+		else if (type.equals(WTPARG_CHECKBOX)) {
+			return Widget.TYPE_CHECK;
+		}
+		else if (type.equals(WTPARG_TEXTBOX)) {
+			return Widget.TYPE_TEXTBOX;
 		}
 		else {
 			return null;
