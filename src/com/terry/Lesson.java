@@ -52,7 +52,7 @@ public class Lesson extends LanguageMapping implements Serializable {
 		type = stream.readChar();
 		definition = (Definition) stream.readObject();
 		
-		Logger.log("deserialized lesson " + id);
+		Logger.log("deserialized lesson " + id + ": " + pattern);
 	}
 	
 	public static abstract class Definition implements Serializable {

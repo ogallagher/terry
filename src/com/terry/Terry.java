@@ -23,6 +23,12 @@
  * 		- member label is the string contained within the widget's bounds
  * 		- member bounds is a rectangle to define the size and shape of the widget
  * 		- member appearance is a collection of features (keypoint-descriptor pairs) for visual identification
+ * 
+ * TODO:
+ * 	- test widget reference by name
+ * 	- test google text finder
+ * 	- enable multitoken strings
+ * 	- finish Widget.Appearance
  */
 
 package com.terry;
@@ -158,8 +164,8 @@ public class Terry {
 		if (LanguageMapping.empty()) {
 			createPrimitiveActions();
 			createLessons();
-			Logger.log(Memory.printDictionary());
 		}
+		Logger.log(Memory.printDictionary());
 		
 		prompter = new Prompter();
 		prompter.init(args);
@@ -364,93 +370,72 @@ public class Terry {
 		//--- find widget location in screen ---//
 		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget ?is)");
 		
-		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", null, new String[] {"widget"}, new DriverExecution<Point2D>() {
+		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new DriverExecution<Point2D>() {
 			public Point2D execute(Point2D stateOld, Arg[] args) {
 				//map args
-				String widgetName = null;
+				Widget widget = null;
 				
 				for (Arg arg : args) {
 					if (arg != null && arg.name.equals("widget")) {
-						widgetName = (String) arg.value;
+						widget = (Widget) arg.value;
 					}
 				}
 				
 				//direct various modules
-				if (widgetName != null) {
-					//direct memory to find widget by name
-					ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(widgetName);
+				if (widget != null) {										
+					//direct driver to capture screen
+					Logger.log("preparing to locate widget " + widget.getName());
 					
-					Widget widget = null;
-					for (Memory.Lookup entry : entries) {
-						ArrayList<LanguageMapping> mappings = entry.mappings;
+					BufferedImage screenshot;
+					try {
+						screenshot = Driver.captureScreen();
 						
-						for (LanguageMapping lm : mappings) {
-							if (lm.type == LanguageMapping.TYPE_WIDGET) {
-								widget = (Widget) lm; 
-								break;
-							}
-						}
+						final Widget finalWidget = widget;
+						//direct widget to find itself
+						finalWidget.findInScreen(screenshot);
 						
-						if (widget != null) {
-							break;
-						}
-					}
-					
-					if (widget != null) {
-						//direct driver to capture screen
-						Logger.log("preparing to locate widget " + widget.getName());
-						
-						BufferedImage screenshot;
-						try {
-							screenshot = Driver.captureScreen();
-							//direct widget to find itself
-							widget.findInScreen(screenshot);
-							
-							final Widget finalWidget = widget;
-							Point2D location = new Point2D.Double(-1,-1);
-							widget.state.addListener(new ChangeListener<Character>() {
-								public void changed(ObservableValue<? extends Character> observable, Character oldValue,
-										Character newValue) {
-									if (newValue == Widget.STATE_FOUND) {
-										Rectangle zone = finalWidget.getZone();
-										
-										Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
-										
-										//direct prompter to highlight found widget
-										Prompter.clearOverlay();
-										Prompter.showOverlay();
-										Prompter.colorOverlay(null, Color.RED);
-										Prompter.drawOverlay(zone.getPathIterator(null), false, true);
-										
-										//update state
-										location.setLocation(zone.getCenterX(), zone.getCenterY());
-									}
-									else if (newValue == Widget.STATE_NOT_FOUND) {
-										Logger.log("widget not found");
-									}
+						Point2D location = new Point2D.Double(-1,-1);
+						finalWidget.state.addListener(new ChangeListener<Character>() {
+							public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+								if (newValue == Widget.STATE_FOUND) {
+									Rectangle zone = finalWidget.getZone();
+									
+									Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
+									
+									//direct prompter to highlight found widget
+									Prompter.clearOverlay();
+									Prompter.showOverlay();
+									Prompter.colorOverlay(null, Color.RED);
+									Prompter.drawOverlay(zone.getPathIterator(null), false, true);
+									
+									//update state
+									location.setLocation(zone.getCenterX(), zone.getCenterY());
 								}
-							});
-							
-							return location;
-						} 
-						catch (DriverException e) {
-							Logger.logError("could not capture screen: " + e.getMessage());
-						} 
-						catch (WidgetException e) {
-							Logger.logError("widget search failed: " + e.getMessage());
-						}
+								else if (newValue == Widget.STATE_NOT_FOUND) {
+									Logger.log("widget not found");
+								}
+							}
+						});
+						
+						return location;
+					} 
+					catch (DriverException e) {
+						Logger.logError("could not capture screen: " + e.getMessage());
+					} 
+					catch (WidgetException e) {
+						Logger.logError("widget search failed: " + e.getMessage());
 					}
-					else {
-						Logger.logError("could not search for unknown widget " + widgetName);
-					}
-					
 					return null;
 				}
 				else {
+					Logger.logError("widget to find was not given");
 					return null;
 				}
 			}
 		});
+		locateWidget.addState(widgetlocation);
+		
+		Memory.addMapping(locateWidget);
 		
 		//--- demos ---//
 		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");
@@ -609,6 +594,7 @@ public class Terry {
 				Widget widget = new Widget(name);
 				widget.setType(type);
 				widget.setLabel(label);
+				
 				Memory.addMapping(widget);
 			}
 		};

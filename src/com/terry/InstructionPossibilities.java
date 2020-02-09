@@ -2,9 +2,6 @@ package com.terry;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map.Entry;
 import java.util.Scanner;
 
 import com.terry.LanguageMapping.PatternNode;
@@ -21,18 +18,10 @@ public class InstructionPossibilities {
 		if (possibilities == null) {
 			//first word, dictionary lookup
 			possibilities = new ArrayList<InstructionPossibility>();
-			ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token);
+			ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token, true, true);
 			
-			if (entries == null) { //no matching results; assume it's an argument
-				Logger.log(token + " not recognized; assumed arg");
-				
-				/*
-				for (LanguageMapping lm : Memory.getMappings()) {
-					PatternNode leader = lm.getLeader(null);
-					
-					
-				}
-				*/
+			if (entries == null) { //no matching results
+				Logger.logError("token " + token + " is not a leader token of any mapping");
 			}
 			else {
 				for (Memory.Lookup entry : entries) {
@@ -120,7 +109,7 @@ public class InstructionPossibilities {
 			Logger.log("adding possibilities for " + lm);
 			node = leader;
 			
-			if (node.getType() == PatternNode.notarg) {
+			if (node.getType() == Arg.notarg) {
 				arg = null;
 			}
 			else {
@@ -200,8 +189,6 @@ public class InstructionPossibilities {
 		/*
 		 * Return true if this possibility can still accept the next token.
 		 * Else, return false.
-		 * 
-		 * TODO handle edit distance in LanguageMapping.getFollowers()
 		 */
 		public boolean resolve(String next) {
 			Logger.log("resolving " + next);
@@ -218,7 +205,7 @@ public class InstructionPossibilities {
 				
 				//Logger.log("checking " + next + " vs " + leaf.node.token);
 				
-				if (argType == PatternNode.notarg) {
+				if (argType == Arg.notarg) {
 					//is keyword
 					int dist = Utilities.editDistance(leaf.node.token, next, leaf.node.token.length()*2/3);
 					
@@ -258,9 +245,11 @@ public class InstructionPossibilities {
 			return resolved;
 		}
 		
-		//the only possible version of this mapping has no more tokens expected
+		/*
+		 * One possible version of this mapping is a terminal node.
+		 */
 		public boolean complete() {
-			return leaves.isEmpty() || (leaves.size() == 1 && leaves.get(0).children.isEmpty());
+			return leaves.isEmpty() || node.isTerminal();
 		}
 		
 		/*

@@ -1,7 +1,6 @@
 package com.terry;
 
 import java.awt.Dimension;
-import java.awt.MouseInfo;
 import java.awt.geom.PathIterator;
 import java.util.Optional;
 
@@ -17,10 +16,8 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.collections.ObservableListBase;
 import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -29,21 +26,17 @@ import javafx.scene.control.Alert.AlertType;
 import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
-import javafx.scene.control.MultipleSelectionModel;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.input.MouseEvent;
-import javafx.scene.layout.Background;
-import javafx.scene.layout.BackgroundFill;
 import javafx.scene.layout.BorderPane;
-import javafx.scene.layout.GridPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
-import javafx.stage.WindowEvent;
 import javafx.util.Callback;
 
+@SuppressWarnings("restriction")
 public class Prompter extends Application {
 	@SuppressWarnings("unused")
 	private static JFXPanel dummyPanel = new JFXPanel();	//This prevents "Java Toolkit Not Initialized Error". 
@@ -85,7 +78,6 @@ public class Prompter extends Application {
 		launch(args);
 	}
 	
-	@SuppressWarnings("restriction")
 	@Override
 	public void start(Stage primaryStage) throws Exception {
 		//launch intercom window

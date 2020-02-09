@@ -231,7 +231,7 @@ public class Widget extends LanguageMapping implements Serializable {
 			appearance = null;
 		}
 		
-		Logger.log("deserialized widget " + id);
+		Logger.log("deserialized widget " + id + ": " + pattern);
 	}
 	
 	/*

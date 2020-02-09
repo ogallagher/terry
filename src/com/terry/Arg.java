@@ -3,11 +3,21 @@ package com.terry;
 import java.awt.Color;
 import java.util.ArrayList;
 
-import com.terry.LanguageMapping.PatternNode;
+import com.terry.Memory.Lookup;
 
 public class Arg {
 	public String name;
 	public Object value = null;
+	
+	public static final char notarg = '0';		//not arg
+	public static final char strarg = '$';		//string
+	public static final char numarg = '#';		//number
+	public static final char wigarg = 'w';		//widget
+	public static final char colarg = 'c';		//color
+	public static final char spdarg = '>';		//speed
+	public static final char dirarg = '+';		//direction
+	public static final char wtparg = 't';		//widget type
+	public static final char[] argtypes = new char[] {strarg,numarg,wigarg,colarg,spdarg,dirarg,wtparg};
 	
 	//color arg values
 	public static final String COLARG_RED = "red";
@@ -138,47 +148,50 @@ public class Arg {
 		Object argValue = null;
 		
 		switch (argType) {
-			case PatternNode.colarg:
+			case colarg:
 				argValue = Arg.getColor(next);
-				if (argValue == null) {
-					Logger.log("invalid color " + next);
+				if (argValue != null) {
+					Logger.log("valid color " + next);
 				}
 				break;
 				
-			case PatternNode.dirarg:
+			case dirarg:
 				argValue = Arg.getDirection(next);
-				if (argValue == null) {
-					Logger.log("invalid direction " + next);
+				if (argValue != null) {
+					Logger.log("valid direction " + next);
 				}
 				break;
 				
-			case PatternNode.numarg: //TODO handle multitoken numbers
+			case numarg: //TODO handle multitoken numbers
 				argValue = Arg.getNumeric(next);
-				if (argValue == null) {
-					Logger.log("invalid number " + next);
+				if (argValue != null) {
+					Logger.log("valid number " + next);
 				}
 				break;
 				
-			case PatternNode.spdarg:
+			case spdarg:
 				argValue = Arg.getSpeed(next);
-				if (argValue == null) {
-					Logger.log("invalid speed " + next);
+				if (argValue != null) {
+					Logger.log("valid speed " + next);
 				}
 				break;
 				
-			case PatternNode.strarg: //TODO handle multitoken strings
+			case strarg: //TODO handle multitoken strings
 				argValue = next;
 				break;
 				
-			case PatternNode.wtparg:
+			case wtparg:
 				argValue = Arg.getWidgetType(next);
 				if (argValue == null) {
-					Logger.log("invalid widget type " + next);
+					Logger.log("valid widget type " + next);
 				}
 				break;
 				
-			case PatternNode.wigarg:
-				Logger.log("widgets not supported yet");
+			case wigarg:
+				argValue = Arg.getWidget(next);
+				if (argValue != null) {
+					Logger.log("found known widget " + next);
+				}
 				break;
 				
 			default:
@@ -401,6 +414,29 @@ public class Arg {
 		else {
 			return null;
 		}
+	}
+	
+	public static Widget getWidget(String name) {
+		ArrayList<Lookup> entries = Memory.dictionaryLookup(name, false, false);
+		
+		if (entries == null) {
+			return null;
+		}
+		else {
+			for (Lookup entry : entries) {
+				for (LanguageMapping lm : entry.mappings) {
+					try {
+						Widget widget = (Widget) lm;
+						return widget;
+					}
+					catch (ClassCastException e) {
+						//not widget, fail quietly
+					}
+				}
+			}
+		}
+		
+		return null;
 	}
 	
 	public static Character getWidgetType(String type) {

@@ -63,19 +63,26 @@ public class LanguageMapping {
 	}
 	
 	public PatternNode getLeader(String token) {
-		if (pattern.graph.token == null) {
+		if (pattern.graph.token == null) { //move inward
 			return pattern.graph.getFollower(token);
 		}
-		else {
+		else if (pattern.graph.token.equals(token) || pattern.graph.type != Arg.notarg) {
+			//keyword match, or argument match (argtype check already done in Memory.dictionaryLookup()
 			return pattern.graph;
+		}
+		else { //no match
+			return null;
 		}
 	}
 	
-	//get all keywords that appear in the pattern, to be added to the dictionary
-	public LinkedList<String> getTokens() {
-		LinkedList<String> tokens = new LinkedList<String>();
-		pattern.getTokens(tokens, pattern.graph);
-		return tokens;
+	/*
+	 * Get all tokens that can begin the pattern, to be added to
+	 * the dictionary. Argument tokens are abbreviated to @+argtype (ex: @$, @#) 
+	 */
+	public LinkedList<String> getLeaders() {
+		LinkedList<String> leaders = new LinkedList<String>();
+		pattern.getLeaders(leaders, pattern.graph);
+		return leaders;
 	}
 	
 	public String patternDiagram() {
@@ -117,26 +124,24 @@ public class LanguageMapping {
 			return graph.diagram("");
 		}
 		
-		public void getTokens(LinkedList<String> tokens, PatternNode node) {
-			String token;
-			boolean go = true;
+		public void getLeaders(LinkedList<String> leaders, PatternNode node) {
+			String token = node.token;
 			
-			if (node.type == PatternNode.notarg) {
-				token = node.token;
-				
-				if (token != null) {
-					if (tokens.contains(token)) {
-						go = false;
-					}
-					else {
-						tokens.add(token);
-					}
+			if (token == null) { //skip null node, get children
+				for (PatternNode follower : node.followers) {
+					getLeaders(leaders,follower);
 				}
 			}
-			
-			if (go) {
-				for (PatternNode follower : node.followers) {
-					getTokens(tokens, follower);
+			else if (node.type == Arg.notarg) { //add keyword leader
+				if (!leaders.contains(token)) {
+					leaders.add(token);
+				}
+			}
+			else { //add argument leader
+				String arg = "@" + node.type;
+				
+				if (!leaders.contains(arg)) {
+					leaders.add(arg);
 				}
 			}
 		}
@@ -155,22 +160,15 @@ public class LanguageMapping {
 		public LinkedList<PatternNode> followers;
 		private char type;
 		
-		//arg types denoted with suffixes
-		public static final char notarg = '0';		//not arg
-		public static final char strarg = '$';		//string
-		public static final char numarg = '#';		//number
-		public static final char wigarg = 'w';		//widget
-		public static final char colarg = 'c';		//color
-		public static final char spdarg = '>';		//speed
-		public static final char dirarg = '+';		//direction
-		public static final char wtparg = 't';		//widget type
+		private boolean terminal;	//allowed to have no followers
 		
 		private static int DIAGRAM_DEPTH = 20;
 		
 		private PatternNode() {
 			token = null;
 			followers = new LinkedList<PatternNode>();
-			type = notarg;
+			type = Arg.notarg;
+			terminal = false;
 		}
 		
 		private void setToken(String tok) {
@@ -182,7 +180,7 @@ public class LanguageMapping {
 				token = null;
 			}
 			else { //is keyword
-				type = notarg;
+				type = Arg.notarg;
 				token = tok;
 			}					
 		}
@@ -191,8 +189,23 @@ public class LanguageMapping {
 			return type;
 		}
 		
+		public boolean isTerminal() {
+			if (terminal || followers.isEmpty()) {
+				return true;
+			}
+			else {
+				for (PatternNode follower : followers) {
+					if (follower.token == null && follower.isTerminal()) {
+						return true;
+					}
+				}
+				
+				return false;
+			}
+		}
+		
 		/*
-		 * Returns possible follower nodes. Skips nulls!
+		 * Returns possible follower nodes. Skips nulls.
 		 */
 		public LinkedList<PatternNode> getFollowers() {
 			LinkedList<PatternNode> nodes = new LinkedList<PatternNode>();
@@ -211,14 +224,11 @@ public class LanguageMapping {
 		
 		public PatternNode getFollower(String token) {
 			for (PatternNode node : followers) {
-				if (node.token == null) {
+				if (node.token == null) { //move along
 					PatternNode follower = node.getFollower(token);
-					
-					if (follower != null) {
-						return follower;
-					}
+					return follower;
 				}
-				else if (node.token.equals(token)) {
+				else if (node.token.equals(token) || node.type != Arg.notarg) { //keyword match, arg match
 					return node;
 				}
 			}
@@ -402,6 +412,7 @@ public class LanguageMapping {
 			//end of expr
 			node.setToken(String.copyValueOf(expr,a,n-a));
 			node.followers.clear();
+			node.terminal = true;
 			
 			//remove single-parent nulls
 			Iterator<PatternNode> walker = nully.iterator();
@@ -445,7 +456,7 @@ public class LanguageMapping {
 		
 		public String diagram(String indent) {
 			String tok = token;
-			if (type != notarg) {
+			if (type != Arg.notarg) {
 				tok = "<" + tok + ">";
 			}
 			String diagram = indent + tok;

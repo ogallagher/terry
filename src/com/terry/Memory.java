@@ -300,17 +300,17 @@ public class Memory {
 	
 	/*
 	 * Return either the entry for the exact token-key match, the entries with the lowest edit distance,
-	 * or null if no match is found.
+	 * or null if no match is found. For handling args, also check against each argtype and include those
+	 * entries' mappings also.
 	 */
-	public static ArrayList<Lookup> dictionaryLookup(String token) {
+	public static ArrayList<Lookup> dictionaryLookup(String token, boolean fuzzyMatch, boolean argMatch) {
 		ArrayList<Lookup> mappings = new ArrayList<Lookup>();
-		Lookup exact = new Lookup(token, dictionary.get(token));
 		
-		//score keys if not found
-		if (exact.mappings == null) {
+		//check fuzzy match with keywords
+		if (fuzzyMatch) {
 			Set<String> keys = dictionary.keySet();
 			
-			int best = token.length()*2/3; //edit dist (insert,delete,replace) must be less than token.length()/2
+			int best = token.length()*2/3; //edit dist (insert,delete,replace) must be less than token.length()*2/3
 			LinkedList<String> matches = new LinkedList<String>();
 			
 			//check edit distance
@@ -332,50 +332,116 @@ public class Memory {
 			if (matches.isEmpty()) {
 				//no results found
 				Logger.log(token + " not in dictionary");
+			}
+			else {
+				//return closest matches	
+				int m = 0;
+				Lookup l;
+				for (String match : matches) {
+					l = new Lookup(match,dictionary.get(match));
+					mappings.add(l);
+					m += l.mappings.size();
+				}
+				
+				Logger.log(token + " returned " +  m + " possible matches");
+				
+			}
+		}
+		//check exact match with keywords
+		else {
+			Lookup exact = new Lookup(token, dictionary.get(token));
+			
+			if (exact.mappings == null) {
+				//no exact matches
+				Logger.log(token + " not in dictionary");
 				return null;
 			}
 			else {
-				//return closest matches				
-				for (String match : matches) {
-					Logger.log(token + " returned possible match " + match);
-					mappings.add(new Lookup(match,dictionary.get(match)));
-				}
-				
-				return mappings;
+				Logger.log(token + " returned " + exact.mappings.size() + " exact matches");
+				mappings.add(exact);
 			}
 		}
-		else {
-			Logger.log(token + " returned " + exact.mappings.size() + " exact matches: ");
-			for (LanguageMapping lm : exact.mappings) {
-				Logger.log("\t" + lm.id);
+		
+		//check value with argtypes
+		if (argMatch) {
+			Object value = null;
+			for (char argtype : Arg.argtypes) {
+				value = Arg.getArgValue(argtype, token);
+				
+				if (value != null) {
+					Lookup argLookup = new Lookup(token, dictionary.get("@" + argtype));
+					
+					if (argLookup.mappings == null) {
+						//no mappings begin with this argtype
+						Logger.log("arg type " + argtype + " not in dictionary");
+					}
+					else {
+						Logger.log(token + " returned " + argLookup.mappings.size() + " argument matches");
+						mappings.add(argLookup);
+					}
+				}
 			}
-			
-			mappings.add(exact);
+		}
+		
+		if (mappings.isEmpty()) {
+			return null;
+		}
+		else {
 			return mappings;
 		}
 	}
 	
+	/*
+	 * Search all mappings for another with the same language pattern.
+	 */
+	public static LanguageMapping patternLookup(String pattern) {
+		LanguageMapping mapping = null;
+		
+		for (LanguageMapping checked : mappings.values()) {
+			if (checked.pattern.toString().equals(pattern)) {
+				mapping = checked;
+				return mapping;
+			}
+		}
+		
+		return null;
+	}
+	
 	public static void addMapping(LanguageMapping mapping) {
-		//update mappings
-		mappings.put(mapping.id, mapping);
+		LanguageMapping existing = patternLookup(mapping.pattern.toString());
 		
-		//update dictionary
-		LinkedList<String> tokens = mapping.getTokens();
-		ArrayList<LanguageMapping> entry = null;
-		
-		for (String token : tokens) {
-			entry = dictionary.get(token);
+		if (existing == null) {
+			//add new mapping
+			Logger.log("adding mapping " + mapping.id);
+			mappings.put(mapping.id, mapping);
 			
-			if (entry == null) {
-				//add new word to dictionary
-				entry = new ArrayList<LanguageMapping>();
-				entry.add(mapping);
-				dictionary.put(token, entry);
+			//update dictionary
+			LinkedList<String> tokens = mapping.getLeaders();
+			ArrayList<LanguageMapping> entry = null;
+			
+			for (String token : tokens) {
+				entry = dictionary.get(token);
+				
+				if (entry == null) {
+					//add new word to dictionary
+					entry = new ArrayList<LanguageMapping>();
+					entry.add(mapping);
+					dictionary.put(token, entry);
+				}
+				else {
+					//add mapping to existing word's dictionary entry
+					entry.add(mapping);
+				}
 			}
-			else {
-				//add mapping to existing word's dictionary entry
-				entry.add(mapping);
+		}
+		else {
+			//replace existing mapping
+			Logger.log("updating mapping " + existing.id);
+			if (LanguageMapping.count == mapping.id+1) { //decrement id generator
+				LanguageMapping.count--;
 			}
+			mapping.id = existing.id;
+			mappings.put(mapping.id, mapping);
 		}
 		
 		saved = false;

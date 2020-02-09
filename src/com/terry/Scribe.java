@@ -160,10 +160,12 @@ public class Scribe {
 				"move to eighty comma ninety",
 				"do driver demo one"
 				};
-		transcription = instructions[testing++];
+		
+		testing++;
 		if (testing > instructions.length) {
 			testing = 0;
 		}
+		transcription = instructions[testing];
 		
 		Logger.log(transcription);
 		

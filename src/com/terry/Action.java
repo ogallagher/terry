@@ -91,6 +91,6 @@ public class Action extends LanguageMapping implements Serializable {
 			states.add((State<?>) stream.readObject());
 		}
 		
-		Logger.log("deserialized action " + id);
+		Logger.log("deserialized action " + id + ": " + pattern);
 	}
 }
