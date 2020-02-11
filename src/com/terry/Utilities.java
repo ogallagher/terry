@@ -86,7 +86,12 @@ public class Utilities {
 			keys.add(KeyEvent.VK_CAPS_LOCK);
 		}
 		else if (alias.equals(Terry.KEY_CMD)) {
-			keys.add(KeyEvent.VK_META);
+			if (Terry.os == Terry.OS_MAC) {
+				keys.add(KeyEvent.VK_META);
+			}
+			else {
+				keys.add(KeyEvent.VK_CONTROL);
+			}
 		}
 		else if (alias.equals(Terry.KEY_CONTROL)) {
 			keys.add(KeyEvent.VK_CONTROL);

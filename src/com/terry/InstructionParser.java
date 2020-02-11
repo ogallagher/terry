@@ -116,11 +116,11 @@ public class InstructionParser {
 					out += " colon";
 					break;
 					
-				case '‚Äú':
+				case 'ì':
 					out += "begin quote ";
 					break;
 					
-				case '‚Äù':
+				case 'î':
 					out += " end quote";
 					break;
 					
@@ -136,7 +136,7 @@ public class InstructionParser {
 					}
 					
 				case '\'': //single quote
-				case '‚Äô': //apostrophe
+				case 'í': //apostrophe
 					if (b == ' ') { //previous is space; start string
 						out += "begin quote ";
 					}

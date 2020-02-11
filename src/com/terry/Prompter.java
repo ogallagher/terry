@@ -1,12 +1,16 @@
 package com.terry;
 
+import java.awt.desktop.*;
+import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.geom.PathIterator;
 import java.util.Optional;
 
+/* see https://docs.oracle.com/javase/9/migrate/toc.htm#JSMIG-GUID-59701F80-5BB1-416D-835D-C39A9112FC1E
 import com.apple.eawt.AppEvent.QuitEvent;
 import com.apple.eawt.QuitHandler;
 import com.apple.eawt.QuitResponse;
+*/
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
@@ -255,8 +259,23 @@ public class Prompter extends Application {
 		//tell logger that prompter is ready for logs
 		Logger.emptyBacklog();
 		
-		//handle mac quit (otherwise, Prompter.stop() is never called)		
+		//handle mac quit (otherwise, Prompter.stop() is never called)	
 		if (Terry.os == Terry.OS_MAC) {
+			Desktop.getDesktop().setQuitHandler(new QuitHandler() {
+				public void handleQuitRequestWith(QuitEvent qe, QuitResponse qr) {
+					try {
+						qr.cancelQuit();
+						stop();
+					}
+					catch (Exception e) {}
+				}
+			});
+			
+			/*
+			 * The java.awt.Desktop class replaces com.apple.eawt and com.apple.eio packages.
+			 * 
+			 * https://docs.oracle.com/javase/9/migrate/toc.htm#JSMIG-GUID-59701F80-5BB1-416D-835D-C39A9112FC1E
+			 * 
 			com.apple.eawt.Application.getApplication().setQuitHandler(new QuitHandler() {
 				public void handleQuitRequestWith(QuitEvent qe, QuitResponse qr) {
 					try {
@@ -266,6 +285,7 @@ public class Prompter extends Application {
 					catch (Exception e) {}
 				}
 			});
+			*/
 		}
 	}
 	

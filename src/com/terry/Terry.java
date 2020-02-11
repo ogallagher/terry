@@ -191,8 +191,8 @@ public class Terry {
 			private static final long serialVersionUID = -5509580894164954809L;
 			
 			public Point2D execute(Point2D stateOld, Arg[] args) {
-				Float x = new Float(0);
-				Float y = new Float(0);
+				Float x = Float.valueOf(0);
+				Float y = Float.valueOf(0);
 				
 				//map args
 				for (Arg arg : args) {
@@ -371,6 +371,8 @@ public class Terry {
 		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget ?is)");
 		
 		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new DriverExecution<Point2D>() {
+			private static final long serialVersionUID = 3281519688836173335L;
+
 			public Point2D execute(Point2D stateOld, Arg[] args) {
 				//map args
 				Widget widget = null;
