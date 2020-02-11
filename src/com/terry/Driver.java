@@ -193,11 +193,8 @@ public class Driver {
 	
 	public static BufferedImage captureScreen() throws DriverException {
 		try {
-			//BufferedImage capture = robot.createScreenCapture(new Rectangle(screen.width,screen.height));
-			BufferedImage capture = robot.createScreenCapture(new Rectangle(0,0,500,60)); //apple icon
-			
-			Widget testWidget = new Widget("test widget");
-			testWidget.setAppearance(capture);
+			BufferedImage capture = robot.createScreenCapture(new Rectangle(screen.width,screen.height));
+			//BufferedImage capture = robot.createScreenCapture(new Rectangle(0,0,500,60)); //apple icon
 			
 			return capture;
 		}

@@ -116,11 +116,11 @@ public class InstructionParser {
 					out += " colon";
 					break;
 					
-				case '“':
+				case '\u201c':
 					out += "begin quote ";
 					break;
 					
-				case '”':
+				case '\u201d':
 					out += " end quote";
 					break;
 					
@@ -136,7 +136,7 @@ public class InstructionParser {
 					}
 					
 				case '\'': //single quote
-				case '’': //apostrophe
+				case '\u2019': //apostrophe
 					if (b == ' ') { //previous is space; start string
 						out += "begin quote ";
 					}

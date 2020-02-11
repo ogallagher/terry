@@ -25,7 +25,6 @@
  * 		- member appearance is a collection of features (keypoint-descriptor pairs) for visual identification
  * 
  * TODO:
- * 	- test widget reference by name
  * 	- test google text finder
  * 	- enable multitoken strings
  * 	- finish Widget.Appearance
@@ -39,7 +38,6 @@ import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
-import java.awt.geom.Rectangle2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -54,6 +52,7 @@ import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 import com.terry.Widget.WidgetException;
 
+import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
@@ -334,6 +333,16 @@ public class Terry {
 		//--- capture screen/take screenshot ---//
 		Action captureScreen = new Action("?create) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
 		
+		//set captureupdated to false, which statecaptured will then set to true when the screen capture is obtained
+		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
+
+			@Override
+			public Boolean execute(Boolean stateOld, Arg[] args) {
+				return false;
+			}
+		});
+		captureScreen.addState(statecaptureupdated);
+		
 		State<BufferedImage> statecaptured = new State<BufferedImage>("statecaptured", new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), new String[] {}, new DriverExecution<BufferedImage>() {
 			private static final long serialVersionUID = 4607129019674379163L;
 
@@ -342,11 +351,14 @@ public class Terry {
 				//direct driver and prompter
 				Prompter.hide();
 				
+				Dimension screen = Driver.getScreen();
+				BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
+						
 				//make sure hide happens first
 				Platform.runLater(new Runnable() {
 					public void run() {
 						try {
-							BufferedImage capture = Driver.captureScreen();
+							capture.setData(Driver.captureScreen().getRaster());
 							
 							if (capture != null) {
 								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
@@ -360,7 +372,7 @@ public class Terry {
 					}
 				});
 				
-				return null;
+				return capture;
 			}
 		});
 		captureScreen.addState(statecaptured);

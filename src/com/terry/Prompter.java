@@ -6,11 +6,6 @@ import java.awt.Dimension;
 import java.awt.geom.PathIterator;
 import java.util.Optional;
 
-/* see https://docs.oracle.com/javase/9/migrate/toc.htm#JSMIG-GUID-59701F80-5BB1-416D-835D-C39A9112FC1E
-import com.apple.eawt.AppEvent.QuitEvent;
-import com.apple.eawt.QuitHandler;
-import com.apple.eawt.QuitResponse;
-*/
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
@@ -20,7 +15,6 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.embed.swing.JFXPanel;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -40,12 +34,7 @@ import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
 
-@SuppressWarnings("restriction")
 public class Prompter extends Application {
-	@SuppressWarnings("unused")
-	private static JFXPanel dummyPanel = new JFXPanel();	//This prevents "Java Toolkit Not Initialized Error". 
-															//I don't really get it, but an extra line doesn't do much harm anyway.
-	
 	private static Stage intercom; //main window for recording instructions
 	private static final int INTERCOM_WIDTH = 200;
 	private static final int GLASSES_WIDTH = 150;
@@ -270,22 +259,6 @@ public class Prompter extends Application {
 					catch (Exception e) {}
 				}
 			});
-			
-			/*
-			 * The java.awt.Desktop class replaces com.apple.eawt and com.apple.eio packages.
-			 * 
-			 * https://docs.oracle.com/javase/9/migrate/toc.htm#JSMIG-GUID-59701F80-5BB1-416D-835D-C39A9112FC1E
-			 * 
-			com.apple.eawt.Application.getApplication().setQuitHandler(new QuitHandler() {
-				public void handleQuitRequestWith(QuitEvent qe, QuitResponse qr) {
-					try {
-						qr.cancelQuit();
-						stop();
-					} 
-					catch (Exception e) {}
-				}
-			});
-			*/
 		}
 	}
 	
