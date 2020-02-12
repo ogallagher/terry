@@ -50,9 +50,9 @@ import com.terry.Driver.DriverException;
 import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
+import com.terry.State.StateException;
 import com.terry.Widget.WidgetException;
 
-import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
@@ -335,6 +335,7 @@ public class Terry {
 		
 		//set captureupdated to false, which statecaptured will then set to true when the screen capture is obtained
 		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
+			private static final long serialVersionUID = -5850373248159506280L;
 
 			@Override
 			public Boolean execute(Boolean stateOld, Arg[] args) {
@@ -353,12 +354,17 @@ public class Terry {
 				
 				Dimension screen = Driver.getScreen();
 				BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
-						
+				
 				//make sure hide happens first
 				Platform.runLater(new Runnable() {
+					@SuppressWarnings("unchecked")
 					public void run() {
 						try {
 							capture.setData(Driver.captureScreen().getRaster());
+							
+							//update statecaptureupdated when the capture object contains the data
+							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+							captureUpdated.set(true);
 							
 							if (capture != null) {
 								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
@@ -382,6 +388,16 @@ public class Terry {
 		//--- find widget location in screen ---//
 		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget ?is)");
 		
+		State<Boolean> widgetlocationupdated = new State<Boolean>("widgetlocationupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
+			private static final long serialVersionUID = 1721914958113344877L;
+			
+			public Boolean execute(Boolean stateOld, Arg[] args) {
+				return false;
+			}
+			
+		});
+		locateWidget.addState(widgetlocationupdated);
+		
 		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new DriverExecution<Point2D>() {
 			private static final long serialVersionUID = 3281519688836173335L;
 
@@ -395,56 +411,71 @@ public class Terry {
 					}
 				}
 				
+				Point2D location = new Point2D.Double(-1,-1);
+				
 				//direct various modules
 				if (widget != null) {										
 					//direct driver to capture screen
 					Logger.log("preparing to locate widget " + widget.getName());
+					final Widget finalWidget = widget;
 					
-					BufferedImage screenshot;
+					HashMap<String,Arg> captureScreenArgs = new HashMap<>();
 					try {
-						screenshot = Driver.captureScreen();
+						//execute screen capture action
+						captureScreen.execute(captureScreenArgs);
 						
-						final Widget finalWidget = widget;
-						//direct widget to find itself
-						finalWidget.findInScreen(screenshot);
-						
-						Point2D location = new Point2D.Double(-1,-1);
-						finalWidget.state.addListener(new ChangeListener<Character>() {
-							public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
-								if (newValue == Widget.STATE_FOUND) {
-									Rectangle zone = finalWidget.getZone();
-									
-									Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
-									
-									//direct prompter to highlight found widget
-									Prompter.clearOverlay();
-									Prompter.showOverlay();
-									Prompter.colorOverlay(null, Color.RED);
-									Prompter.drawOverlay(zone.getPathIterator(null), false, true);
-									
-									//update state
-									location.setLocation(zone.getCenterX(), zone.getCenterY());
-								}
-								else if (newValue == Widget.STATE_NOT_FOUND) {
-									Logger.log("widget not found");
+						//listen for when screen capture is complete
+						SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+						captureUpdated.addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+								if (newValue.booleanValue()) {
+									//get capture and search
+									BufferedImage screenshot;
+									try {
+										screenshot = statecaptured.getValue();
+										
+										//direct widget to find itself
+										finalWidget.findInScreen(screenshot);
+										
+										finalWidget.state.addListener(new ChangeListener<Character>() {
+											public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+												if (newValue == Widget.STATE_FOUND) {
+													Rectangle zone = finalWidget.getZone();
+													
+													Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
+													
+													//direct prompter to highlight found widget
+													Prompter.clearOverlay();
+													Prompter.showOverlay();
+													Prompter.colorOverlay(null, Color.RED);
+													Prompter.drawOverlay(zone.getPathIterator(null), false, true);
+													
+													//update state(s)
+													location.setLocation(zone.getCenterX(), zone.getCenterY());
+													widgetlocationupdated.getProperty().set(true);
+												}
+												else if (newValue == Widget.STATE_NOT_FOUND) {
+													Logger.log("widget not found");
+												}
+											}
+										});
+									}
+									catch (WidgetException e) {
+										Logger.logError("widget search failed: " + e.getMessage());
+									}
 								}
 							}
 						});
-						
-						return location;
 					} 
-					catch (DriverException e) {
-						Logger.logError("could not capture screen: " + e.getMessage());
-					} 
-					catch (WidgetException e) {
-						Logger.logError("widget search failed: " + e.getMessage());
+					catch (StateException e) {
+						Logger.logError(e.getMessage());
 					}
-					return null;
 				}
 				else {
 					Logger.logError("widget to find was not given");
-					return null;
 				}
+				
+				return location;
 			}
 		});
 		locateWidget.addState(widgetlocation);

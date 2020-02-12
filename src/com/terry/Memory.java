@@ -565,7 +565,6 @@ public class Memory {
 		
 		public MemoryException(String message) {
 			this.message = message;
-			this.vital = vital;
 		}
 		
 		public MemoryException() {
