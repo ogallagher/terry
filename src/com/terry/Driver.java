@@ -178,16 +178,16 @@ public class Driver {
 	}
 	
 	public static void clickLeft() {
-		robot.mousePress(InputEvent.BUTTON1_MASK);
+		robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
 	    robot.delay(DELAY_CLICK);
-	    robot.mouseRelease(InputEvent.BUTTON1_MASK);
+	    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
 	    robot.delay(DELAY_CLICK);
 	}
 	
 	public static void clickRight() {
-		robot.mousePress(InputEvent.BUTTON2_MASK);
+		robot.mousePress(InputEvent.BUTTON2_DOWN_MASK);
 	    robot.delay(DELAY_CLICK);
-	    robot.mouseRelease(InputEvent.BUTTON2_MASK);
+	    robot.mouseRelease(InputEvent.BUTTON2_DOWN_MASK);
 	    robot.delay(DELAY_CLICK);
 	}
 	

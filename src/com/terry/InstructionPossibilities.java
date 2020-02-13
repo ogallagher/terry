@@ -225,7 +225,7 @@ public class InstructionPossibilities {
 					//is arg
 					Arg arg = new Arg();
 					arg.name = leaf.node.token;
-					arg.value = Arg.getArgValue(leaf.node.getType(), next);
+					arg.value = Arg.getArgValue(argType, next);
 					
 					if (arg.value != null) {
 						leaf.arg = arg;
@@ -237,7 +237,13 @@ public class InstructionPossibilities {
 						}
 					}
 					
+					//check multiword args
 					leaves.remove(0);
+					if (leaf.arg.appendToken(argType, next)) {
+						//arg could add next token; remains as a leaf; add it back
+						leaves.add(leaf);
+						resolved = true;
+					}
 					i++;
 				}
 			}

@@ -8,6 +8,7 @@ import com.terry.Memory.Lookup;
 public class Arg {
 	public String name;
 	public Object value = null;
+	public String text = null;
 	
 	public static final char notarg = '0';		//not arg
 	public static final char strarg = '$';		//string
@@ -139,6 +140,24 @@ public class Arg {
 		wtpargs.add(WTPARG_TEXTBOX);
 	}
 	
+	/*
+	 * return true if multiword arg accepted
+	 * return false if multiword arg is invalid
+	 */
+	public boolean appendToken(char argType, String token) {
+		String multiword = text + token;
+		Object newValue = getArgValue(argType, multiword);
+		
+		if (newValue == null) {
+			return false;
+		}
+		else {
+			text = multiword;
+			value = newValue;
+			return true;
+		}
+	}
+	
 	@Override
 	public String toString() {
 		return value.toString();
@@ -162,7 +181,7 @@ public class Arg {
 				}
 				break;
 				
-			case numarg: //TODO handle multitoken numbers
+			case numarg:
 				argValue = Arg.getNumeric(next);
 				if (argValue != null) {
 					Logger.log("valid number " + next);
@@ -176,7 +195,7 @@ public class Arg {
 				}
 				break;
 				
-			case strarg: //TODO handle multitoken strings
+			case strarg:
 				argValue = next;
 				break;
 				
@@ -272,7 +291,8 @@ public class Arg {
 	}
 	
 	/*
-	 * Adapted from https://stackoverflow.com/a/26951693/10200417
+	 * Adapted from https://stackoverflow.com/a/26951693/10200417. 
+	 * Handles multiword number names (ex: one thousand three hundred fifty four)
 	 */
 	public static Float getNumeric(String numeric) {
 		float digit = 0;

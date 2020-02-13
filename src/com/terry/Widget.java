@@ -317,6 +317,7 @@ public class Widget extends LanguageMapping implements Serializable {
 			return string;
 		}
 		
+		@SuppressWarnings("unused")
 		public static BufferedImage MatToBufferedImage(Mat mat) {
 			return toFrame.convert(toMat.convert(mat));
 		}
