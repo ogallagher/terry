@@ -68,7 +68,6 @@ public class State<T> implements Serializable {
 	
 	/*
 	 * Updates value and executes transition. 
-	 * Call transition.setArgs() first.
 	 * Always creates new thread so it can run in parallel to the application thread.
 	 */
 	public void transition(Arg[] args) throws StateException {

@@ -1,5 +1,6 @@
 package com.terry;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -62,22 +63,23 @@ public class LanguageMapping {
 		return id;
 	}
 	
-	public PatternNode getLeader(String token) {
+	public ArrayList<PatternNode> getLeaders(String token) {
+		ArrayList<PatternNode> leaders = new ArrayList<>();
+		
 		if (pattern.graph.token == null) { //move inward
-			return pattern.graph.getFollower(token);
+			leaders.addAll(pattern.graph.getFollowers(token));
 		}
 		else if (pattern.graph.token.equals(token) || pattern.graph.type != Arg.notarg) {
-			//keyword match, or argument match (argtype check already done in Memory.dictionaryLookup()
-			return pattern.graph;
+			//keyword match, or argument match
+			leaders.add(pattern.graph);
 		}
-		else { //no match
-			return null;
-		}
+		
+		return leaders;
 	}
 	
 	/*
 	 * Get all tokens that can begin the pattern, to be added to
-	 * the dictionary. Argument tokens are abbreviated to @+argtype (ex: @$, @#) 
+	 * the dictionary. Argument tokens are abbreviated to @argtype (ex: @$, @#) 
 	 */
 	public LinkedList<String> getLeaders() {
 		LinkedList<String> leaders = new LinkedList<String>();
@@ -222,19 +224,39 @@ public class LanguageMapping {
 			return nodes;
 		}
 		
-		public PatternNode getFollower(String token) {
+		public ArrayList<PatternNode> getFollowers(String token) {
+			ArrayList<PatternNode> matches = new ArrayList<>();
+			
 			for (PatternNode node : followers) {
 				if (node.token == null) { //move along
-					PatternNode follower = node.getFollower(token);
-					return follower;
+					matches.addAll(node.getFollowers(token));
 				}
-				else if (node.token.equals(token) || node.type != Arg.notarg) { //keyword match, arg match
-					return node;
+				else if (node.token.equals(token) || 
+						(node.type != Arg.notarg && Arg.getArgValue(node.type, token) != null)) { //keyword match, arg match
+					matches.add(node);
 				}
 			}
 			
-			//follower of given token not found
-			return null;
+			return matches;
+		}
+		
+		public int tokenCount() {
+			int finalCount = 0;
+			int candidateCount = 0;
+			
+			if (token != null) {
+				finalCount++;
+			}
+			
+			for (PatternNode follower : followers) {
+				candidateCount = follower.tokenCount();
+				
+				if (candidateCount < finalCount) {
+					finalCount = candidateCount;
+				}
+			}
+			
+			return finalCount;
 		}
 		
 		public static PatternNode newGraph(char[] expr) {

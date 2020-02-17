@@ -23,10 +23,11 @@
  * 		- member label is the string contained within the widget's bounds
  * 		- member bounds is a rectangle to define the size and shape of the widget
  * 		- member appearance is a collection of features (keypoint-descriptor pairs) for visual identification
+ * - Lesson
+ * 		- member type
+ * 		- member definition
  * 
  * TODO:
- * 	- test google text finder
- * 	- enable multitoken strings
  * 	- finish Widget.Appearance
  */
 
@@ -152,6 +153,8 @@ public class Terry {
 		
 		InstructionParser.init();
 		
+		Compiler.init();
+		
 		try {
 			Memory.init(); //calls LanguageMapping.init() from maps.txt file
 		}
@@ -195,14 +198,16 @@ public class Terry {
 				
 				//map args
 				for (Arg arg : args) {
-					if (arg == null) {
+					Object value = arg.getValue();
+					
+					if (value == null) {
 						Logger.log("null arg");
 					}
 					else if (arg.name.equals("x")) {
-						x = (Float) arg.value;
+						x = (Float) value;
 					}
 					else if (arg.name.equals("y")) {
-						y = (Float) arg.value;
+						y = (Float) value;
 					}
 				}
 				
@@ -217,8 +222,8 @@ public class Terry {
 		
 		Memory.addMapping(mouseToXY);
 		
-		//--- click mouse button ---///
-		Action mouseClickBtn = new Action("?@+btn) click");
+		//--- click mouse button ---//
+		Action mouseClickBtn = new Action("?@dbtn) click");
 		
 		State<Integer> clickbtn = new State<Integer>("clickbtn", 0, new String[] {"btn"}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = -3163938142402546869L;
@@ -228,11 +233,13 @@ public class Terry {
 		        
 		        //map args
 		        for (Arg arg : args) {
-		        	if (arg == null) {
+		        	Object value = arg.getValue();
+		        	
+		        	if (value == null) {
 						Logger.log("null arg");
 					}
 		        	else if (arg.name.equals("btn")) {
-		        		String direction = (String) arg.value;
+		        		String direction = (String) value;
 		        		
 		        		if (direction.equals("right")) {
 		        			button = MouseEvent.BUTTON2;
@@ -269,7 +276,7 @@ public class Terry {
 				//map args
 				for (Arg arg : args) {
 					if (arg.name.equals("str")) {
-						string = (String) arg.value;
+						string = (String) arg.getValue();
 					}
 				}
 				
@@ -357,7 +364,6 @@ public class Terry {
 				
 				//make sure hide happens first
 				Platform.runLater(new Runnable() {
-					@SuppressWarnings("unchecked")
 					public void run() {
 						try {
 							capture.setData(Driver.captureScreen().getRaster());
@@ -405,10 +411,9 @@ public class Terry {
 				//map args
 				Widget widget = null;
 				
-				for (Arg arg : args) {
-					
+				for (Arg arg : args) {	
 					if (arg != null && arg.name.equals("widget")) {
-						widget = (Widget) arg.value;
+						widget = (Widget) arg.getValue();
 					}
 				}
 				
@@ -610,7 +615,7 @@ public class Terry {
 		Logger.log("creating lessons");
 		
 		//--- create widget with label ---//
-		Lesson newWidget = new Lesson("@$name is ?@ttype) |has,with,says,) @$label", Lesson.TYPE_WIDGET);
+		Lesson newWidget = new Lesson("@$name ?is @ttype) |has,with,says,) @$label", Lesson.TYPE_WIDGET);
 		
 		Definition newwidget = new Definition(new String[] {"name","type","label"}) {
 			private static final long serialVersionUID = 7901389876329514500L;
@@ -622,16 +627,18 @@ public class Terry {
 				
 				//map args
 				for (Arg arg : args) {
-					if (arg != null) {
-						Logger.log("arg name is " + arg.name);
+					Object value = arg.getValue();
+					
+					if (value != null) {
+						Logger.log("arg: " + arg.name + " = " + value);
 						if (arg.name.equals("name")) {
-							name = (String) arg.value;
+							name = (String) value;
 						}
 						else if (arg.name.equals("type")) {
-							type = (char) arg.value;
+							type = (char) value;
 						}
 						else if (arg.name.equals("label")) {
-							label = (String) arg.value;
+							label = (String) value;
 						}
 					}
 				}

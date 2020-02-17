@@ -7,16 +7,17 @@ import com.terry.Memory.Lookup;
 
 public class Arg {
 	public String name;
-	public Object value = null;
-	public String text = null;
+	private Object value = null;
+	private String text = "";
 	
+	//arg types cannot be ? + * ) as these are reserved for pattern structure
 	public static final char notarg = '0';		//not arg
 	public static final char strarg = '$';		//string
 	public static final char numarg = '#';		//number
 	public static final char wigarg = 'w';		//widget
 	public static final char colarg = 'c';		//color
 	public static final char spdarg = '>';		//speed
-	public static final char dirarg = '+';		//direction
+	public static final char dirarg = 'd';		//direction
 	public static final char wtparg = 't';		//widget type
 	public static final char[] argtypes = new char[] {strarg,numarg,wigarg,colarg,spdarg,dirarg,wtparg};
 	
@@ -140,12 +141,33 @@ public class Arg {
 		wtpargs.add(WTPARG_TEXTBOX);
 	}
 	
+	public Arg() {}
+	
+	public Arg(Arg clone, char argType) {
+		name = clone.name;
+		text = clone.text;
+		value = clone.value; //clone.value is immutable; only reassigned for changes
+	}
+	
+	public void setValue(Object value, String text) {
+		this.value = value;
+		this.text = text;
+	}
+	
+	public Object getValue() {
+		return value;
+	}
+	
+	public String getText() {
+		return text;
+	}
+	
 	/*
 	 * return true if multiword arg accepted
 	 * return false if multiword arg is invalid
 	 */
 	public boolean appendToken(char argType, String token) {
-		String multiword = text + token;
+		String multiword = text + " " + token;
 		Object newValue = getArgValue(argType, multiword);
 		
 		if (newValue == null) {
@@ -160,7 +182,12 @@ public class Arg {
 	
 	@Override
 	public String toString() {
-		return value.toString();
+		if (value == null) {
+			return "null";
+		}
+		else {
+			return value.toString();
+		}
 	}
 	
 	public static Object getArgValue(char argType, String next) {
@@ -201,7 +228,7 @@ public class Arg {
 				
 			case wtparg:
 				argValue = Arg.getWidgetType(next);
-				if (argValue == null) {
+				if (argValue != null) {
 					Logger.log("valid widget type " + next);
 				}
 				break;

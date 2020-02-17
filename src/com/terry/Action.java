@@ -57,7 +57,13 @@ public class Action extends LanguageMapping implements Serializable {
 			
 			for (int a=0; a<args.length; a++) {
 				arg = allArgs.get(argNames[a]);
+				if (arg == null) {
+					arg = new Arg();
+					arg.name = argNames[a];
+				}
+				
 				Logger.log("mapping arg " + argNames[a] + " to " + arg);
+				
 				args[a] = arg;
 			}
 			

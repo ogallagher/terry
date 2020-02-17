@@ -214,7 +214,7 @@ public class Prompter extends Application {
 						
 						mic.animate(0);
 						
-						loading.animate(-1,-1,0,-1,200);
+						loading.animate(0);
 						
 						break;
 						
@@ -236,7 +236,6 @@ public class Prompter extends Application {
 						
 					case Scribe.STATE_DONE:
 						InstructionParser.parse(Scribe.getTranscription()); //search associated language mapping
-						
 						break;
 						
 					default:

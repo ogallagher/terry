@@ -38,33 +38,39 @@ public class InstructionParser {
 			//get next token
 			token = scanner.next();
 			
-			//ignore if trivial
-			if (!Memory.isTrivial(token)) {
-				Logger.log(token + " kept");
-				//handle punctuation
+			//handle punctuation
+			
+			//update instruction possibilities
+			if (possibilities.resolve(token)) {
+				/*
+				 * If possibilities have resolved into one mapping, fill in the rest of the tokens 
+				 * and execute the action or learn the lesson.
+				 */
+				InstructionPossibility instruction = possibilities.finish(scanner);
 				
-				//update instruction possibilities
-				if (possibilities.resolve(token)) {
-					/*
-					 * If possibilities have resolved into one mapping, fill in the rest of the tokens 
-					 * and execute the action or learn the lesson.
-					 */
-					InstructionPossibility instruction = possibilities.finish(scanner);
-					
-					if (instruction == null) { //instruction did not match mapping
-						//TODO handle failed instruction
-					}
-					else { //instruction is valid; follow through
-						instruction.compile();
-					}
-					
-					//look for new instruction
-					possibilities = new InstructionPossibilities();
+				if (instruction == null) { //instruction did not match mapping
+					Logger.logError("no mappings found for given instruction");
 				}
+				else { //instruction is valid; follow through
+					instruction.compile();
+				}
+				
+				//look for new instruction
+				possibilities = new InstructionPossibilities();
 			}
-			else {
-				Logger.log(token + " ignored");
-			}
+		}
+		
+		/*
+		 * If there are multiple remaining possibilities (or none), pick the best.
+		 */
+		InstructionPossibility instruction = possibilities.finish();
+		
+		if (instruction == null) { //there were no remaining possibilities
+			Logger.logError("no mappings found for given instruction");
+		}
+		else { //follow through
+			Compiler.enqueue(instruction);
+			Compiler.compile();
 		}
 		
 		scanner.close();

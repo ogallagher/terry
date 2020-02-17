@@ -31,7 +31,14 @@ public class Lesson extends LanguageMapping implements Serializable {
 		
 		Arg[] args = new Arg[definition.argNames.length];
 		for (int i=0; i<args.length; i++) {
-			args[i] = allArgs.get(definition.argNames[i]);
+			Arg arg = allArgs.get(definition.argNames[i]);
+			
+			if (arg == null) {
+				arg = new Arg();
+				arg.name = definition.argNames[i];
+			}
+			
+			args[i] = arg;
 		}
 		definition.learn(args);
 	}
