@@ -51,8 +51,8 @@ public class InstructionParser {
 				if (instruction == null) { //instruction did not match mapping
 					Logger.logError("no mappings found for given instruction");
 				}
-				else { //instruction is valid; follow through
-					instruction.compile();
+				else {
+					Compiler.enqueue(instruction);
 				}
 				
 				//look for new instruction

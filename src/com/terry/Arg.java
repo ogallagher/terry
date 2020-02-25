@@ -162,6 +162,10 @@ public class Arg {
 		return text;
 	}
 	
+	public int tokenCount() {
+		return text.split("\\s+").length;
+	}
+	
 	/*
 	 * return true if multiword arg accepted
 	 * return false if multiword arg is invalid

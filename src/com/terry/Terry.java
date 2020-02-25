@@ -338,7 +338,7 @@ public class Terry {
 		Memory.addMapping(showstate);
 		
 		//--- capture screen/take screenshot ---//
-		Action captureScreen = new Action("?create) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
+		Action captureScreen = new Action("?|create,take,)) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
 		
 		//set captureupdated to false, which statecaptured will then set to true when the screen capture is obtained
 		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
