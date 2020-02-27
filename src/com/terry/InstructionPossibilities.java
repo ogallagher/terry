@@ -251,14 +251,6 @@ public class InstructionPossibilities {
 			
 			parents = new ArrayList<InstructionPossibility>();
 			parents.addAll(clone.parents);
-//			if (parents.size() == 1) {
-//				if (parents.get(0).node == null) {
-//					Logger.log("created clone from " + clone.node.token + " with parent ROOT");
-//				}
-//				else {
-//					Logger.log("created clone from " + clone.node.token + " with parent " + parents.get(0).node.token);
-//				}
-//			}
 			
 			if (cloneLeaves.contains(clone) && !newLeaves.contains(this)) {
 				newLeaves.add(this);
@@ -327,7 +319,7 @@ public class InstructionPossibilities {
 			ArrayList<InstructionPossibility> newLeaves = new ArrayList<>();
 			
 			while (i < n) {
-				leaf = leaves.get(0);
+				leaf = leaves.get(i);
 				argType = leaf.node.getType();
 				
 				if (argType == Arg.notarg) {
@@ -402,16 +394,11 @@ public class InstructionPossibilities {
 						}
 					}
 				}
-				
-				leaves.remove(0);
 				i++;
 			}
 			
-			for (InstructionPossibility newLeaf : newLeaves) {
-				if (!leaves.contains(newLeaf)) {
-					leaves.add(newLeaf);
-				}
-			}
+			leaves.clear();
+			leaves.addAll(newLeaves);
 			
 			System.out.println(diagram());
 			
