@@ -45,6 +45,7 @@ public class InstructionPossibilities {
 			for (int i=0; i<n; i++) {
 				InstructionPossibility p = possibilities.get(i);
 				
+				Logger.log("resolve " + token + " against possibility " + i);
 				if (!p.resolve(token) && p.complete() == null) { //possibility no longer possible
 					Logger.log("eliminated possibility " + p.mapping);
 					possibilities.remove(i);
@@ -60,13 +61,7 @@ public class InstructionPossibilities {
 				for (Memory.Lookup entry : entries) {
 					for (LanguageMapping lm : entry.mappings) {
 						for (PatternNode leader : lm.getLeaders(entry.token)) {
-							InstructionPossibility p = new InstructionPossibility(lm, leader, token);
-							if (leader.getType() != Arg.notarg) {
-								//itself is a leaf if it can be a multiword arg
-								p.leaves.add(p);
-							}
-							
-							possibilities.add(p);
+							possibilities.add(new InstructionPossibility(lm, leader, token));
 						}
 					}
 				}
@@ -310,7 +305,7 @@ public class InstructionPossibilities {
 			int n=leaves.size();
 			char argType;
 			
-			Logger.log("resolving " + next + " against " + n + " leaves");
+			Logger.log("resolving " + next + " against " + n + " leaves for mapping " + mapping.id);
 			
 			/*
 			 * When adding new leaves or adding back old ones that are multitoken args, add first to this list, and then
