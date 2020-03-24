@@ -440,9 +440,8 @@ public class Terry {
 									try {
 										screenshot = statecaptured.getValue();
 										
-										//direct widget to find itself
-										finalWidget.findInScreen(screenshot);
-										
+										//handle result of widget search
+										finalWidget.state = new CharProperty(Widget.STATE_IDLE);
 										finalWidget.state.addListener(new ChangeListener<Character>() {
 											public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 												if (newValue == Widget.STATE_FOUND) {
@@ -465,6 +464,9 @@ public class Terry {
 												}
 											}
 										});
+										
+										//direct widget to find itself
+										finalWidget.findInScreen(screenshot);
 									}
 									catch (WidgetException e) {
 										Logger.logError("widget search failed: " + e.getMessage());
@@ -487,6 +489,66 @@ public class Terry {
 		locateWidget.addState(widgetlocation);
 		
 		Memory.addMapping(locateWidget);
+		
+		//--- move mouse to widget ---//
+		Action mouseToWidget = new Action("?|move,go,)) |mouse,cursor,pointer,) to @wwidget");
+		
+		State<Widget> mouseatwidget = new State<Widget>("mouseatwidget", null, new String[] {"widget"}, new DriverExecution<Widget>() {
+			private static final long serialVersionUID = 4934794946741729275L;
+
+			public Widget execute(Widget stateOld, Arg[] args) {
+				//map args
+				Widget widget = null;
+				
+				for (Arg arg : args) {	
+					if (arg != null && arg.name.equals("widget")) {
+						widget = (Widget) arg.getValue();
+					}
+				}
+				
+				if (widget != null) {
+					//get widget location
+					HashMap<String,Arg> locateWidgetArgs = new HashMap<>();
+					locateWidgetArgs.put("widget", new Arg("widget", widget, widget.getName()));
+					
+					try {
+						widgetlocationupdated.getProperty().set(false);
+						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue,
+									Boolean newValue) {
+								if (newValue) {
+									//move mouse to widget location
+									Point2D location = widgetlocation.getProperty().get();
+									int x = (int) location.getX();
+									int y = (int) location.getY();
+									
+									//direct driver
+									Driver.point(x, y);
+									
+									//update mouse location
+									mouseat.getProperty().set(new Point2D.Float(x,y));
+								}
+							}
+						});
+						
+						locateWidget.execute(locateWidgetArgs);
+						
+						//update moused widget
+						return widget;
+					}
+					catch (StateException e) {
+						//widget location failure
+						return null;
+					}					
+				}
+				else {
+					return null;
+				}
+			}
+		});
+		mouseToWidget.addState(mouseatwidget);
+		
+		Memory.addMapping(mouseToWidget);
 		
 		//--- demos ---//
 		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");

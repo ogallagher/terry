@@ -310,8 +310,11 @@ public class Prompter extends Application {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				console.toBack();
+				console.setIconified(true);
 				intercom.toBack();
+				intercom.setIconified(true);
 				overlay.toBack();
+				overlay.setIconified(true);
 			}
 		});
 	}
@@ -320,8 +323,11 @@ public class Prompter extends Application {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				overlay.toFront();
+				overlay.setIconified(false);
 				console.toFront();
+				console.setIconified(false);
 				intercom.toFront();
+				intercom.setIconified(false);
 			}
 		});
 	}

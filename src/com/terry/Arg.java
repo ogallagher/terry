@@ -143,6 +143,12 @@ public class Arg {
 	
 	public Arg() {}
 	
+	public Arg(String name, Object value, String text) {
+		this.name = name;
+		this.value = value;
+		this.text = text;
+	}
+	
 	public Arg(Arg clone, char argType) {
 		name = clone.name;
 		text = clone.text;

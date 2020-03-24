@@ -163,8 +163,9 @@ public class Widget extends LanguageMapping implements Serializable {
 							ArrayList<Rectangle> zones = textFinder.candidates;
 							Logger.log("finished text search; found " + zones.size() + " candidate zones");
 							
-							if (zones.size() != 0) {
-								zone = zones.get(0);
+							int zn = zones.size();
+							if (zn != 0) {
+								zone = zones.get(zn-1); //return last zone
 								state.set(STATE_FOUND);
 							}
 							else {
@@ -424,13 +425,21 @@ public class Widget extends LanguageMapping implements Serializable {
 						List<EntityAnnotation> annotations = response.getTextAnnotationsList();
 						
 						state.set(STATE_FINDING);
+						float bestScore = 0;
+						int bestDist = text.length();
+						int maxDist = (int) Math.ceil(text.length() * 0.4);
 						for (EntityAnnotation annotation : annotations) {
 							String text = annotation.getDescription();
 							BoundingPoly poly = annotation.getBoundingPoly();
-							Logger.log("found text " + text + " at " + poly);
+							float score = annotation.getScore();
 							
-							//compare to query label text
-							if (!text.equals("")) {
+							//Logger.log("checking text " + text + " at " + poly);
+							
+							//compare to query label text and previous best score
+							int dist = Utilities.editDistance(this.text, text, maxDist);
+							if (dist != -1 && dist <= bestDist && score >= bestScore) {
+								Logger.log(text + " has edit dist " + dist + " and score " + score);
+								
 								//convert to rectangle
 								List<Vertex> vertices = poly.getVerticesList();
 								Path2D.Double path = new Path2D.Double();
@@ -444,6 +453,10 @@ public class Widget extends LanguageMapping implements Serializable {
 								
 								//append to candidates
 								candidates.add(path.getBounds());
+								
+								//update best score and dist
+								bestDist = dist;
+								bestScore = score;
 							}
 						}
 						state.set(STATE_DONE);
