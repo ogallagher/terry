@@ -76,6 +76,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	
 	public CharProperty state;
 	
+	
 	public static void init() throws WidgetException {
 		TextFinderThread.init();
 		Appearance.init();
@@ -429,11 +430,11 @@ public class Widget extends LanguageMapping implements Serializable {
 						int bestDist = text.length();
 						int maxDist = (int) Math.ceil(text.length() * 0.4);
 						for (EntityAnnotation annotation : annotations) {
-							String text = annotation.getDescription();
+							String text = annotation.getDescription().trim().toLowerCase();
 							BoundingPoly poly = annotation.getBoundingPoly();
 							float score = annotation.getScore();
 							
-							//Logger.log("checking text " + text + " at " + poly);
+							Logger.log("checking text " + text);
 							
 							//compare to query label text and previous best score
 							int dist = Utilities.editDistance(this.text, text, maxDist);

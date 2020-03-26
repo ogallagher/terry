@@ -49,7 +49,7 @@ public class InstructionParser {
 				InstructionPossibility instruction = possibilities.finish(scanner);
 				
 				if (instruction == null) { //instruction did not match mapping
-					Logger.logError("no mappings found for given instruction");
+					Logger.logError("mapping candidate for given instruction failed to resolve");
 				}
 				else {
 					Compiler.enqueue(instruction);
@@ -65,13 +65,12 @@ public class InstructionParser {
 		 */
 		InstructionPossibility instruction = possibilities.finish();
 		
-		if (instruction == null) { //there were no remaining possibilities
-			Logger.logError("no mappings found for given instruction");
-		}
-		else { //follow through
+		if (instruction != null) { //there were no remaining possibilities
 			Compiler.enqueue(instruction);
-			Compiler.compile();
 		}
+		
+		//follow through
+		Compiler.compile();
 		
 		scanner.close();
 		state.set(STATE_DONE);

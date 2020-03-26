@@ -321,7 +321,15 @@ public class InstructionPossibilities {
 					Logger.log("checking " + next + " against keyword " + leaf.node.token);
 					//is keyword
 					if (!trivial) {
-						int dist = Utilities.editDistance(leaf.node.token, next, leaf.node.token.length()*2/3);
+						int maxDist = leaf.node.token.length();
+						if (maxDist > 3) {
+							maxDist = maxDist*2/3;
+						}
+						else {
+							maxDist = 0;
+						}
+						
+						int dist = Utilities.editDistance(leaf.node.token, next, maxDist);
 						
 						if (dist != -1) {
 							resolved = true;

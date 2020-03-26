@@ -8,6 +8,8 @@ import java.util.ArrayList;
 
 import javax.imageio.ImageIO;
 
+import javafx.scene.input.KeyCode;
+
 public class Utilities {
 	/*
 	 * Edit distance calculation uses the Wagner-Fischer algorithm for Levenshtein edit distance.
@@ -76,136 +78,136 @@ public class Utilities {
 		}
 	}
 	
-	public static ArrayList<Integer> keyCodesFromAlias(String alias) {
-		ArrayList<Integer> keys = new ArrayList<>();
+	public static ArrayList<KeyCode> keyCodesFromAlias(String alias) {
+		ArrayList<KeyCode> keys = new ArrayList<>();
 		
 		if (alias.equals(Terry.KEY_ALT)) {
-			keys.add(KeyEvent.VK_ALT);
+			keys.add(KeyCode.ALT);
 		}
 		else if (alias.equals(Terry.KEY_CAPS_LOCK)) {
-			keys.add(KeyEvent.VK_CAPS_LOCK);
+			keys.add(KeyCode.CAPS);
 		}
 		else if (alias.equals(Terry.KEY_CMD)) {
 			if (Terry.os == Terry.OS_MAC) {
-				keys.add(KeyEvent.VK_META);
+				keys.add(KeyCode.META);
 			}
 			else {
-				keys.add(KeyEvent.VK_CONTROL);
+				keys.add(KeyCode.CONTROL);
 			}
 		}
 		else if (alias.equals(Terry.KEY_CONTROL)) {
-			keys.add(KeyEvent.VK_CONTROL);
+			keys.add(KeyCode.CONTROL);
 		}
 		else if (alias.equals(Terry.KEY_DELETE)) {
-			keys.add(KeyEvent.VK_DELETE);
+			keys.add(KeyCode.DELETE);
 		}
 		else if (alias.equals(Terry.KEY_BACKSPACE)) {
-			keys.add(KeyEvent.VK_BACK_SPACE);
+			keys.add(KeyCode.BACK_SPACE);
 		}
 		else if (alias.equals(Terry.KEY_DOWN)) {
-			keys.add(KeyEvent.VK_DOWN);
+			keys.add(KeyCode.DOWN);
 		}
 		else if (alias.equals(Terry.KEY_ESCAPE)) {
-			keys.add(KeyEvent.VK_ESCAPE);
+			keys.add(KeyCode.ESCAPE);
 		}
 		else if (alias.equals(Terry.KEY_FN1)) {
-			keys.add(KeyEvent.VK_F1);
+			keys.add(KeyCode.F1);
 		}
 		else if (alias.equals(Terry.KEY_LEFT)) {
-			keys.add(KeyEvent.VK_LEFT);
+			keys.add(KeyCode.LEFT);
 		}
 		else if (alias.equals(Terry.KEY_RIGHT)) {
-			keys.add(KeyEvent.VK_RIGHT);
+			keys.add(KeyCode.RIGHT);
 		}
 		else if (alias.equals(Terry.KEY_SHIFT)) {
-			keys.add(KeyEvent.VK_SHIFT);
+			keys.add(KeyCode.SHIFT);
 		}
 		else if (alias.equals(Terry.KEY_UP)) {
-			keys.add(KeyEvent.VK_UP);
+			keys.add(KeyCode.UP);
 		}
 		else if (alias.equals(Terry.KEY_TILDE)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_BACK_QUOTE);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.BACK_QUOTE);
 		}
 		else if (alias.equals(Terry.KEY_EXCLAMATION)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_1);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT1);
 		}
 		else if (alias.equals(Terry.KEY_AT)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_2);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT2);
 		}
 		else if (alias.equals(Terry.KEY_HASHTAG)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_3);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT3);
 		}
 		else if (alias.equals(Terry.KEY_DOLLAR)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_4);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT4);
 		}
 		else if (alias.equals(Terry.KEY_PERCENT)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_5);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT5);
 		}
 		else if (alias.equals(Terry.KEY_CARROT)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_6);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT6);
 		}
 		else if (alias.equals(Terry.KEY_AMPERSAND)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_7);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT7);
 		}
 		else if (alias.equals(Terry.KEY_STAR)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_8);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT8);
 		}
 		else if (alias.equals(Terry.KEY_LPAREN)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_9);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT9);
 		}
 		else if (alias.equals(Terry.KEY_RPAREN)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_0);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.DIGIT0);
 		}
 		else if (alias.equals(Terry.KEY_DASH)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_MINUS);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.MINUS);
 		}
 		else if (alias.equals(Terry.KEY_PLUS)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_EQUALS);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.EQUALS);
 		}
 		else if (alias.equals(Terry.KEY_LBRACE)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_OPEN_BRACKET);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.OPEN_BRACKET);
 		}
 		else if (alias.equals(Terry.KEY_RBRACE)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_CLOSE_BRACKET);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.CLOSE_BRACKET);
 		}
 		else if (alias.equals(Terry.KEY_PIPE)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_BACK_SLASH);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.BACK_SLASH);
 		}
 		else if (alias.equals(Terry.KEY_COLON)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_SEMICOLON);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.SEMICOLON);
 		}
 		else if (alias.equals(Terry.KEY_DOUBLE_QUOTE)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_QUOTE);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.QUOTE);
 		}
 		else if (alias.equals(Terry.KEY_LESS)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_COMMA);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.COMMA);
 		}
 		else if (alias.equals(Terry.KEY_GREATER)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_PERIOD);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.PERIOD);
 		}
 		else if (alias.equals(Terry.KEY_QUERY)) {
-			keys.add(KeyEvent.VK_SHIFT);
-			keys.add(KeyEvent.VK_SLASH);
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.SLASH);
 		}
 		
 		return keys;

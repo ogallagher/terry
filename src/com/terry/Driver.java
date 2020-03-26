@@ -6,18 +6,25 @@ import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.Robot;
 import java.awt.Toolkit;
 import java.awt.event.InputEvent;
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.security.AccessControlException;
 import java.security.AccessController;
 import java.util.Iterator;
 import java.util.LinkedList;
 
+import javafx.application.Platform;
+import javafx.geometry.Rectangle2D;
+import javafx.scene.image.WritableImage;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.robot.*;
+
 public class Driver {
 	private static Robot robot;
+	private static javafx.scene.robot.Robot robotfx;
 	
 	private static int DELAY_POINT; //time taken to move cursor, in ms
 	private static int DELAY_TYPE;	//time taken to press a key, in ms
@@ -31,16 +38,18 @@ public class Driver {
 		ITER_MAX = 50;
 		POINT_SIZE = 20;
 		
-		AWTPermission robotPermission = new AWTPermission("createRobot", null);
+		//AWTPermission robotPermission = new AWTPermission("createRobot", null);
 		
 		try {
 			//AccessController.checkPermission(robotPermission); this does not work, always throws security exception
 			
-			robot = new Robot();
-			robot.setAutoDelay(10);
-			robot.setAutoWaitForIdle(true);
+			Platform.runLater(new Runnable() {
+				public void run() {
+					robotfx = new javafx.scene.robot.Robot();
+				}
+			});
 			
-			DELAY_POINT = 5;
+			DELAY_POINT = 8;
 			DELAY_TYPE = 20;
 			DELAY_CLICK = 100;
 			
@@ -51,12 +60,9 @@ public class Driver {
 		catch (SecurityException e) {
 			throw new DriverException("do not have permission to control the mouse and keyboard");
 		} 
-		catch (AWTException e) {
-			throw new DriverException("could not connect driver to screen");
-		}
 	}
 	
-	public static void point(int x, int y) {		
+	private static void pointfx(int x, int y) {
 		Point mouse = MouseInfo.getPointerInfo().getLocation();
 		int mx = mouse.x;
 		int my = mouse.y;
@@ -74,7 +80,8 @@ public class Driver {
 				 * See issue here for why this is necessary: https://stackoverflow.com/q/48837741/10200417
 				 */
 				while (mouse.x != mx || mouse.y != my) {
-					robot.mouseMove(mx, my);
+					Logger.log("driver to " + x + " " + y + " from " + mx + " " + my);
+					robotfx.mouseMove(mx, my);
 					mouse = MouseInfo.getPointerInfo().getLocation();
 				}
 				
@@ -82,37 +89,45 @@ public class Driver {
 				i++;
 			}
 			
-			robot.mouseMove(x, y);
+			robotfx.mouseMove(x, y);
 		}
 		catch (InterruptedException e) {
 			Logger.logError("driver pointing interrupted");
 		}
 	}
 	
+	public static void point(int x, int y) {	
+		Platform.runLater(new Runnable() {
+			public void run() {
+				pointfx(x,y);
+			}
+		});
+	}
+	
 	public static void type(String str) {
 		char[] chars = str.toLowerCase().toCharArray();
-		int key = 0;
+		KeyCode key = KeyCode.UNDEFINED;
 		char[] alias = new char[3];
 		
 		try {
 			for (int c=0; c<chars.length; c++) {
-				key = KeyEvent.getExtendedKeyCodeForChar(chars[c]);
+				key = KeyCode.getKeyCode(String.valueOf(chars[c]));
 				
-				if (key == KeyEvent.VK_UNDEFINED) {
+				if (key == KeyCode.UNDEFINED) {
 					Logger.logError("unknown keycode for char " + chars[c]);
 				}
-				else if ((key >= KeyEvent.VK_0 && key <= KeyEvent.VK_9) || (key >= KeyEvent.VK_A && key <= KeyEvent.VK_Z)) { 
+				else if ((key.compareTo(KeyCode.DIGIT0) >= 0 && key.compareTo(KeyCode.DIGIT9) <= 0) || (key.compareTo(KeyCode.A) >= 0 && key.compareTo(KeyCode.Z) <= 0)) { 
 					//alphanumeric
-					robot.keyPress(key);
-					robot.keyRelease(key);
+					robotfx.keyPress(key);
+					robotfx.keyRelease(key);
 				}
-				else if ((key == KeyEvent.VK_NUMBER_SIGN)) {
+				else if ((key == KeyCode.NUMBER_SIGN)) {
 					//control chars that cannot be expressed as chars in a string are escaped and given codes. ex: #cmd+del) #shf) #up)
 					c++; //skip hashtag
 					
 					char chr = '#';
 					boolean go = true;
-					LinkedList<Integer> keys = new LinkedList<Integer>();
+					LinkedList<KeyCode> keys = new LinkedList<>();
 					
 					for (int i=0; c<chars.length && go; c++) {
 						chr = chars[c];
@@ -127,7 +142,7 @@ public class Driver {
 							//keys done
 							keys.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
 							
-							Iterator<Integer> iterator = keys.iterator();
+							Iterator<KeyCode> iterator = keys.iterator();
 							while (iterator.hasNext()) {
 								robot.keyPress(iterator.next());
 							}
@@ -148,23 +163,26 @@ public class Driver {
 				else { 
 					//control, punctuation
 					switch (key) {
-						case KeyEvent.VK_SPACE:
-						case KeyEvent.VK_PERIOD:
-						case KeyEvent.VK_COMMA:
-						case KeyEvent.VK_SLASH:
-						case KeyEvent.VK_SEMICOLON:
-						case KeyEvent.VK_QUOTE:
-						case KeyEvent.VK_OPEN_BRACKET:
-						case KeyEvent.VK_CLOSE_BRACKET:
-						case KeyEvent.VK_BACK_SLASH:
-						case KeyEvent.VK_BACK_QUOTE:
-						case KeyEvent.VK_EQUALS:
-						case KeyEvent.VK_ENTER:
-						case KeyEvent.VK_ACCEPT:
-						case KeyEvent.VK_TAB:
-						case KeyEvent.VK_MINUS:
+						case SPACE:
+						case PERIOD:
+						case COMMA:
+						case SLASH:
+						case SEMICOLON:
+						case QUOTE:
+						case OPEN_BRACKET:
+						case CLOSE_BRACKET:
+						case BACK_SLASH:
+						case BACK_QUOTE:
+						case EQUALS:
+						case ENTER:
+						case ACCEPT:
+						case TAB:
+						case MINUS:
 							robot.keyPress(key);
 							robot.keyRelease(key);
+							break;
+							
+						default:
 							break;
 					}
 				}
@@ -178,23 +196,33 @@ public class Driver {
 	}
 	
 	public static void clickLeft() {
-		robot.mousePress(InputEvent.BUTTON1_DOWN_MASK);
-	    robot.delay(DELAY_CLICK);
-	    robot.mouseRelease(InputEvent.BUTTON1_DOWN_MASK);
-	    robot.delay(DELAY_CLICK);
+		try {
+			robot.mousePress(MouseButton.PRIMARY);
+			robot.wait(DELAY_CLICK);
+		    robot.mouseRelease(MouseButton.PRIMARY);
+		    robot.wait(DELAY_CLICK);
+		}
+		catch (InterruptedException e) {
+			//fail quietly
+		}
 	}
 	
 	public static void clickRight() {
-		robot.mousePress(InputEvent.BUTTON2_DOWN_MASK);
-	    robot.delay(DELAY_CLICK);
-	    robot.mouseRelease(InputEvent.BUTTON2_DOWN_MASK);
-	    robot.delay(DELAY_CLICK);
+		try {
+			robot.mousePress(MouseButton.SECONDARY);
+		    robot.wait(DELAY_CLICK);
+		    robot.mouseRelease(MouseButton.SECONDARY);
+		    robot.wait(DELAY_CLICK);
+		}
+		catch (InterruptedException e) {
+			//fail quietly
+		}
 	}
 	
-	public static BufferedImage captureScreen() throws DriverException {
+	public static WritableImage captureScreen() throws DriverException {
 		try {
-			BufferedImage capture = robot.createScreenCapture(new Rectangle(screen.width,screen.height));
-			//BufferedImage capture = robot.createScreenCapture(new Rectangle(0,0,500,60)); //apple icon
+			WritableImage capture = new WritableImage(screen.width,screen.height);
+			robotfx.getScreenCapture(capture, new Rectangle2D(0,0,screen.width,screen.height));
 			
 			return capture;
 		}

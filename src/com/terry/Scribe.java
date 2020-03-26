@@ -153,9 +153,10 @@ public class Scribe {
 		//gtranscriber.start();
 		
 		String[] instructions = new String[] {
-				"the terry menu button is a label that says terry",
-				"show me where the terry menu button is",
+				"elephant is a label that says elephant",
+				//"show me where elephant is",
 				"move mouse to x sixty five y eighty",
+				"go to elephant",
 				"take a screen shot",
 				"click",
 				"type a hello from terry",

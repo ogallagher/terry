@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.geom.PathIterator;
 import java.util.Optional;
 
+import com.terry.Driver.DriverException;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 
@@ -73,6 +74,14 @@ public class Prompter extends Application {
 	
 	@Override
 	public void start(Stage primaryStage) throws Exception {
+		//init driver
+		try {
+			Driver.init();
+		}
+		catch (DriverException e) {
+			Logger.logError(e.getMessage());
+		}
+		
 		//launch intercom window
 		intercom = primaryStage;
 		intercom.initStyle(StageStyle.TRANSPARENT);

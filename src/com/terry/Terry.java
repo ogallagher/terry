@@ -63,6 +63,8 @@ import javafx.scene.paint.Color;
 public class Terry {
 	public static Prompter prompter;
 	
+	public static Widget dummyWidget;
+	
 	public static HashMap<String,State<?>> states = new HashMap<>();
 	
 	public static final String RES_PATH = "res/";
@@ -115,6 +117,7 @@ public class Terry {
 		
 		try {
 			Widget.init();
+			dummyWidget = new Widget("ddumy"); //purposefully misspelled so widgets called "dummy" can still be created
 		} 
 		catch (WidgetException e) {
 			Logger.logError(e.getMessage());
@@ -144,13 +147,6 @@ public class Terry {
 			Logger.logError(e.getMessage());
 		}
 		
-		try {
-			Driver.init();
-		}
-		catch (DriverException e) {
-			Logger.logError(e.getMessage());
-		}
-		
 		InstructionParser.init();
 		
 		Compiler.init();
@@ -170,7 +166,7 @@ public class Terry {
 		Logger.log(Memory.printDictionary());
 		
 		prompter = new Prompter();
-		prompter.init(args);
+		prompter.init(args); //calls Driver.init() since jfx robot needs jfx toolkit initialization
 	}
 	
 	public static ArrayList<String> printState() {
@@ -187,7 +183,7 @@ public class Terry {
 		Logger.log("no mappings found; creating primitive actions corpus");
 		
 		//--- move mouse to screen location ---//
-		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why,) @#y ?why)");
+		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
 		
 		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
 			private static final long serialVersionUID = -5509580894164954809L;
@@ -366,7 +362,7 @@ public class Terry {
 				Platform.runLater(new Runnable() {
 					public void run() {
 						try {
-							capture.setData(Driver.captureScreen().getRaster());
+							javafx.embed.swing.SwingFXUtils.fromFXImage(Driver.captureScreen(), capture);
 							
 							//update statecaptureupdated when the capture object contains the data
 							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
@@ -400,7 +396,6 @@ public class Terry {
 			public Boolean execute(Boolean stateOld, Arg[] args) {
 				return false;
 			}
-			
 		});
 		locateWidget.addState(widgetlocationupdated);
 		
@@ -452,8 +447,8 @@ public class Terry {
 													//direct prompter to highlight found widget
 													Prompter.clearOverlay();
 													Prompter.showOverlay();
-													Prompter.colorOverlay(null, Color.RED);
-													Prompter.drawOverlay(zone.getPathIterator(null), false, true);
+													Prompter.colorOverlay(new Color(1,1,1,0.2), Color.YELLOW);
+													Prompter.drawOverlay(zone.getPathIterator(null), true, true);
 													
 													//update state(s)
 													location.setLocation(zone.getCenterX(), zone.getCenterY());
@@ -491,31 +486,32 @@ public class Terry {
 		Memory.addMapping(locateWidget);
 		
 		//--- move mouse to widget ---//
-		Action mouseToWidget = new Action("?|move,go,)) |mouse,cursor,pointer,) to @wwidget");
+		Action mouseToWidget = new Action("|[?move)_|mouse,cursor,pointer,)],go,) to @wwidget");
 		
-		State<Widget> mouseatwidget = new State<Widget>("mouseatwidget", null, new String[] {"widget"}, new DriverExecution<Widget>() {
+		State<Widget> mouseatwidget = new State<Widget>("mouseatwidget", dummyWidget, new String[] {"widget"}, new DriverExecution<Widget>() {
 			private static final long serialVersionUID = 4934794946741729275L;
 
 			public Widget execute(Widget stateOld, Arg[] args) {
 				//map args
 				Widget widget = null;
+				Arg widgetArg = null;
 				
 				for (Arg arg : args) {	
 					if (arg != null && arg.name.equals("widget")) {
 						widget = (Widget) arg.getValue();
+						widgetArg = arg;
 					}
 				}
 				
 				if (widget != null) {
 					//get widget location
 					HashMap<String,Arg> locateWidgetArgs = new HashMap<>();
-					locateWidgetArgs.put("widget", new Arg("widget", widget, widget.getName()));
+					locateWidgetArgs.put("widget", widgetArg);
 					
 					try {
-						widgetlocationupdated.getProperty().set(false);
+						//widgetlocationupdated.getProperty().set(false);
 						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
-							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue,
-									Boolean newValue) {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
 								if (newValue) {
 									//move mouse to widget location
 									Point2D location = widgetlocation.getProperty().get();

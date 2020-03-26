@@ -15,6 +15,9 @@ public class Compiler {
 		if (instruction != null) {
 			executionQueue.add(instruction);
 		}
+		else {
+			Logger.logError("compiler cannot enqueue a null instruction");
+		}
 	}
 	
 	public static void compile() {
