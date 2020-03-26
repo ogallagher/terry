@@ -361,22 +361,25 @@ public class Terry {
 				//make sure hide happens first
 				Platform.runLater(new Runnable() {
 					public void run() {
-						try {
-							javafx.embed.swing.SwingFXUtils.fromFXImage(Driver.captureScreen(), capture);
-							
-							//update statecaptureupdated when the capture object contains the data
-							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
-							captureUpdated.set(true);
-							
-							if (capture != null) {
-								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
+						//handle capture result
+						Driver.captured.addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+								if (newValue) {
+									javafx.embed.swing.SwingFXUtils.fromFXImage(Driver.capture, capture);
+									
+									//update statecaptureupdated when the capture object contains the data
+									SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+									captureUpdated.set(true);
+									
+									if (capture != null) {
+										Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
+									}
+									
+									Prompter.show();
+								}
 							}
-							
-							Prompter.show();
-						}
-						catch (DriverException e) {
-							Logger.logError(e.getMessage());
-						}
+						});
+						Driver.captureScreen();
 					}
 				});
 				

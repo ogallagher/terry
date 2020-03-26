@@ -1,30 +1,22 @@
 package com.terry;
 
-import java.awt.AWTException;
-import java.awt.AWTPermission;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
-import java.awt.Rectangle;
 import java.awt.Toolkit;
-import java.awt.event.InputEvent;
-import java.awt.image.BufferedImage;
-import java.security.AccessControlException;
-import java.security.AccessController;
 import java.util.Iterator;
 import java.util.LinkedList;
 
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.geometry.Rectangle2D;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.robot.*;
 
 public class Driver {
 	private static Robot robot;
-	private static javafx.scene.robot.Robot robotfx;
 	
 	private static int DELAY_POINT; //time taken to move cursor, in ms
 	private static int DELAY_TYPE;	//time taken to press a key, in ms
@@ -33,6 +25,8 @@ public class Driver {
 	private static int POINT_SIZE;	//collision box width around the cursor
 	
 	private static Dimension screen;
+	public static WritableImage capture;
+	public static SimpleObjectProperty<Boolean> captured;
 	
 	public static void init() throws DriverException {
 		ITER_MAX = 50;
@@ -45,7 +39,7 @@ public class Driver {
 			
 			Platform.runLater(new Runnable() {
 				public void run() {
-					robotfx = new javafx.scene.robot.Robot();
+					robot = new javafx.scene.robot.Robot();
 				}
 			});
 			
@@ -54,6 +48,8 @@ public class Driver {
 			DELAY_CLICK = 100;
 			
 			screen = Toolkit.getDefaultToolkit().getScreenSize();
+			capture = null;
+			captured = new SimpleObjectProperty<>(false);
 			
 			Logger.log("driver init success");
 		}
@@ -80,8 +76,7 @@ public class Driver {
 				 * See issue here for why this is necessary: https://stackoverflow.com/q/48837741/10200417
 				 */
 				while (mouse.x != mx || mouse.y != my) {
-					Logger.log("driver to " + x + " " + y + " from " + mx + " " + my);
-					robotfx.mouseMove(mx, my);
+					robot.mouseMove(mx, my);
 					mouse = MouseInfo.getPointerInfo().getLocation();
 				}
 				
@@ -89,7 +84,7 @@ public class Driver {
 				i++;
 			}
 			
-			robotfx.mouseMove(x, y);
+			robot.mouseMove(x, y);
 		}
 		catch (InterruptedException e) {
 			Logger.logError("driver pointing interrupted");
@@ -104,7 +99,7 @@ public class Driver {
 		});
 	}
 	
-	public static void type(String str) {
+	private static void typefx(String str) {
 		char[] chars = str.toLowerCase().toCharArray();
 		KeyCode key = KeyCode.UNDEFINED;
 		char[] alias = new char[3];
@@ -118,8 +113,8 @@ public class Driver {
 				}
 				else if ((key.compareTo(KeyCode.DIGIT0) >= 0 && key.compareTo(KeyCode.DIGIT9) <= 0) || (key.compareTo(KeyCode.A) >= 0 && key.compareTo(KeyCode.Z) <= 0)) { 
 					//alphanumeric
-					robotfx.keyPress(key);
-					robotfx.keyRelease(key);
+					robot.keyPress(key);
+					robot.keyRelease(key);
 				}
 				else if ((key == KeyCode.NUMBER_SIGN)) {
 					//control chars that cannot be expressed as chars in a string are escaped and given codes. ex: #cmd+del) #shf) #up)
@@ -195,40 +190,61 @@ public class Driver {
 		}
 	}
 	
+	public static void type(String str) {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				typefx(str);
+			}
+		});
+	}
+	
 	public static void clickLeft() {
-		try {
-			robot.mousePress(MouseButton.PRIMARY);
-			robot.wait(DELAY_CLICK);
-		    robot.mouseRelease(MouseButton.PRIMARY);
-		    robot.wait(DELAY_CLICK);
-		}
-		catch (InterruptedException e) {
-			//fail quietly
-		}
+		Platform.runLater(new Runnable() {
+			public void run() {
+				try {
+					robot.mousePress(MouseButton.PRIMARY);
+					robot.wait(DELAY_CLICK);
+				    robot.mouseRelease(MouseButton.PRIMARY);
+				    robot.wait(DELAY_CLICK);
+				}
+				catch (InterruptedException e) {
+					//fail quietly
+				}
+			}
+		});
 	}
 	
 	public static void clickRight() {
-		try {
-			robot.mousePress(MouseButton.SECONDARY);
-		    robot.wait(DELAY_CLICK);
-		    robot.mouseRelease(MouseButton.SECONDARY);
-		    robot.wait(DELAY_CLICK);
-		}
-		catch (InterruptedException e) {
-			//fail quietly
-		}
+		Platform.runLater(new Runnable() {
+			public void run() {
+				try {
+					robot.mousePress(MouseButton.SECONDARY);
+					robot.wait(DELAY_CLICK);
+				    robot.mouseRelease(MouseButton.SECONDARY);
+				    robot.wait(DELAY_CLICK);
+				}
+				catch (InterruptedException e) {
+					//fail quietly
+				}
+			}
+		});
 	}
 	
-	public static WritableImage captureScreen() throws DriverException {
-		try {
-			WritableImage capture = new WritableImage(screen.width,screen.height);
-			robotfx.getScreenCapture(capture, new Rectangle2D(0,0,screen.width,screen.height));
-			
-			return capture;
-		}
-		catch (SecurityException e) {
-			throw new DriverException("not permitted to view the screen");
-		}
+	public static void captureScreen() {
+		captured.set(false);
+		
+		Platform.runLater(new Runnable() {
+			public void run() {
+				try {
+					capture = new WritableImage(screen.width,screen.height);
+					robot.getScreenCapture(capture, new Rectangle2D(0,0,screen.width,screen.height));
+					captured.set(true);
+				}
+				catch (SecurityException e) {
+					Logger.logError("not permitted to view the screen");
+				}
+			}
+		});
 	}
 	
 	public static Dimension getScreen() {
