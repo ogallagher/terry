@@ -258,7 +258,7 @@ public class Widget extends LanguageMapping implements Serializable {
 			int channels = src.getColorModel().getNumComponents();
 			
 			//convert to javacv image class
-			Mat original = toMat.convert(toFrame.convert(src));
+			Mat original = bufferedImageToMat(src);
 			
 			//convert to 8bit grayscale image
 			Mat grayscale = new Mat(original.size(), CvType.CV_8UC1);
@@ -320,8 +320,12 @@ public class Widget extends LanguageMapping implements Serializable {
 		}
 		
 		@SuppressWarnings("unused")
-		public static BufferedImage MatToBufferedImage(Mat mat) {
+		public static BufferedImage matToBufferedImage(Mat mat) {
 			return toFrame.convert(toMat.convert(mat));
+		}
+		
+		public static Mat bufferedImageToMat(BufferedImage img) {
+			return toMat.convert(toFrame.convert(img));
 		}
 	}
 	

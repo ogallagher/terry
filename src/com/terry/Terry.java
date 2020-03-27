@@ -29,6 +29,11 @@
  * 
  * TODO:
  * 	- finish Widget.Appearance
+ *  - accept widget appearances with prompter
+ *  - create action learner
+ *  - create watcher connected to keyboard and mouse
+ *  	- create os input hooks to catch keystrokes and mouse updates: https://stackoverflow.com/a/43885566/10200417
+ *  	- trigger scribe with key combination
  */
 
 package com.terry;
@@ -58,6 +63,7 @@ import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.scene.paint.Color;
 
 public class Terry {
@@ -177,6 +183,32 @@ public class Terry {
 		}
 		
 		return list;
+	}
+	
+	public static void triggerScribe() {
+		try {
+			switch (Scribe.state.get()) {
+				case Scribe.STATE_IDLE:
+					Scribe.start();
+					break;
+					
+				case Scribe.STATE_RECORDING:
+					Scribe.stop();
+					break;
+					
+				case Scribe.STATE_TRANSCRIBING:
+				case Scribe.STATE_DONE:
+					Logger.log("waiting for scribe to finish transcription...");
+					break;
+					
+				default:
+					Logger.logError("scribe in unknown state");
+					break;
+			}
+		} 
+		catch (ScribeException e) {
+			Logger.logError(e.getMessage());
+		}
 	}
 	
 	private static void createPrimitiveActions() {
@@ -359,13 +391,14 @@ public class Terry {
 				BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
 				
 				//make sure hide happens first
+				//TODO Platform.runLater may now be redundant
 				Platform.runLater(new Runnable() {
 					public void run() {
 						//handle capture result
 						Driver.captured.addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
 								if (newValue) {
-									javafx.embed.swing.SwingFXUtils.fromFXImage(Driver.capture, capture);
+									SwingFXUtils.fromFXImage(Driver.capture, capture);
 									
 									//update statecaptureupdated when the capture object contains the data
 									SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();

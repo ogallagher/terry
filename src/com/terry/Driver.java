@@ -14,6 +14,7 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.robot.*;
+import javafx.scene.shape.Rectangle;
 
 public class Driver {
 	private static Robot robot;
@@ -231,13 +232,17 @@ public class Driver {
 	}
 	
 	public static void captureScreen() {
+		captureScreen(new Rectangle(screen.width,screen.height));
+	}
+	
+	public static void captureScreen(Rectangle region) {
 		captured.set(false);
 		
 		Platform.runLater(new Runnable() {
 			public void run() {
 				try {
-					capture = new WritableImage(screen.width,screen.height);
-					robot.getScreenCapture(capture, new Rectangle2D(0,0,screen.width,screen.height));
+					capture = new WritableImage((int)region.getWidth(),(int)region.getHeight());
+					robot.getScreenCapture(capture, new Rectangle2D(region.getX(),region.getY(),region.getWidth(),region.getHeight()));
 					captured.set(true);
 				}
 				catch (SecurityException e) {

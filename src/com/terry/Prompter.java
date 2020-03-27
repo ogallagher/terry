@@ -4,6 +4,7 @@ import java.awt.desktop.*;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.geom.PathIterator;
+import java.awt.image.BufferedImage;
 import java.util.Optional;
 
 import com.terry.Driver.DriverException;
@@ -16,7 +17,9 @@ import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
+import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -26,11 +29,14 @@ import javafx.scene.control.ButtonType;
 import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
+import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
@@ -60,6 +66,16 @@ public class Prompter extends Application {
 	private static int OVERLAY_WIDTH;
 	private static int OVERLAY_HEIGHT;
 	private static GraphicsContext graphics; //overlay graphics context
+	
+	private static Rectangle overlayZone = null;
+	private static Widget pendingWidget = null;
+	
+	public static final char STATE_IDLE = 0;
+	public static final char STATE_SHOWING_ZONES = 1;
+	public static final char STATE_ACCEPTING_ZONE = 2;
+	public static final char STATE_OVERLAY_INPUT_DONE = 3;
+	
+	public static CharProperty state = new CharProperty(STATE_IDLE);
 		
 	/*
 	 * (non-Javadoc)
@@ -108,33 +124,10 @@ public class Prompter extends Application {
 		intercom.setMinHeight(INTERCOM_WIDTH);
 		intercom.setMaxHeight(INTERCOM_WIDTH);
 		
+		//scribe trigger: intercom click
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
-				try {
-					switch (Scribe.state.get()) {
-						case Scribe.STATE_IDLE:
-							Scribe.start();
-							
-							break;
-							
-						case Scribe.STATE_RECORDING:
-							Scribe.stop();
-							
-							break;
-							
-						case Scribe.STATE_TRANSCRIBING:
-						case Scribe.STATE_DONE:
-							Logger.log("waiting for scribe to finish transcription...");
-							break;
-							
-						default:
-							Logger.logError("scribe in unknown state");
-							break;
-					}
-				} 
-				catch (ScribeException e) {
-					Logger.logError(e.getMessage());
-				}
+				Terry.triggerScribe();
 			}
 		});
 		
@@ -215,6 +208,7 @@ public class Prompter extends Application {
 		
 		intercom.show();
 		
+		//create visual cues on intercom
 		Scribe.state.addListener(new ChangeListener<Character>() {
 			public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 				switch (newValue) {
@@ -248,6 +242,91 @@ public class Prompter extends Application {
 						break;
 						
 					default:
+						break;
+				}
+			}
+		});
+		
+		EventHandler<MouseEvent> overlayMousePressedHandler = new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent event) {
+				//begin new overlay zone
+				overlayZone = new Rectangle(event.getX(),event.getY(),0,0);
+			}
+		};
+		
+		EventHandler<MouseEvent> overlayMouseDraggedHandler = new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent event) {
+				//update overlay zone
+				double w = event.getX() - overlayZone.getX();
+				double h = event.getY() - overlayZone.getY();
+				
+				overlayZone.setWidth(w);
+				overlayZone.setHeight(h);
+			}
+		};
+		EventHandler<MouseEvent> overlayMouseReleasedHandler = new EventHandler<MouseEvent>() {
+			public void handle(MouseEvent event) {
+				//finish overlay zone
+				state.set(STATE_OVERLAY_INPUT_DONE);
+			}
+		};
+		
+		//handle native state changes
+		state.addListener(new ChangeListener<Character>() {
+			public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+				char state = newValue.charValue();
+				
+				switch (state) {
+					case STATE_ACCEPTING_ZONE:
+						//if accepting zones, overlay to front and accept input events
+						Platform.runLater(new Runnable() {
+							public void run() {
+								overlay.toFront();
+							}
+						});
+						overlay.addEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
+						overlay.addEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
+						overlay.addEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
+						
+						break;
+						
+					case STATE_OVERLAY_INPUT_DONE:
+						//finish zone acceptance, turn off overlay input monitoring
+						overlay.removeEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
+						overlay.removeEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
+						overlay.removeEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
+						Platform.runLater(new Runnable() {
+							public void run() {
+								overlay.hide();
+							}
+						});
+						
+						if (pendingWidget != null && overlayZone != null) {
+							//define widget's appearance with screenshot of captured zone
+							hide();
+							
+							Driver.captured.addListener(new ChangeListener<Boolean>() {
+								public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+									if (newValue) {
+										BufferedImage capture = new BufferedImage((int)overlayZone.getWidth(), (int)overlayZone.getHeight(), BufferedImage.TYPE_INT_RGB);
+										SwingFXUtils.fromFXImage(Driver.capture, capture);
+										
+										if (capture != null) {
+											Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "zone_capture.png");
+											pendingWidget.setAppearance(capture);
+										}
+									}
+								}
+							});
+							Driver.captureScreen(overlayZone);
+							
+							show();
+						}
+						else {
+							//should not be possible
+							Logger.logError("a region on screen was improperly defined, or defined for no widget");
+						}
+						
 						break;
 				}
 			}
@@ -413,6 +492,17 @@ public class Prompter extends Application {
 				graphics.clearRect(0, 0, OVERLAY_WIDTH, OVERLAY_HEIGHT);
 			}
 		});
+	}
+	
+	public static void requestAppearance(Widget widget) {
+		//ask user for widget's appearance
+		Logger.log("show me what " + widget.getName() + " looks like");
+		
+		//show overlay, accept zone
+		overlayZone = null;
+		pendingWidget = widget;
+		showOverlay();
+		state.set(STATE_ACCEPTING_ZONE);
 	}
 	
 	public static void consoleLog(String entry) {
