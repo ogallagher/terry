@@ -3,6 +3,7 @@ package com.terry;
 import java.awt.Dimension;
 import java.awt.MouseInfo;
 import java.awt.Point;
+import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -14,7 +15,6 @@ import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.robot.*;
-import javafx.scene.shape.Rectangle;
 
 public class Driver {
 	private static Robot robot;
@@ -204,9 +204,9 @@ public class Driver {
 			public void run() {
 				try {
 					robot.mousePress(MouseButton.PRIMARY);
-					robot.wait(DELAY_CLICK);
+					Thread.sleep(DELAY_CLICK);
 				    robot.mouseRelease(MouseButton.PRIMARY);
-				    robot.wait(DELAY_CLICK);
+				    Thread.sleep(DELAY_CLICK);
 				}
 				catch (InterruptedException e) {
 					//fail quietly
@@ -220,9 +220,9 @@ public class Driver {
 			public void run() {
 				try {
 					robot.mousePress(MouseButton.SECONDARY);
-					robot.wait(DELAY_CLICK);
+					Thread.sleep(DELAY_CLICK);
 				    robot.mouseRelease(MouseButton.SECONDARY);
-				    robot.wait(DELAY_CLICK);
+				    Thread.sleep(DELAY_CLICK);
 				}
 				catch (InterruptedException e) {
 					//fail quietly
@@ -236,6 +236,17 @@ public class Driver {
 	}
 	
 	public static void captureScreen(Rectangle region) {
+		//positivize region
+		int x=region.x, y=region.y, w=region.width, h=region.height;
+		if (w < 0) {
+			region.x = x + w;
+			region.width = -w;
+		}
+		if (h < 0) {
+			region.y = y + h;
+			region.height = -h;
+		}
+		
 		captured.set(false);
 		
 		Platform.runLater(new Runnable() {

@@ -33,8 +33,9 @@ public class InstructionParser {
 		
 		Scanner scanner = new Scanner(tokens);
 		String token;
+		boolean go = true;
 		
-		while (scanner.hasNext()) {
+		while (scanner.hasNext() && go) {
 			//get next token
 			token = scanner.next();
 			
@@ -53,10 +54,8 @@ public class InstructionParser {
 				}
 				else {
 					Compiler.enqueue(instruction);
+					go = false;
 				}
-				
-				//look for new instruction
-				possibilities = new InstructionPossibilities();
 			}
 		}
 		

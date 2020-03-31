@@ -28,12 +28,14 @@
  * 		- member definition
  * 
  * TODO:
- * 	- finish Widget.Appearance
- *  - accept widget appearances with prompter
+ * 	= finish Widget.Appearance
+ * 		+ store image features
+ * 		- normalize features
  *  - create action learner
  *  - create watcher connected to keyboard and mouse
  *  	- create os input hooks to catch keystrokes and mouse updates: https://stackoverflow.com/a/43885566/10200417
  *  	- trigger scribe with key combination
+ *  - ability to define Widget.zone, where a widget is expected to be found
  */
 
 package com.terry;
@@ -390,31 +392,27 @@ public class Terry {
 				Dimension screen = Driver.getScreen();
 				BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
 				
-				//make sure hide happens first
-				//TODO Platform.runLater may now be redundant
-				Platform.runLater(new Runnable() {
-					public void run() {
-						//handle capture result
-						Driver.captured.addListener(new ChangeListener<Boolean>() {
-							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-								if (newValue) {
-									SwingFXUtils.fromFXImage(Driver.capture, capture);
-									
-									//update statecaptureupdated when the capture object contains the data
-									SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
-									captureUpdated.set(true);
-									
-									if (capture != null) {
-										Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
-									}
-									
-									Prompter.show();
-								}
+				//capture screen
+				Driver.captured.addListener(new ChangeListener<Boolean>() {
+					public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+						if (newValue) {
+							SwingFXUtils.fromFXImage(Driver.capture, capture);
+							
+							//update statecaptureupdated when the capture object contains the data
+							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+							captureUpdated.set(true);
+							
+							if (capture != null) {
+								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
 							}
-						});
-						Driver.captureScreen();
+							
+							Prompter.show();
+							
+							Driver.captured.removeListener(this);
+						}
 					}
 				});
+				Driver.captureScreen();
 				
 				return capture;
 			}
@@ -475,6 +473,8 @@ public class Terry {
 										finalWidget.state = new CharProperty(Widget.STATE_IDLE);
 										finalWidget.state.addListener(new ChangeListener<Character>() {
 											public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+												boolean removeme = false;
+												
 												if (newValue == Widget.STATE_FOUND) {
 													Rectangle zone = finalWidget.getZone();
 													
@@ -489,9 +489,15 @@ public class Terry {
 													//update state(s)
 													location.setLocation(zone.getCenterX(), zone.getCenterY());
 													widgetlocationupdated.getProperty().set(true);
+													removeme = true;
 												}
 												else if (newValue == Widget.STATE_NOT_FOUND) {
 													Logger.log("widget not found");
+													removeme = true;
+												}
+												
+												if (removeme) {
+													finalWidget.state.removeListener(this);
 												}
 											}
 										});
@@ -502,6 +508,8 @@ public class Terry {
 									catch (WidgetException e) {
 										Logger.logError("widget search failed: " + e.getMessage());
 									}
+									
+									captureUpdated.removeListener(this);
 								}
 							}
 						});
@@ -545,7 +553,6 @@ public class Terry {
 					locateWidgetArgs.put("widget", widgetArg);
 					
 					try {
-						//widgetlocationupdated.getProperty().set(false);
 						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
 								if (newValue) {
@@ -559,6 +566,8 @@ public class Terry {
 									
 									//update mouse location
 									mouseat.getProperty().set(new Point2D.Float(x,y));
+									
+									widgetlocationupdated.getProperty().removeListener(this);
 								}
 							}
 						});
@@ -708,8 +717,8 @@ public class Terry {
 	public static void createLessons() {
 		Logger.log("creating lessons");
 		
-		//--- create widget with label ---//
-		Lesson newWidget = new Lesson("@$name ?is @ttype) |has,with,says,) @$label", Lesson.TYPE_WIDGET);
+		//--- create widget ---//
+		Lesson newWidget = new Lesson("@$name is @ttype ?|has,with,says,) @$label)", Lesson.TYPE_WIDGET);
 		
 		Definition newwidget = new Definition(new String[] {"name","type","label"}) {
 			private static final long serialVersionUID = 7901389876329514500L;
@@ -737,12 +746,32 @@ public class Terry {
 					}
 				}
 				
-				//update memory
+				//create widget
 				Widget widget = new Widget(name);
 				widget.setType(type);
 				widget.setLabel(label);
 				
-				Memory.addMapping(widget);
+				//ask for appearance
+				boolean appears = Prompter.askYesNo("Define appearance for " + name, null, "Does " + name + " have any other visuals/graphics that can help me find it (an icon, for example)?");
+				if (appears) {
+					Prompter.state.addListener(new ChangeListener<Character>() {
+						public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+							char state = newValue.charValue();
+							
+							if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+								//update memory
+								Memory.addMapping(widget);
+								Prompter.state.removeListener(this);
+							}
+						}
+					});
+					
+					Prompter.requestAppearance(widget);
+				}
+				else {
+					//update memory
+					Memory.addMapping(widget);
+				}
 			}
 		};
 		newWidget.setDefinition(newwidget);

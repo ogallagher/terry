@@ -153,10 +153,10 @@ public class Scribe {
 		//gtranscriber.start();
 		
 		String[] instructions = new String[] {
-				"elephant is a label that says elephant",
-				//"show me where elephant is",
+				"play is a button",
+				"show me where play is",
 				"move mouse to x sixty five y eighty",
-				"go to elephant",
+				"go to play",
 				"take a screen shot",
 				"click",
 				"type a hello from terry",

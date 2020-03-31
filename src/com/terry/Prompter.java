@@ -3,6 +3,8 @@ package com.terry;
 import java.awt.desktop.*;
 import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.Rectangle;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
 import java.awt.image.BufferedImage;
 import java.util.Optional;
@@ -10,6 +12,7 @@ import java.util.Optional;
 import com.terry.Driver.DriverException;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
+import com.terry.Widget.WidgetException;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -36,7 +39,6 @@ import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
 import javafx.scene.layout.StackPane;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
@@ -71,9 +73,10 @@ public class Prompter extends Application {
 	private static Widget pendingWidget = null;
 	
 	public static final char STATE_IDLE = 0;
-	public static final char STATE_SHOWING_ZONES = 1;
 	public static final char STATE_ACCEPTING_ZONE = 2;
 	public static final char STATE_OVERLAY_INPUT_DONE = 3;
+	public static final char STATE_ZONE_ABORTED = 4;
+	public static final char STATE_ZONE_COMPLETE = 5;
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
 		
@@ -250,24 +253,76 @@ public class Prompter extends Application {
 		EventHandler<MouseEvent> overlayMousePressedHandler = new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
 				//begin new overlay zone
-				overlayZone = new Rectangle(event.getX(),event.getY(),0,0);
+				overlayZone = new Rectangle();
+				overlayZone.setLocation((int)event.getX(), (int)event.getY());
 			}
 		};
 		
 		EventHandler<MouseEvent> overlayMouseDraggedHandler = new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
 				//update overlay zone
-				double w = event.getX() - overlayZone.getX();
-				double h = event.getY() - overlayZone.getY();
+				int x = overlayZone.x;
+				int y = overlayZone.y;
+				int w = (int)event.getX() - x;
+				int h = (int)event.getY() - y;
 				
-				overlayZone.setWidth(w);
-				overlayZone.setHeight(h);
+				overlayZone.width = w;
+				overlayZone.height = h;
+				
+				//draw overlay zone in red
+				clearOverlay();
+				colorOverlay(null, Color.ORANGERED);
+				
+				Rectangle positiveZone = new Rectangle();
+				if (w < 0) {
+					positiveZone.x = x + w;
+					positiveZone.width = -w;
+				}
+				else {
+					positiveZone.x = x;
+					positiveZone.width = w;
+				}
+				if (h < 0) {
+					positiveZone.y = y + h;
+					positiveZone.height = -h;
+				}
+				else {
+					positiveZone.y = y;
+					positiveZone.height = h;
+				}
+				
+				drawOverlay(positiveZone.getPathIterator(null),false,true);
 			}
 		};
 		EventHandler<MouseEvent> overlayMouseReleasedHandler = new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
-				//finish overlay zone
-				state.set(STATE_OVERLAY_INPUT_DONE);
+				if (overlayZone == null || overlayZone.width == 0 || overlayZone.height == 0) {
+					//zone aborted; confirm cancel
+					boolean quit = askYesNo("Region Aborted", 
+									   "Stop drawing the rectangle?", 
+									   "The current screen region is invalid. Did you mean to quit drawing it?");
+					
+					if (quit) {
+						overlayZone = null;
+						state.set(STATE_OVERLAY_INPUT_DONE);
+					}
+				}
+				else {
+					//finish overlay zone
+					state.set(STATE_OVERLAY_INPUT_DONE);
+				}
+				
+				//clear overlay
+				clearOverlay();
+			}
+		};
+		EventHandler<KeyEvent> overlayKeyReleasedHandler = new EventHandler<KeyEvent>() {
+			public void handle(KeyEvent event) {
+				if (event.getCode() == KeyCode.ESCAPE) {
+					//clear overlay zone
+					overlayZone = null;
+					clearOverlay();
+				}
 			}
 		};
 		
@@ -287,6 +342,7 @@ public class Prompter extends Application {
 						overlay.addEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
 						overlay.addEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
 						overlay.addEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
+						overlay.addEventHandler(KeyEvent.KEY_RELEASED, overlayKeyReleasedHandler);
 						
 						break;
 						
@@ -295,13 +351,18 @@ public class Prompter extends Application {
 						overlay.removeEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
 						overlay.removeEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
 						overlay.removeEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
+						overlay.removeEventHandler(KeyEvent.KEY_RELEASED, overlayKeyReleasedHandler);
 						Platform.runLater(new Runnable() {
 							public void run() {
 								overlay.hide();
 							}
 						});
 						
-						if (pendingWidget != null && overlayZone != null) {
+						if (overlayZone == null) {
+							//region aborted
+							Prompter.state.set(STATE_ZONE_ABORTED);
+						}
+						else if (pendingWidget != null) {
 							//define widget's appearance with screenshot of captured zone
 							hide();
 							
@@ -315,6 +376,10 @@ public class Prompter extends Application {
 											Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "zone_capture.png");
 											pendingWidget.setAppearance(capture);
 										}
+										
+										Prompter.state.set(STATE_ZONE_COMPLETE);
+										
+										Driver.captured.removeListener(this);
 									}
 								}
 							});
@@ -325,7 +390,9 @@ public class Prompter extends Application {
 						else {
 							//should not be possible
 							Logger.logError("a region on screen was improperly defined, or defined for no widget");
+							Prompter.state.set(STATE_ZONE_ABORTED);
 						}
+						Prompter.state.set(STATE_IDLE);
 						
 						break;
 				}
@@ -347,6 +414,13 @@ public class Prompter extends Application {
 				}
 			});
 		}
+		
+		//TODO remove testing
+		/*
+		Widget flag = new Widget("flag");
+		flag.setLabel("flag");
+		Prompter.requestAppearance(flag);
+		*/
 	}
 	
 	@Override
@@ -382,6 +456,23 @@ public class Prompter extends Application {
 		alert.setTitle("Unsaved Memory");
 		alert.setHeaderText("Learned Memory Not Saved");
 		alert.setContentText("Some things that Terry learned this session could not be saved. Are you sure you want to quit?");
+		
+		Optional<ButtonType> response = alert.showAndWait();
+		
+		if (response.isPresent()) {
+			return response.get() == ButtonType.YES;
+		}
+		else {
+			return false;
+		}
+	}
+	
+	public static boolean askYesNo(String title, String header, String message) {
+		Logger.log("asking " + title);
+		Alert alert = new Alert(AlertType.CONFIRMATION, message, ButtonType.NO, ButtonType.YES);
+		alert.initOwner(intercom);
+		alert.setTitle(title);
+		alert.setHeaderText(header);
 		
 		Optional<ButtonType> response = alert.showAndWait();
 		
@@ -497,6 +588,7 @@ public class Prompter extends Application {
 	public static void requestAppearance(Widget widget) {
 		//ask user for widget's appearance
 		Logger.log("show me what " + widget.getName() + " looks like");
+		Logger.log("draw a rectangle around " + widget.getName() + " and type ESC to cancel");
 		
 		//show overlay, accept zone
 		overlayZone = null;

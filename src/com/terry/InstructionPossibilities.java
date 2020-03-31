@@ -78,6 +78,7 @@ public class InstructionPossibilities {
 	 */
 	public InstructionPossibility finish(Scanner scanner) {
 		InstructionPossibility possibility = possibilities.get(0);
+		possibilities.clear();
 		
 		if (possibility.complete() != null) {
 			return possibility;
@@ -148,6 +149,7 @@ public class InstructionPossibilities {
 					}
 				}
 			}
+			possibilities.clear();
 			
 			return best;
 		}
