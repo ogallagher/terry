@@ -12,6 +12,7 @@ import java.util.Optional;
 import com.terry.Driver.DriverException;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
+import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
 
 import javafx.application.Application;
@@ -414,13 +415,6 @@ public class Prompter extends Application {
 				}
 			});
 		}
-		
-		//TODO remove testing
-		/*
-		Widget flag = new Widget("flag");
-		flag.setLabel("flag");
-		Prompter.requestAppearance(flag);
-		*/
 	}
 	
 	@Override
@@ -440,7 +434,15 @@ public class Prompter extends Application {
 				go = false;
 			}
 		}
+		
 		//destroy terry-specific resources
+		try {
+			Watcher.stop();
+		}
+		catch (WatcherException e) {
+			//fail and continue
+			Logger.logError(e.getMessage());
+		}
 		
 		if (!go && !confirmNoSave()) {
 			Logger.log("quit canceled");

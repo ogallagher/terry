@@ -28,12 +28,9 @@
  * 		- member definition
  * 
  * TODO:
- * 	= finish Widget.Appearance
- * 		+ store image features
- * 		- normalize features
  *  - create action learner
- *  - create watcher connected to keyboard and mouse
- *  	- create os input hooks to catch keystrokes and mouse updates: https://stackoverflow.com/a/43885566/10200417
+ *  = create watcher connected to keyboard and mouse
+ *  	= create os input hooks to catch keystrokes and mouse updates
  *  	- trigger scribe with key combination
  *  - ability to define Widget.zone, where a widget is expected to be found
  */
@@ -51,17 +48,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import org.bytedeco.javacpp.Loader;
-import org.bytedeco.opencv.opencv_java;
-
-import com.terry.Driver.DriverException;
 import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
 import com.terry.Scribe.ScribeException;
 import com.terry.State.StateException;
+import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
 
-import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -118,7 +111,9 @@ public class Terry {
 	public static final String KEY_GREATER = "gtr";
 	public static final String KEY_QUERY = "qry";
 	
-	public static final int EXITCODE_MEMORY = 1;
+	public static final int EXITCODE_OS = 1;
+	public static final int EXITCODE_WATCHER = 2;
+	public static final int EXITCODE_MEMORY = 3;
 	
 	public static void main(String[] args) {
 		Logger.init();
@@ -145,7 +140,15 @@ public class Terry {
 		else {
 			os = OS_OTHER;
 			Logger.logError("detected unsupported os: " + osName);
-			System.exit(1);
+			System.exit(EXITCODE_OS);
+		}
+		
+		try {
+			Watcher.init();
+		}
+		catch (WatcherException e) {
+			Logger.logError(e.getMessage());
+			System.exit(EXITCODE_WATCHER);
 		}
 		
 		try {
