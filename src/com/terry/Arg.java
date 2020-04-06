@@ -6,9 +6,9 @@ import java.util.ArrayList;
 import com.terry.Memory.Lookup;
 
 public class Arg {
-	public String name;
-	private Object value = null;
-	private String text = "";
+	public String name;				//name of arg in language mapping expression
+	private Object value = null;	//usable arg value
+	private String text = "";		//tokens that created the value
 	
 	//arg types cannot be ? + * ) as these are reserved for pattern structure
 	public static final char notarg = '0';		//not arg
@@ -245,7 +245,7 @@ public class Arg {
 				
 			case wigarg:
 				argValue = Arg.getWidget(next);
-				if (argValue != null) {
+				if (argValue != Terry.dummyWidget) {
 					Logger.log("found known widget " + next);
 				}
 				break;
@@ -477,7 +477,7 @@ public class Arg {
 		ArrayList<Lookup> entries = Memory.dictionaryLookup(name, false, false);
 		
 		if (entries == null) {
-			return null;
+			return Terry.dummyWidget;
 		}
 		else {
 			for (Lookup entry : entries) {

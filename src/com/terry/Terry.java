@@ -28,11 +28,17 @@
  * 		- member definition
  * 
  * TODO:
- *  - create action learner
+ * 	= recognize unknown widgets
+ *  = create action learner
+ *  	= recognize unknown actions
+ *  	- learn by instruction
+ *  	- learn by demonstration
  *  = create watcher connected to keyboard and mouse
  *  	= create os input hooks to catch keystrokes and mouse updates
- *  	- trigger scribe with key combination
+ *  	+ trigger scribe with key combination (not a good key combo; just what works on both win and mac right now)
  *  - ability to define Widget.zone, where a widget is expected to be found
+ *  - hide overlay when no longer needed
+ *  + create log files
  */
 
 package com.terry;
@@ -50,11 +56,13 @@ import java.util.Map.Entry;
 
 import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
+import com.terry.Prompter.PrompterException;
 import com.terry.Scribe.ScribeException;
 import com.terry.State.StateException;
 import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -174,6 +182,7 @@ public class Terry {
 			createPrimitiveActions();
 			createLessons();
 		}
+		
 		Logger.log(Memory.printDictionary());
 		
 		prompter = new Prompter();
@@ -486,7 +495,7 @@ public class Terry {
 													//direct prompter to highlight found widget
 													Prompter.clearOverlay();
 													Prompter.showOverlay();
-													Prompter.colorOverlay(new Color(1,1,1,0.2), Color.YELLOW);
+													Prompter.colorOverlay(new Color(0.8,0.1,0.6,0.2), Color.MEDIUMVIOLETRED);
 													Prompter.drawOverlay(zone.getPathIterator(null), true, true);
 													
 													//update state(s)
@@ -754,27 +763,37 @@ public class Terry {
 				widget.setType(type);
 				widget.setLabel(label);
 				
-				//ask for appearance
-				boolean appears = Prompter.askYesNo("Define appearance for " + name, null, "Does " + name + " have any other visuals/graphics that can help me find it (an icon, for example)?");
-				if (appears) {
-					Prompter.state.addListener(new ChangeListener<Character>() {
-						public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
-							char state = newValue.charValue();
-							
-							if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+				//ask for appearance, askYesNo requires fx thread
+				final String finalName = name;
+				Platform.runLater(new Runnable() {
+					public void run() {
+						try {
+							boolean appears = Prompter.askYesNo("Define appearance for " + finalName, null, "Does " + finalName + " have any other visuals/graphics that can help me find it (an icon, for example)?");
+							if (appears) {
+								Prompter.state.addListener(new ChangeListener<Character>() {
+									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										char state = newValue.charValue();
+										
+										if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+											//update memory
+											Memory.addMapping(widget);
+											Prompter.state.removeListener(this);
+										}
+									}
+								});
+								
+								Prompter.requestAppearance(widget);
+							}
+							else {
 								//update memory
 								Memory.addMapping(widget);
-								Prompter.state.removeListener(this);
 							}
 						}
-					});
-					
-					Prompter.requestAppearance(widget);
-				}
-				else {
-					//update memory
-					Memory.addMapping(widget);
-				}
+						catch (PrompterException e) {
+							Logger.logError(e.getMessage());
+						}
+					}
+				});
 			}
 		};
 		newWidget.setDefinition(newwidget);
