@@ -452,19 +452,19 @@ public class Memory {
 	}
 	
 	public static String printDictionary() {
-		String string = "";
+		StringBuilder string = new StringBuilder("printing dictionary\n");
 		
 		for (Entry<String, ArrayList<LanguageMapping>> entry : dictionary.entrySet()) {
-			string += entry.getKey() + ": ";
+			string.append(entry.getKey() + ": ");
 			
 			for (LanguageMapping lm : entry.getValue()) {
-				string += lm.id + " ";
+				string.append(lm.id + " ");
 			}
 			
-			string += "\n";
+			string.append("\n");
 		}
 		
-		return string;
+		return string.toString();
 	}
 	
 	/*

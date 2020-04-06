@@ -35,9 +35,10 @@
  *  	- learn by demonstration
  *  = create watcher connected to keyboard and mouse
  *  	= create os input hooks to catch keystrokes and mouse updates
- *  	- trigger scribe with key combination
+ *  	+ trigger scribe with key combination (not a good key combo; just what works on both win and mac right now)
  *  - ability to define Widget.zone, where a widget is expected to be found
  *  - hide overlay when no longer needed
+ *  + create log files
  */
 
 package com.terry;
@@ -181,6 +182,7 @@ public class Terry {
 			createPrimitiveActions();
 			createLessons();
 		}
+		
 		Logger.log(Memory.printDictionary());
 		
 		prompter = new Prompter();

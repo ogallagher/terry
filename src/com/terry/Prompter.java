@@ -452,6 +452,9 @@ public class Prompter extends Application {
 			}
 		}
 		
+		//save logs
+		Logger.save();
+		
 		//destroy terry-specific resources
 		try {
 			Watcher.disable();
