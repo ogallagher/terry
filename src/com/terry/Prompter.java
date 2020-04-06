@@ -454,7 +454,7 @@ public class Prompter extends Application {
 		
 		//destroy terry-specific resources
 		try {
-			Watcher.stop();
+			Watcher.disable();
 		}
 		catch (WatcherException e) {
 			//fail and continue

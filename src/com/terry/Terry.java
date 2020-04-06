@@ -37,6 +37,7 @@
  *  	= create os input hooks to catch keystrokes and mouse updates
  *  	- trigger scribe with key combination
  *  - ability to define Widget.zone, where a widget is expected to be found
+ *  - hide overlay when no longer needed
  */
 
 package com.terry;
@@ -492,7 +493,7 @@ public class Terry {
 													//direct prompter to highlight found widget
 													Prompter.clearOverlay();
 													Prompter.showOverlay();
-													Prompter.colorOverlay(new Color(1,1,1,0.2), Color.YELLOW);
+													Prompter.colorOverlay(new Color(0.8,0.1,0.6,0.2), Color.MEDIUMVIOLETRED);
 													Prompter.drawOverlay(zone.getPathIterator(null), true, true);
 													
 													//update state(s)

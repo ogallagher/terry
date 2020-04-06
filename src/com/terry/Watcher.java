@@ -1,6 +1,8 @@
 package com.terry;
 
+import java.awt.Point;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.logging.Level;
 
 import org.jnativehook.GlobalScreen;
@@ -10,7 +12,12 @@ import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
+import javafx.event.Event;
+import javafx.event.EventType;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
+import javafx.scene.input.MouseEvent;
 
 public class Watcher {	
 	private static NativeKeyListener nativeKeyListener;
@@ -21,19 +28,14 @@ public class Watcher {
 	
 	private static ArrayList<KeyCode> keysPressed; 
 	
+	private static boolean enabled = false;
+	private static boolean recording = false;
+	
 	public static void init() throws WatcherException {
 		//disable jnativehook logging
 		java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GlobalScreen.class.getPackage().getName());
 		logger.setLevel(Level.WARNING);
 		logger.setUseParentHandlers(false);
-		
-		//register native hook for terry
-		try {
-			GlobalScreen.registerNativeHook();
-		} 
-		catch (NativeHookException e) {
-			throw new WatcherException("terry failed to register native hooks for mouse and keyboard events");
-		} 
 		
 		//handle keyboard input
 		keysPressed = new ArrayList<>();
@@ -69,7 +71,6 @@ public class Watcher {
 				//do nothing
 			}
 		};
-		GlobalScreen.addNativeKeyListener(nativeKeyListener);
 		
 		//handle mouse input
 		nativeMouseListener = new NativeMouseInputListener() {
@@ -95,18 +96,60 @@ public class Watcher {
 			}
 		};
 		
+		enable();
+		
 		Logger.log("watcher init success");
 	}
 	
-	public static void stop() throws WatcherException {
-		Logger.log("stopping watcher");
-		GlobalScreen.removeNativeKeyListener(nativeKeyListener);
+	public static void enable() throws WatcherException {
+		Logger.log("enabling watcher");
+		
 		try {
+			//register native hook for terry
+			GlobalScreen.registerNativeHook();
+			
+			//add native key listener
+			GlobalScreen.addNativeKeyListener(nativeKeyListener);
+			
+			//add native mouse listener
+			
+			enabled = true;
+		} 
+		catch (NativeHookException e) {
+			throw new WatcherException("terry failed to register native hooks for mouse and keyboard events");
+		} 
+	}
+	
+	public static void disable() throws WatcherException {
+		Logger.log("disabling watcher");
+		
+		if (recording) {
+			ignore();
+		}
+		
+		try {
+			//remove native input listeners
+			GlobalScreen.removeNativeKeyListener(nativeKeyListener);
+			
+			//unregister native hook
 			GlobalScreen.unregisterNativeHook();
+			
+			enabled = false;
 		} 
 		catch (NativeHookException e) {
 			throw new WatcherException("unable to unregister native hooks for watcher");
 		}
+	}
+	
+	public static void record() throws WatcherException {
+		if (!enabled) {
+			enable();
+		}
+		recording = true;
+	}
+	
+	public static void ignore() {
+		recording = false;
 	}
 	
 	//adapted from https://github.com/kwhat/jnativehook/pull/209
@@ -215,7 +258,6 @@ public class Watcher {
                 break;
             // End Function Keys
 
-
             // Begin Alphanumeric Zone
             case NativeKeyEvent.VC_BACKQUOTE:
                 fxKey = KeyCode.BACK_QUOTE;
@@ -274,7 +316,6 @@ public class Watcher {
                 fxKey = KeyCode.BACK_SPACE;
                 break;
 
-
             case NativeKeyEvent.VC_TAB:
                 fxKey = KeyCode.TAB;
                 break;
@@ -282,7 +323,6 @@ public class Watcher {
             case NativeKeyEvent.VC_CAPS_LOCK:
                 fxKey = KeyCode.CAPS;
                 break;
-
 
             case NativeKeyEvent.VC_A:
                 fxKey = KeyCode.A;
@@ -432,7 +472,6 @@ public class Watcher {
                 break;
             // End Alphanumeric Zone
 
-
             case NativeKeyEvent.VC_PRINTSCREEN:
                 fxKey = KeyCode.PRINTSCREEN;
                 break;
@@ -444,7 +483,6 @@ public class Watcher {
             case NativeKeyEvent.VC_PAUSE:
                 fxKey = KeyCode.PAUSE;
                 break;
-
 
             // Begin Edit Key Zone
             case NativeKeyEvent.VC_INSERT:
@@ -472,7 +510,6 @@ public class Watcher {
                 break;
             // End Edit Key Zone
 
-
             // Begin Cursor Key Zone
             case NativeKeyEvent.VC_UP:
                 fxKey = KeyCode.UP;
@@ -491,7 +528,6 @@ public class Watcher {
                 break;
             // End Cursor Key Zone
 
-
             // Begin Numeric Zone
             case NativeKeyEvent.VC_NUM_LOCK:
                 fxKey = KeyCode.NUM_LOCK;
@@ -501,7 +537,6 @@ public class Watcher {
                 fxKey = KeyCode.SEPARATOR;
                 break;
             // End Numeric Zone
-
 
             // Begin Modifier and Control Keys
             case NativeKeyEvent.VC_SHIFT:
@@ -525,7 +560,6 @@ public class Watcher {
                 fxKey = KeyCode.CONTEXT_MENU;
                 break;
             // End Modifier and Control Keys
-
 
 			/* Begin Media Control Keys
 			case NativeKeyEvent.VC_POWER:
@@ -552,30 +586,6 @@ public class Watcher {
 			case NativeKeyEvent.VC_BROWSER_REFRESH:
 			case NativeKeyEvent.VC_BROWSER_FAVORITES:
 			// End Media Control Keys */
-
-
-            // Begin Japanese Language Keys
-            case NativeKeyEvent.VC_KATAKANA:
-                fxKey = KeyCode.KATAKANA;
-                break;
-
-            case NativeKeyEvent.VC_UNDERSCORE:
-                fxKey = KeyCode.UNDERSCORE;
-                break;
-
-            //case VC_FURIGANA:
-
-            case NativeKeyEvent.VC_KANJI:
-                fxKey = KeyCode.KANJI;
-                break;
-
-            case NativeKeyEvent.VC_HIRAGANA:
-                fxKey = KeyCode.HIRAGANA;
-                break;
-
-            //case VC_YEN:
-            // End Japanese Language Keys
-
 
             // Begin Sun keyboards
             case NativeKeyEvent.VC_SUN_HELP:
@@ -622,6 +632,163 @@ public class Watcher {
 		
 		public WatcherException(String message) {
 			super(message);
+		}
+	}
+	
+	/*
+	 * A sequential log of keyboard and mouse manipulations from a start time to an end time,
+	 * along with screen data for determining selected widgets.
+	 */
+	public static class WatcherRecording {
+		LinkedList<Peripheral> manipulations;
+		
+		public WatcherRecording() {
+			manipulations = new LinkedList<>();
+		}
+		
+		public void pressKey(long timestamp, KeyCode key) {
+			addKey(KeyEvent.KEY_PRESSED, timestamp, key);
+		}
+		
+		public void releaseKey(long timestamp, KeyCode key) {
+			addKey(KeyEvent.KEY_RELEASED, timestamp, key);
+		}
+		
+		private void addKey(EventType<KeyEvent> type, long timestamp, KeyCode key) {
+			try {
+				Keyboard last = (Keyboard) manipulations.getLast();
+				last = last.append(type, timestamp, key);
+				
+				if (last != null) {
+					manipulations.add(last);
+				}
+			}
+			catch (ClassCastException e) {
+				manipulations.add(new Keyboard(type, timestamp, key));
+			}
+		}
+		
+		public void moveMouse(long timestamp, int x, int y) {
+			addMouse(MouseEvent.MOUSE_MOVED, timestamp, x, y, MouseButton.NONE);
+		}
+		
+		public void dragMouse(long timestamp, int x, int y) {
+			addMouse(MouseEvent.MOUSE_DRAGGED, timestamp, x, y, MouseButton.NONE);
+		}
+		
+		public void pressMouse(long timestamp, int x, int y, MouseButton button) {
+			addMouse(MouseEvent.MOUSE_PRESSED, timestamp, x, y, button);
+		}
+		
+		public void releaseMouse(long timestamp, int x, int y, MouseButton button) {
+			addMouse(MouseEvent.MOUSE_RELEASED, timestamp, x, y, button);
+		}
+		
+		private void addMouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
+			try {
+				Mouse last = (Mouse) manipulations.getLast();
+				last = last.append(type, timestamp, x, y, button);
+				
+				if (last != null) {
+					manipulations.add(last);
+				}
+			}
+			catch (ClassCastException e) {
+				manipulations.add(new Mouse(type, timestamp, x, y, button));
+			}
+		}
+		
+		//returns duration of full recording in milliseconds
+		public long duration() {
+			return manipulations.getLast().start - manipulations.getFirst().start;
+		}
+	}
+	
+	protected abstract static class Peripheral {
+		EventType<? extends Event> type;
+		long start;			
+	}
+	
+	public static class Keyboard extends Peripheral {
+		private KeyCode key;
+		
+		public Keyboard(EventType<KeyEvent> type, long timestamp, KeyCode key) {
+			this.type = type;
+			start = timestamp;
+			this.key = key;
+		}
+		
+		Keyboard append(EventType<KeyEvent> type, long timestamp, KeyCode key) {
+			return new Keyboard((EventType<KeyEvent>) type, timestamp, key);
+		}
+	}
+	
+	/*
+	 * Moves are a straight line from orig to dest.
+	 * Presses are done in place, to begin a drag or click.
+	 * Drags are begun with a press, but not finished with a release. 
+	 * Releases are always done in place, to denote clicks.
+	 */
+	public static class Mouse extends Peripheral {
+		private Point orig;
+		private Point dest;
+		private MouseButton button;
+		
+		public Mouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
+			this.type = type;
+			start = timestamp;
+			orig = new Point(x, y);
+			dest = new Point(x, y);
+			this.button = button;
+		}
+
+		Mouse append(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
+			boolean newMouse = false;
+			
+			if (type == MouseEvent.MOUSE_MOVED) {
+				if (this.type == type) {
+					//extend movement
+					dest.x = x;
+					dest.y = y;
+				}
+				else {
+					newMouse = true;
+				}
+			}
+			else if (type == MouseEvent.MOUSE_PRESSED) {
+				if (this.type != type) {
+					newMouse = true;
+				}
+				//else ignore duplicate press
+			}
+			else if (type == MouseEvent.MOUSE_RELEASED || type == MouseEvent.MOUSE_CLICKED) {
+				if (this.type == MouseEvent.MOUSE_DRAGGED) {
+					//end drag
+					dest.x = x;
+					dest.y = y;
+				}
+				else if (this.type == MouseEvent.MOUSE_PRESSED) {
+					newMouse = true;
+				}
+				//else ignore duplicate release
+			}
+			else if (type == MouseEvent.MOUSE_DRAGGED) {
+				if (this.type == type) {
+					//extend drag
+					dest.x = x;
+					dest.y = y;
+				}
+				else {
+					newMouse = true;
+				}
+			}
+			
+			if (newMouse) {
+				return new Mouse(type, timestamp, x, y, button);
+			}
+			else {
+				return null;
+			}
 		}
 	}
 }
