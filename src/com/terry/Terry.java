@@ -28,7 +28,11 @@
  * 		- member definition
  * 
  * TODO:
- *  - create action learner
+ * 	= recognize unknown widgets
+ *  = create action learner
+ *  	= recognize unknown actions
+ *  	- learn by instruction
+ *  	- learn by demonstration
  *  = create watcher connected to keyboard and mouse
  *  	= create os input hooks to catch keystrokes and mouse updates
  *  	- trigger scribe with key combination
@@ -50,11 +54,13 @@ import java.util.Map.Entry;
 
 import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
+import com.terry.Prompter.PrompterException;
 import com.terry.Scribe.ScribeException;
 import com.terry.State.StateException;
 import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
 
+import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
@@ -754,27 +760,37 @@ public class Terry {
 				widget.setType(type);
 				widget.setLabel(label);
 				
-				//ask for appearance
-				boolean appears = Prompter.askYesNo("Define appearance for " + name, null, "Does " + name + " have any other visuals/graphics that can help me find it (an icon, for example)?");
-				if (appears) {
-					Prompter.state.addListener(new ChangeListener<Character>() {
-						public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
-							char state = newValue.charValue();
-							
-							if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+				//ask for appearance, askYesNo requires fx thread
+				final String finalName = name;
+				Platform.runLater(new Runnable() {
+					public void run() {
+						try {
+							boolean appears = Prompter.askYesNo("Define appearance for " + finalName, null, "Does " + finalName + " have any other visuals/graphics that can help me find it (an icon, for example)?");
+							if (appears) {
+								Prompter.state.addListener(new ChangeListener<Character>() {
+									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										char state = newValue.charValue();
+										
+										if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+											//update memory
+											Memory.addMapping(widget);
+											Prompter.state.removeListener(this);
+										}
+									}
+								});
+								
+								Prompter.requestAppearance(widget);
+							}
+							else {
 								//update memory
 								Memory.addMapping(widget);
-								Prompter.state.removeListener(this);
 							}
 						}
-					});
-					
-					Prompter.requestAppearance(widget);
-				}
-				else {
-					//update memory
-					Memory.addMapping(widget);
-				}
+						catch (PrompterException e) {
+							Logger.logError(e.getMessage());
+						}
+					}
+				});
 			}
 		};
 		newWidget.setDefinition(newwidget);

@@ -175,6 +175,7 @@ public class InstructionPossibilities {
 		private ArrayList<InstructionPossibility> leaves;	//root has links to leaves
 		private ArrayList<Integer> completion;
 		private int[] argCount;
+		private String unknownWidget = null;
 		
 		//root constructor
 		public InstructionPossibility(LanguageMapping lm, PatternNode leader, String token) {
@@ -358,9 +359,15 @@ public class InstructionPossibilities {
 					if (leaf.arg == null) { //first word of arg
 						Arg arg = new Arg();
 						arg.name = leaf.node.token;
-						arg.setValue(Arg.getArgValue(argType, next), next);
+						Object argValue = Arg.getArgValue(argType, next);
+						arg.setValue(argValue, next);
 						
-						if (arg.getValue() != null) {
+						if (argValue != null) {
+							if (argValue == Terry.dummyWidget) {
+								//handle unknown widget
+								unknownWidget = arg.getText();
+							}
+							
 							Logger.log("set arg " + arg.name + " to " + arg.getValue());
 							leaf.arg = arg;
 							resolved = true;
@@ -383,6 +390,10 @@ public class InstructionPossibilities {
 						
 						//arg could add next token; remains as a leaf
 						if (cloneArg.appendToken(argType, next)) {
+							if (cloneArg.getValue() == Terry.dummyWidget) {
+								unknownWidget = cloneArg.getText();
+							}
+							
 							//there now exist multiple possible values of this arg, including or not including next token
 							InstructionPossibility cloneLeaf = new InstructionPossibility(leaf, leaves, newLeaves); //TODO handle leaves.contains() check
 							cloneLeaf.arg = cloneArg;
@@ -513,6 +524,10 @@ public class InstructionPossibilities {
 			return argCount;
 		}
 		
+		public String unknownWidget() {
+			return unknownWidget;
+		}
+		
 		/*
 		 * Only the root possibility should call this method, which follows through
 		 * on the mapped lesson or action.
@@ -521,18 +536,24 @@ public class InstructionPossibilities {
 			System.out.println(diagram());
 			
 			char mappingType = mapping.getType();
+			String unknownWidget = null;
 			
 			if (mappingType != LanguageMapping.TYPE_UNKNOWN) {
 				HashMap<String,Arg> argMap = new HashMap<>();
 				
 				InstructionPossibility p = children.get(completion.get(0));
 				if (p.arg != null) {
-					argMap.put(p.arg.name, p.arg);
+					if (p.arg.getValue() != Terry.dummyWidget) {
+						argMap.put(p.arg.name, p.arg);
+					}
+					else {
+						unknownWidget = p.arg.getText();
+					}
 				}
 				
 				StringBuilder instructionString = new StringBuilder();	
 				
-				for (int i=1; i<completion.size() && !p.children.isEmpty(); i++) {
+				for (int i=1; i<completion.size() && !p.children.isEmpty() && unknownWidget == null; i++) {
 					if (p.getType() == Arg.notarg) {
 						instructionString.append(p.node.token + " ");
 					}
@@ -543,7 +564,12 @@ public class InstructionPossibilities {
 					p = p.children.get(completion.get(i));
 					
 					if (p.arg != null) {
-						argMap.put(p.arg.name, p.arg);
+						if (p.arg.getValue() != Terry.dummyWidget) {
+							argMap.put(p.arg.name, p.arg);
+						}
+						else {
+							unknownWidget = p.arg.getText();
+						}
 					}
 				}
 				if (p.getType() == Arg.notarg) {
@@ -553,18 +579,23 @@ public class InstructionPossibilities {
 					instructionString.append(p.node.token + "=" + p.arg.getValue());
 				}
 				
-				Logger.log("compiled instruction: " + instructionString.toString());
-				
-				if (mappingType == LanguageMapping.TYPE_ACTION) {
-					try {
-						((Action) mapping).execute(argMap);
+				if (unknownWidget == null) {
+					Logger.log("compiled instruction: " + instructionString.toString());
+					
+					if (mappingType == LanguageMapping.TYPE_ACTION) {
+						try {
+							((Action) mapping).execute(argMap);
+						}
+						catch (StateException e) {
+							Logger.logError(e.getMessage());
+						}
 					}
-					catch (StateException e) {
-						Logger.logError(e.getMessage());
+					else if (mappingType == LanguageMapping.TYPE_LESSON) {
+						((Lesson) mapping).learn(argMap);
 					}
 				}
-				else if (mappingType == LanguageMapping.TYPE_LESSON) {
-					((Lesson) mapping).learn(argMap);
+				else {
+					Logger.log("no known widgets called " + unknownWidget + ". perhaps you could teach it to me?");
 				}
 			}
 			else {

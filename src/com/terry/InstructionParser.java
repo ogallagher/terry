@@ -33,13 +33,13 @@ public class InstructionParser {
 		
 		Scanner scanner = new Scanner(tokens);
 		String token;
-		boolean go = true;
+		InstructionPossibility instruction = null;
+		boolean unresolved = true;
+		boolean unknownAction = false;
 		
-		while (scanner.hasNext() && go) {
+		while (scanner.hasNext() && unresolved) {
 			//get next token
 			token = scanner.next();
-			
-			//handle punctuation
 			
 			//update instruction possibilities
 			if (possibilities.resolve(token)) {
@@ -47,14 +47,17 @@ public class InstructionParser {
 				 * If possibilities have resolved into one mapping, fill in the rest of the tokens 
 				 * and execute the action or learn the lesson.
 				 */
-				InstructionPossibility instruction = possibilities.finish(scanner);
+				instruction = possibilities.finish(scanner);
 				
 				if (instruction == null) { //instruction did not match mapping
 					Logger.logError("mapping candidate for given instruction failed to resolve");
+					unresolved = false;
+					unknownAction = true;
 				}
 				else {
+					unresolved = false;
+					
 					Compiler.enqueue(instruction);
-					go = false;
 				}
 			}
 		}
@@ -62,16 +65,29 @@ public class InstructionParser {
 		/*
 		 * If there are multiple remaining possibilities (or none), pick the best.
 		 */
-		InstructionPossibility instruction = possibilities.finish();
-		
-		if (instruction != null) { //there were no remaining possibilities
-			Compiler.enqueue(instruction);
+		if (unresolved) {
+			instruction = possibilities.finish();
+			
+			if (instruction == null) { //there were no remaining possibilities
+				unknownAction = true;
+				Logger.logError("no mappings matched given instruction");
+			}
+			else {				
+				Compiler.enqueue(instruction);
+			}
 		}
 		
-		//follow through
-		Compiler.compile();
-		
 		scanner.close();
+		if (unknownAction) {
+			//notify unknown action
+			Logger.log("perhaps \"" + tokens + "\" contains actions I've not learned yet?");
+		}
+		else {
+			//follow through
+			Compiler.compile();
+		}
+		
+		
 		state.set(STATE_DONE);
 		state.set(STATE_IDLE);
 	}

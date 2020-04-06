@@ -4,16 +4,14 @@ import java.awt.desktop.*;
 import java.awt.Desktop;
 import java.awt.Dimension;
 import java.awt.Rectangle;
-import java.awt.geom.AffineTransform;
 import java.awt.geom.PathIterator;
 import java.awt.image.BufferedImage;
 import java.util.Optional;
 
+import com.sun.javafx.tk.Toolkit;
 import com.terry.Driver.DriverException;
 import com.terry.Memory.MemoryException;
-import com.terry.Scribe.ScribeException;
 import com.terry.Watcher.WatcherException;
-import com.terry.Widget.WidgetException;
 
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -23,7 +21,6 @@ import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
 import javafx.event.EventHandler;
-import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -68,6 +65,7 @@ public class Prompter extends Application {
 	private static Stage overlay; //transparent full-screen window for drawing over GUI. Hidden most of the time
 	private static int OVERLAY_WIDTH;
 	private static int OVERLAY_HEIGHT;
+	private static double OVERLAY_STROKE_WIDTH;
 	private static GraphicsContext graphics; //overlay graphics context
 	
 	private static Rectangle overlayZone = null;
@@ -80,12 +78,12 @@ public class Prompter extends Application {
 	public static final char STATE_ZONE_COMPLETE = 5;
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
+	
+	public static KeyCode[] keyComboScribe;
+	public static KeyCode[] keyComboScribeDone;
 		
 	/*
-	 * (non-Javadoc)
-	 * @see javafx.application.Application#init()
-	 * 
-	 * This cannot be a static method because it's inherited from Application, but effectively I'll treat it
+	 * This cannot be a static method because it's inherited from javafx.application.Application, but effectively I'll treat it
 	 * as if it were static.
 	 */
 	public void init(String[] args) {
@@ -134,6 +132,15 @@ public class Prompter extends Application {
 				Terry.triggerScribe();
 			}
 		});
+		
+		//scribe trigger: key combo
+		if (Terry.os == Terry.OS_MAC) {
+			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
+		}
+		else {
+			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.CONTROL};
+		}
+		keyComboScribeDone = new KeyCode[] {KeyCode.UNDEFINED}; //undefined = any key
 		
 		//launch console window
 		console = new Stage();
@@ -209,6 +216,9 @@ public class Prompter extends Application {
 		overlayCanvas.setWidth(OVERLAY_WIDTH);
 		overlayCanvas.setHeight(OVERLAY_HEIGHT);
 		graphics = overlayCanvas.getGraphicsContext2D();
+		
+		OVERLAY_STROKE_WIDTH = 2.5;
+		graphics.setLineWidth(OVERLAY_STROKE_WIDTH);
 		
 		intercom.show();
 		
@@ -299,11 +309,18 @@ public class Prompter extends Application {
 			public void handle(MouseEvent event) {
 				if (overlayZone == null || overlayZone.width == 0 || overlayZone.height == 0) {
 					//zone aborted; confirm cancel
-					boolean quit = askYesNo("Region Aborted", 
-									   "Stop drawing the rectangle?", 
-									   "The current screen region is invalid. Did you mean to quit drawing it?");
-					
-					if (quit) {
+					try {
+						boolean quit = askYesNo("Region Aborted", 
+										   "Stop drawing the rectangle?", 
+										   "The current screen region is invalid. Did you mean to quit drawing it?");
+						
+						if (quit) {
+							overlayZone = null;
+							state.set(STATE_OVERLAY_INPUT_DONE);
+						}
+					}
+					catch (PrompterException e) {
+						Logger.logError(e.getMessage());
 						overlayZone = null;
 						state.set(STATE_OVERLAY_INPUT_DONE);
 					}
@@ -469,20 +486,30 @@ public class Prompter extends Application {
 		}
 	}
 	
-	public static boolean askYesNo(String title, String header, String message) {
-		Logger.log("asking " + title);
-		Alert alert = new Alert(AlertType.CONFIRMATION, message, ButtonType.NO, ButtonType.YES);
-		alert.initOwner(intercom);
-		alert.setTitle(title);
-		alert.setHeaderText(header);
-		
-		Optional<ButtonType> response = alert.showAndWait();
-		
-		if (response.isPresent()) {
-			return response.get() == ButtonType.YES;
+	public static boolean askYesNo(String title, String header, String message) throws PrompterException {
+		if (Toolkit.getToolkit().isFxUserThread()) {
+			Logger.log("asking " + title);
+			Alert alert = new Alert(AlertType.CONFIRMATION, message, ButtonType.NO, ButtonType.YES);
+			alert.initOwner(intercom);
+			alert.setTitle(title);
+			alert.setHeaderText(header);
+			
+			try {
+				Optional<ButtonType> response = alert.showAndWait();
+				
+				if (response.isPresent()) {
+					return response.get() == ButtonType.YES;
+				}
+				else {
+					return false;
+				}
+			}
+			catch (ArrayIndexOutOfBoundsException e) {
+				throw new PrompterException("internal error ocurred when creating alert");
+			}
 		}
 		else {
-			return false;
+			throw new PrompterException("prompter askyesno method must be run on fx thread");
 		}
 	}
 	
@@ -587,8 +614,8 @@ public class Prompter extends Application {
 		});
 	}
 	
+	//get widget's appearance from user
 	public static void requestAppearance(Widget widget) {
-		//ask user for widget's appearance
 		Logger.log("show me what " + widget.getName() + " looks like");
 		Logger.log("draw a rectangle around " + widget.getName() + " and type ESC to cancel");
 		
@@ -609,5 +636,11 @@ public class Prompter extends Application {
 		
 		consoleOut.add(entry);
 		consoleOutView.scrollTo(last);
+	}
+	
+	public static class PrompterException extends Exception {
+		public PrompterException(String message) {
+			super(message);
+		}
 	}
 }
