@@ -16,6 +16,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -479,7 +480,16 @@ public class Widget extends LanguageMapping implements Serializable {
 		ArrayList<Rectangle> candidates;
 		
 		public static void init() throws WidgetException {
-			visionDir = new File(Terry.class.getResource(VISION_PATH).getPath());
+			visionDir = new File(Terry.class.getResource(Terry.RES_PATH).getPath(), "vision/");
+			if (!visionDir.exists()) {
+				try {
+					visionDir.createNewFile();
+				} 
+				catch (IOException e) {
+					throw new WidgetException("could not create res/vision/ directory");
+				}
+			}
+			
 			gcloudCredentialsFile = new File(visionDir,GCLOUD_CREDENTIALS_PATH);
 			
 			CredentialsProvider credentials;

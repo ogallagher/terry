@@ -30,21 +30,26 @@ public class State<T> implements Serializable {
 		this.value = new SimpleObjectProperty<T>(value);
 		argNames = args;
 		
-		Class<?> typeClass = value.getClass();
-		if (typeClass == Boolean.class) {
-			type = TYPE_BOOL;
+		if (value == null) {
+			Logger.logError("created state " + name + " of unknown type");
 		}
-		else if (typeClass == Integer.class) {
-			type = TYPE_INT;
-		}
-		else if (typeClass == String.class) {
-			type = TYPE_STR;
-		}
-		else if (typeClass == Point2D.class) {
-			type = TYPE_PNT;
-		}
-		else if (typeClass == BufferedImage.class) {
-			type = TYPE_IMG;
+		else {
+			Class<?> typeClass = value.getClass();
+			if (typeClass == Boolean.class) {
+				type = TYPE_BOOL;
+			}
+			else if (typeClass == Integer.class) {
+				type = TYPE_INT;
+			}
+			else if (typeClass == String.class) {
+				type = TYPE_STR;
+			}
+			else if (typeClass == Point2D.class) {
+				type = TYPE_PNT;
+			}
+			else if (typeClass == BufferedImage.class) {
+				type = TYPE_IMG;
+			}
 		}
 		
 		this.transition = transition;

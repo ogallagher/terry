@@ -31,52 +31,19 @@ public class Watcher {
 		} 
 		
 		nativeKeyListener = new NativeKeyListener() {
-			//only works with control keys
 			public void nativeKeyPressed(NativeKeyEvent e) {
 				int key = e.getKeyCode();
 				boolean alphanumeric = (key >= NativeKeyEvent.VC_A && key <= NativeKeyEvent.VC_Z) || 
 									   (key >= NativeKeyEvent.VC_1 && key <= NativeKeyEvent.VC_0);
 				
-				String message = "native key " + key + " pressed, name = ";
-				String keyString;
-				
-				switch (key) {
-					case NativeKeyEvent.VC_SHIFT:
-					case VC_SHIFT_R:
-						keyString = "SHIFT";
-						break;
-						
-					case NativeKeyEvent.VC_CAPS_LOCK:
-						keyString = "CAPS_LOCK";
-						break;
-						
-					case NativeKeyEvent.VC_CONTROL:
-						keyString = "CONTROL";
-						break;
-						
-					case NativeKeyEvent.VC_ALT:
-						keyString = "ALT/OPTION";
-						break;
-						
-					case NativeKeyEvent.VC_META:
-						keyString = "COMMAND";
-						break;
-						
-					default:
-						keyString = "UNKNOWN";
-						break;
-				}
-				
-				Logger.log(message + keyString);
+				String message = "native key " + key + " pressed, name = " + e.getKeyText(key);
+				Logger.log(message);
 			}
 			
-			//only works with control keys
 			public void nativeKeyReleased(NativeKeyEvent e) {
 				int key = e.getKeyCode();
 				boolean alphanumeric = (key >= NativeKeyEvent.VC_A && key <= NativeKeyEvent.VC_Z) || 
 									   (key >= NativeKeyEvent.VC_1 && key <= NativeKeyEvent.VC_0);
-				
-				//Logger.log("native key " + key + " released, alphanumeric=" + alphanumeric);
 			}
 			
 			public void nativeKeyTyped(NativeKeyEvent e) {
