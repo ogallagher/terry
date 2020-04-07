@@ -16,7 +16,6 @@ public class Logger {
 	private static final String FILE_EXT = ".txt";
 	private static final String LOG_PATH = "logs/";
 	
-	private static LinkedList<String> log;
 	private static LinkedList<String> backlog;
 	private static int logLen;
 	
@@ -28,8 +27,7 @@ public class Logger {
 	public static final char LEVEL_SPEECH = 2;	//written to file, displayed in console, and spoken aloud
 	
 	public static void init() {
-		//init log data structures
-		log = new LinkedList<String>();
+		//init backlog
 		backlog = new LinkedList<String>();
 		
 		//init log file folder
@@ -69,37 +67,24 @@ public class Logger {
 	}
 	
 	public static void log(String entry, char level) {
-		//add to log history
-		if (level >= LEVEL_CONSOLE) {
-			log.add(entry);
-		}
-		
-		//keep below max length
-		if(logLen > LOG_MAX) {
-			log.remove(0);
-		}
-		else {
-			logLen++;
-		}
-		
-		//print entry
-		if (Terry.prompter != null) {
-			Platform.runLater(new ConsoleLogger(entry));
-		}
-		else {
-			backlog.add(entry);
-		}
-		
 		//file entry
-		if (fileLogger != null) {
-			if (fileLogger.log(entry)) {
-				//create new log file
-				try {
-					fileLogger = new FileLogger();
-				} 
-				catch (IOException e) {
-					logError("could not create new file logger");
-				}
+		if (fileLogger != null && fileLogger.log(entry)) {
+			//create new log file
+			try {
+				fileLogger = new FileLogger();
+			} 
+			catch (IOException e) {
+				logError("could not create new file logger");
+			}
+		}
+				
+		//print entry
+		if (level >= LEVEL_CONSOLE) {
+			if (Terry.prompter != null) {
+				Platform.runLater(new ConsoleLogger(entry));
+			}
+			else {
+				backlog.add(entry);
 			}
 		}
 		

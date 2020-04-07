@@ -657,6 +657,8 @@ public class Prompter extends Application {
 	}
 	
 	public static class PrompterException extends Exception {
+		private static final long serialVersionUID = 188016640589220214L;
+
 		public PrompterException(String message) {
 			super(message);
 		}

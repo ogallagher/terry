@@ -40,9 +40,9 @@
  *  - hide overlay when no longer needed
  *  + create log files
  *  + create log levels
- *  = create speaker
+ *  + create speaker
  *  	+ windows
- *  	- mac
+ *  	+ mac
  */
 
 package com.terry;

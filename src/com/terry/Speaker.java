@@ -12,7 +12,7 @@ import java.util.regex.Pattern;
 public class Speaker {
 	//commands
 	private static String cmdWin = "cmd.exe /C echo \"<transcript>\" | <bin> --volume <volume> --name <voice> --rate <speed>"; //volume=0..100, rate=-10..10
-	private static String cmdMac = "<bin>  --voice=<voice> --rate=<speed> <transcript>"; //rate=wpm~150...720, 
+	private static String cmdMac = "<bin>  --voice=<voice> --rate=<speed> <transcript>"; //rate=80...350wpm, 
 	private static String cmd;
 	
 	//args (numeric ranges are 0..1, to be converted per os)
@@ -26,7 +26,7 @@ public class Speaker {
 	private static File cmdDir; 
 	
 	private static String cmdListVoicesWin = binWin + " --list"; //converted to absolute path later
-	private static String cmdListVoicesMac = binMac + " --voice=\"?\"";
+	private static String cmdListVoicesMac = binMac + " --voice=?";
 	private static Pattern regexVoiceNameWin = Pattern.compile("^\".+\"");	//"Name Name" - age,gender,language
 	private static Pattern regexVoiceNameMac = Pattern.compile("^\\w+");	//Name   language: "message"
 	
@@ -111,8 +111,8 @@ public class Speaker {
 				cmd = cmd.replace("<voice>", voice);
 			}
 			
-			//speed~150..720wpm, according to https://apple.stackexchange.com/q/96808/320992
-			String speedArg = String.valueOf((int) ((speed*570f) + 150f));
+			//speed~80..350wpm
+			String speedArg = String.valueOf((int) ((speed*270f) + 50f));
 			cmd = cmd.replace("<speed>", speedArg);
 		}
 		else if (Terry.os == Terry.OS_WIN) {
