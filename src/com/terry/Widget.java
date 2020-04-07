@@ -81,6 +81,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	public CharProperty state;
 	
 	public static void init() throws WidgetException {
+		Logger.log("initializing widget text and appearance finders");
 		TextFinderThread.init();
 		Appearance.init();
 		Logger.log("widget init success");
@@ -479,14 +480,11 @@ public class Widget extends LanguageMapping implements Serializable {
 		
 		public static void init() throws WidgetException {
 			visionDir = new File(Terry.class.getResource(Terry.RES_PATH).getPath() + "/" + VISION_PATH);
-			try {
-				visionDir.mkdir();
-			} 
-			catch (SecurityException e) {
-				throw new WidgetException("could not create res/vision/ directory");
+			if (!visionDir.exists()) {
+				throw new WidgetException("could not find res/vision/ directory");
 			}
 			
-			gcloudCredentialsFile = new File(visionDir,GCLOUD_CREDENTIALS_PATH);
+			gcloudCredentialsFile = new File(visionDir.getAbsolutePath() + "/" + GCLOUD_CREDENTIALS_PATH);
 			
 			CredentialsProvider credentials;
 			try {

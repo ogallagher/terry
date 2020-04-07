@@ -47,28 +47,17 @@ public class Watcher {
 					keysPressed.add(fxKey);
 					
 					//check scribe key combo
-					boolean combo = true;
-					for (KeyCode k : Prompter.keyComboScribe) {
-						if (!keysPressed.contains(k) && k != KeyCode.UNDEFINED) {
-							combo = false;
-							break;
-						}
+					if (keyCombo(Terry.keyComboScribe)) {
+						Terry.triggerScribe(true);
 					}
 					
-					if (combo) {
-						Terry.triggerScribe();
+					//check scribe-done key combo
+					if (keyCombo(Terry.keyComboScribeDone)) {
+						Terry.triggerScribe(false);
 					}
 					
 					//check abort key combo
-					combo = true;
-					for (KeyCode k : Prompter.keyComboAbort) {
-						if (!keysPressed.contains(k) && k != KeyCode.UNDEFINED) {
-							combo = false;
-							break;
-						}
-					}
-					
-					if (combo) {
+					if (keyCombo(Prompter.keyComboAbort)) {
 						Prompter.abort();
 					}
 				}
@@ -161,6 +150,16 @@ public class Watcher {
 	
 	public static void ignore() {
 		recording = false;
+	}
+	
+	private static boolean keyCombo(KeyCode[] combo) {
+		for (KeyCode k : combo) {
+			if (!keysPressed.contains(k) && k != KeyCode.UNDEFINED) {
+				return false;
+			}
+		}
+		
+		return true;
 	}
 	
 	//adapted from https://github.com/kwhat/jnativehook/pull/209

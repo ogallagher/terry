@@ -1,7 +1,7 @@
 #overlay_root {
 	-fx-padding: 0px;
 	-fx-border-style: none;
-	-fx-background-color: transparent;
+	-fx-background-color: #FFF5; /* semitransparent */
 	-fx-fill: transparent;
 }
 

@@ -79,8 +79,6 @@ public class Prompter extends Application {
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
 	
-	public static KeyCode[] keyComboScribe;
-	public static KeyCode[] keyComboScribeDone;
 	public static KeyCode[] keyComboAbort;
 		
 	/*
@@ -130,18 +128,10 @@ public class Prompter extends Application {
 		//scribe trigger: intercom click
 		intercomScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			public void handle(MouseEvent event) {
-				Terry.triggerScribe();
+				Terry.triggerScribe(true);
 			}
 		});
 		
-		//scribe trigger: key combo
-		if (Terry.os == Terry.OS_MAC) {
-			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
-		}
-		else {
-			keyComboScribe = new KeyCode[] {KeyCode.T, KeyCode.E, KeyCode.R, KeyCode.Y};
-		}
-		keyComboScribeDone = new KeyCode[] {KeyCode.UNDEFINED}; //undefined = any key
 		keyComboAbort = new KeyCode[] {KeyCode.ESCAPE};
 		
 		//launch console window
@@ -205,7 +195,7 @@ public class Prompter extends Application {
 		//console location
 		Dimension screen = Driver.getScreen();
 		console.setX(screen.width - CONSOLE_WIDTH);
-		console.setY(screen.height - CONSOLE_HEIGHT);
+		console.setY((screen.height - CONSOLE_HEIGHT) / 2);
 		console.show();
 		//consoleRoot.requestFocus();
 		
@@ -331,21 +321,7 @@ public class Prompter extends Application {
 			public void handle(MouseEvent event) {
 				if (overlayZone == null || overlayZone.width == 0 || overlayZone.height == 0) {
 					//zone aborted; confirm cancel
-					try {
-						boolean quit = askYesNo("Region Aborted", 
-										   "Stop drawing the rectangle?", 
-										   "The current screen region is invalid. Did you mean to quit drawing it?");
-						
-						if (quit) {
-							overlayZone = null;
-							state.set(STATE_OVERLAY_INPUT_DONE);
-						}
-					}
-					catch (PrompterException e) {
-						Logger.logError(e.getMessage());
-						overlayZone = null;
-						state.set(STATE_OVERLAY_INPUT_DONE);
-					}
+					abort();
 				}
 				else {
 					//finish overlay zone
@@ -644,9 +620,27 @@ public class Prompter extends Application {
 	
 	public static void abort() {
 		if (state.get() == STATE_ACCEPTING_ZONE) {
-			//clear overlay zone
-			Prompter.overlayZone = null;
-			clearOverlay();
+			Platform.runLater(new Runnable() {
+				public void run() {
+					try {
+						boolean quit = askYesNo("Region Aborted", 
+										   "Stop drawing the rectangle?", 
+										   "The current screen region is invalid. Did you mean to quit drawing it?");
+						
+						if (quit) {
+							clearOverlay();
+							overlayZone = null;
+							state.set(STATE_OVERLAY_INPUT_DONE);
+						}
+					}
+					catch (PrompterException e) {
+						Logger.logError(e.getMessage());
+						clearOverlay();
+						overlayZone = null;
+						state.set(STATE_OVERLAY_INPUT_DONE);
+					}
+				}
+			});
 		}
 	}
 	

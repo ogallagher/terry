@@ -149,14 +149,11 @@ public class Scribe {
 		
 		state.set(STATE_TRANSCRIBING);
 		
-		//gtranscriber = new GoogleTranscribeThread();
-		//gtranscriber.start();
-		
 		String[] instructions = new String[] {
+				"play is a button",
 				"move mouse to elephant",
 				"go to icecream cone",
 				"look up aardvark",
-				"play is a button",
 				"go to play",
 				"click",
 				"type a hello from terry",
@@ -274,7 +271,7 @@ public class Scribe {
 				//create speech api client
 				speechClient = SpeechClient.create(settings);
 				
-				Logger.log("google transcriber init success: " + "info");
+				Logger.log("google transcriber init success");
 			} 
 			catch (FileNotFoundException e) {
 				throw new ScribeException("google transcriber failed to load cloud credentials");

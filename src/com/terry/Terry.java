@@ -72,6 +72,7 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.input.KeyCode;
 import javafx.scene.paint.Color;
 
 public class Terry {
@@ -87,9 +88,7 @@ public class Terry {
 	public static final char OS_WIN = 2;
 	public static final char OS_OTHER = 3;
 	public static char os;
-	
-	public static char PATH_SEPARATOR = '/'; //most of the time file objects with handle urls with this path separator regardless of the os
-	
+		
 	public static final int KEY_ALIAS_MAX = 3;
 	public static final String KEY_DELETE = "del";
 	public static final String KEY_BACKSPACE = "bck";
@@ -126,6 +125,9 @@ public class Terry {
 	public static final String KEY_GREATER = "gtr";
 	public static final String KEY_QUERY = "qry";
 	
+	public static KeyCode[] keyComboScribe;
+	public static KeyCode[] keyComboScribeDone;
+	
 	public static final int EXITCODE_OS = 1;
 	public static final int EXITCODE_WATCHER = 2;
 	public static final int EXITCODE_MEMORY = 3;
@@ -136,18 +138,22 @@ public class Terry {
 		if (osName.startsWith("win")) {
 			os = OS_WIN;
 			osMessage = "detected win os";
-			PATH_SEPARATOR = '\\';
+			
+			keyComboScribe = new KeyCode[] {KeyCode.CONTROL, KeyCode.ALT, KeyCode.T};
 		}
 		else if (osName.startsWith("mac")) {
 			os = OS_MAC;
 			osMessage = "detected mac os";
-			PATH_SEPARATOR = '/';
+			
+			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
 		}
 		else {
 			os = OS_OTHER;
 			System.err.println("detected unsupported os: " + osName);
 			System.exit(EXITCODE_OS);
 		}
+		
+		keyComboScribeDone = new KeyCode[] {KeyCode.UNDEFINED}; //undefined = any key
 		
 		Logger.init();
 		Logger.log(osMessage, Logger.LEVEL_CONSOLE);
@@ -217,11 +223,14 @@ public class Terry {
 		return list;
 	}
 	
-	public static void triggerScribe() {
+	//if activate, start if idle. Otherwise, switch scribe states
+	public static void triggerScribe(boolean activate) {
 		try {
 			switch (Scribe.state.get()) {
 				case Scribe.STATE_IDLE:
-					Scribe.start();
+					if (activate) {
+						Scribe.start();
+					}
 					break;
 					
 				case Scribe.STATE_RECORDING:
