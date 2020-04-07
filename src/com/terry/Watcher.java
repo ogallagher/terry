@@ -58,6 +58,19 @@ public class Watcher {
 					if (combo) {
 						Terry.triggerScribe();
 					}
+					
+					//check abort key combo
+					combo = true;
+					for (KeyCode k : Prompter.keyComboAbort) {
+						if (!keysPressed.contains(k) && k != KeyCode.UNDEFINED) {
+							combo = false;
+							break;
+						}
+					}
+					
+					if (combo) {
+						Prompter.abort();
+					}
 				}
 			}
 			

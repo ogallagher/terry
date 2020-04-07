@@ -80,7 +80,7 @@ public class InstructionParser {
 		scanner.close();
 		if (unknownAction) {
 			//notify unknown action
-			Logger.log("perhaps \"" + tokens + "\" contains actions I've not learned yet?");
+			Logger.log("perhaps \"" + tokens + "\" contains actions I've not learned yet?", Logger.LEVEL_SPEECH);
 		}
 		else {
 			//follow through

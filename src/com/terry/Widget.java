@@ -457,7 +457,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		private static final long serialVersionUID = -7574636617579442887L;
 		
 		private static File visionDir;
-		private static final String VISION_PATH = Terry.RES_PATH + "vision/";
+		private static final String VISION_PATH = "vision/";
 		
 		private static File gcloudCredentialsFile;
 		private static final String GCLOUD_CREDENTIALS_PATH = "google_vision_credentials.json";
@@ -478,14 +478,12 @@ public class Widget extends LanguageMapping implements Serializable {
 		ArrayList<Rectangle> candidates;
 		
 		public static void init() throws WidgetException {
-			visionDir = new File(Terry.class.getResource(Terry.RES_PATH).getPath(), "vision/");
-			if (!visionDir.exists()) {
-				try {
-					visionDir.createNewFile();
-				} 
-				catch (IOException e) {
-					throw new WidgetException("could not create res/vision/ directory");
-				}
+			visionDir = new File(Terry.class.getResource(Terry.RES_PATH).getPath() + "/" + VISION_PATH);
+			try {
+				visionDir.mkdir();
+			} 
+			catch (SecurityException e) {
+				throw new WidgetException("could not create res/vision/ directory");
 			}
 			
 			gcloudCredentialsFile = new File(visionDir,GCLOUD_CREDENTIALS_PATH);
@@ -592,15 +590,9 @@ public class Widget extends LanguageMapping implements Serializable {
 	
 	public static class WidgetException extends Exception implements Serializable {
 		private static final long serialVersionUID = -7383323102955403795L;
-		private String message;
 
 		public WidgetException(String message) {
-			this.message = message;
-		}
-		
-		@Override
-		public String getMessage() {
-			return message;
+			super(message);
 		}
 	}
 }

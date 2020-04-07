@@ -8,10 +8,16 @@
 
 .console_out_cell {
 	-fx-background-color: #1F1959; /* darker purple */
-	-fx-text-fill: #cccccc; /* gray */
+	-fx-text-fill: #CCCCCC; /* gray */
 	-fx-font-size: 14px;
 }
 
 .console_out_cell:selected {
 	-fx-background-color: #383276 /* purple */
+}
+
+.console_err_cell {
+	-fx-background-color: #3F002F; /* dark violet */
+	-fx-text-fill: #FFFFFF; /* white */
+	-fx-font-size: 14px;
 }

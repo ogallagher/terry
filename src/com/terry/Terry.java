@@ -39,6 +39,10 @@
  *  - ability to define Widget.zone, where a widget is expected to be found
  *  - hide overlay when no longer needed
  *  + create log files
+ *  + create log levels
+ *  = create speaker
+ *  	+ windows
+ *  	- mac
  */
 
 package com.terry;
@@ -58,6 +62,7 @@ import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
 import com.terry.Prompter.PrompterException;
 import com.terry.Scribe.ScribeException;
+import com.terry.Speaker.SpeakerException;
 import com.terry.State.StateException;
 import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
@@ -82,6 +87,8 @@ public class Terry {
 	public static final char OS_WIN = 2;
 	public static final char OS_OTHER = 3;
 	public static char os;
+	
+	public static char PATH_SEPARATOR = '/'; //most of the time file objects with handle urls with this path separator regardless of the os
 	
 	public static final int KEY_ALIAS_MAX = 3;
 	public static final String KEY_DELETE = "del";
@@ -124,32 +131,43 @@ public class Terry {
 	public static final int EXITCODE_MEMORY = 3;
 	
 	public static void main(String[] args) {
+		String osName = System.getProperty("os.name").toLowerCase();
+		String osMessage = "";
+		if (osName.startsWith("win")) {
+			os = OS_WIN;
+			osMessage = "detected win os";
+			PATH_SEPARATOR = '\\';
+		}
+		else if (osName.startsWith("mac")) {
+			os = OS_MAC;
+			osMessage = "detected mac os";
+			PATH_SEPARATOR = '/';
+		}
+		else {
+			os = OS_OTHER;
+			System.err.println("detected unsupported os: " + osName);
+			System.exit(EXITCODE_OS);
+		}
+		
 		Logger.init();
+		Logger.log(osMessage, Logger.LEVEL_CONSOLE);
+		
+		try {
+			Speaker.init();
+		} 
+		catch (SpeakerException e) {
+			Logger.logError(e.getMessage());
+		}
 		
 		try {
 			Widget.init();
 			dummyWidget = new Widget("ddumy"); //purposefully misspelled so widgets called "dummy" can still be created
 		} 
 		catch (WidgetException e) {
-			Logger.logError(e.getMessage());
+			Logger.logError("widget init failed. " + e.getMessage());
 		}
 		
 		Arg.init();
-		
-		String osName = System.getProperty("os.name").toLowerCase();
-		if (osName.startsWith("win")) {
-			os = OS_WIN;
-			Logger.log("detected win os");
-		}
-		else if (osName.startsWith("mac")) {
-			os = OS_MAC;
-			Logger.log("detected mac os");
-		}
-		else {
-			os = OS_OTHER;
-			Logger.logError("detected unsupported os: " + osName);
-			System.exit(EXITCODE_OS);
-		}
 		
 		try {
 			Watcher.init();

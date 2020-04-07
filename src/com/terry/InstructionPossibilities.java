@@ -595,7 +595,7 @@ public class InstructionPossibilities {
 					}
 				}
 				else {
-					Logger.log("no known widgets called " + unknownWidget + ". perhaps you could teach it to me?");
+					Logger.log("no known widgets called " + unknownWidget + ". perhaps you could teach it to me?", Logger.LEVEL_SPEECH);
 				}
 			}
 			else {

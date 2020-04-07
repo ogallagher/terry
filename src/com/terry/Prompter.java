@@ -81,6 +81,7 @@ public class Prompter extends Application {
 	
 	public static KeyCode[] keyComboScribe;
 	public static KeyCode[] keyComboScribeDone;
+	public static KeyCode[] keyComboAbort;
 		
 	/*
 	 * This cannot be a static method because it's inherited from javafx.application.Application, but effectively I'll treat it
@@ -138,9 +139,10 @@ public class Prompter extends Application {
 			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
 		}
 		else {
-			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.CONTROL};
+			keyComboScribe = new KeyCode[] {KeyCode.T, KeyCode.E, KeyCode.R, KeyCode.Y};
 		}
 		keyComboScribeDone = new KeyCode[] {KeyCode.UNDEFINED}; //undefined = any key
+		keyComboAbort = new KeyCode[] {KeyCode.ESCAPE};
 		
 		//launch console window
 		console = new Stage();
@@ -159,8 +161,28 @@ public class Prompter extends Application {
 					@Override
 					public void updateItem(String item, boolean empty) {
 			            super.updateItem(item, empty);
-			            setText(item);
-			            getStyleClass().add("console_out_cell");			            
+			            
+			            if (empty || item == null) {
+			            	setText(null);
+			            	
+			            	ObservableList<String> classes = getStyleClass();
+			            	classes.remove("console_err_cell");
+			            	classes.add("console_out_cell");
+			            }
+			            else if (item.startsWith("e_")) {
+			            	setText(item.substring(2));
+			            	
+			            	ObservableList<String> classes = getStyleClass();
+			            	classes.remove("console_out_cell");
+			            	classes.add("console_err_cell");
+			            }
+			            else {
+			            	setText(item);
+			            	
+			            	ObservableList<String> classes = getStyleClass();
+			            	classes.remove("console_err_cell");
+			            	classes.add("console_out_cell");
+			            }		            
 			        }
 				};
 			}
@@ -334,15 +356,6 @@ public class Prompter extends Application {
 				clearOverlay();
 			}
 		};
-		EventHandler<KeyEvent> overlayKeyReleasedHandler = new EventHandler<KeyEvent>() {
-			public void handle(KeyEvent event) {
-				if (event.getCode() == KeyCode.ESCAPE) {
-					//clear overlay zone
-					overlayZone = null;
-					clearOverlay();
-				}
-			}
-		};
 		
 		//handle native state changes
 		state.addListener(new ChangeListener<Character>() {
@@ -360,7 +373,6 @@ public class Prompter extends Application {
 						overlay.addEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
 						overlay.addEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
 						overlay.addEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
-						overlay.addEventHandler(KeyEvent.KEY_RELEASED, overlayKeyReleasedHandler);
 						
 						break;
 						
@@ -369,7 +381,6 @@ public class Prompter extends Application {
 						overlay.removeEventHandler(MouseEvent.MOUSE_PRESSED, overlayMousePressedHandler);
 						overlay.removeEventHandler(MouseEvent.MOUSE_DRAGGED, overlayMouseDraggedHandler);
 						overlay.removeEventHandler(MouseEvent.MOUSE_RELEASED, overlayMouseReleasedHandler);
-						overlay.removeEventHandler(KeyEvent.KEY_RELEASED, overlayKeyReleasedHandler);
 						Platform.runLater(new Runnable() {
 							public void run() {
 								overlay.hide();
@@ -432,6 +443,8 @@ public class Prompter extends Application {
 				}
 			});
 		}
+		
+		Logger.log("hello there, my name is terry. what shall we do first?", Logger.LEVEL_SPEECH);
 	}
 	
 	@Override
@@ -627,6 +640,14 @@ public class Prompter extends Application {
 		pendingWidget = widget;
 		showOverlay();
 		state.set(STATE_ACCEPTING_ZONE);
+	}
+	
+	public static void abort() {
+		if (state.get() == STATE_ACCEPTING_ZONE) {
+			//clear overlay zone
+			Prompter.overlayZone = null;
+			clearOverlay();
+		}
 	}
 	
 	public static void consoleLog(String entry) {

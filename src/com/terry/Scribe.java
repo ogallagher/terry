@@ -345,7 +345,6 @@ public class Scribe {
 		public static void init() {
 			//default settings are for mac
 			if (Terry.os == Terry.OS_WIN) {
-				String argPrefix = "/";
 				String pathDelim = "\\";
 			}
 			
@@ -390,13 +389,13 @@ public class Scribe {
 				}
 			}
 			else if (Terry.os == Terry.OS_WIN) {
-				Logger.logError("scribe does not support windows yet");
+				Logger.logError("deepspeech scribe does not support windows yet");
 			}
 		}
 	}
 	
 	/*
-	 * Reads the progessive transcription updates from deepspeech.
+	 * Reads the progressive transcription updates from deepspeech.
 	 */
 	private static class ReadThread extends Thread {
 		private BufferedReader reader;
@@ -431,19 +430,13 @@ public class Scribe {
 	
 	public static class ScribeException extends Exception {
 		private static final long serialVersionUID = 5174766874051468658L;
-		private String message;
 
 		public ScribeException(String message) {
-			this.message = message;
+			super(message);
 		}
 		
 		public ScribeException() {
-			this.message = "scribe failed for unknown reason";
-		}
-		
-		@Override
-		public String getMessage() {
-			return message;
+			super("scribe failed for unknown reason");
 		}
 	}
 }
