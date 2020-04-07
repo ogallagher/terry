@@ -220,7 +220,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	 * type   id   pattern   widget_type   label   bounds   appearance
 	 */
 	private void writeObject(ObjectOutputStream stream) throws IOException {
-		System.out.println("serializing widget " + id);
+		Logger.log("serializing widget " + id, Logger.LEVEL_FILE);
 		
 		stream.writeObject(super.toString());
 		stream.writeChar(type);
@@ -261,7 +261,7 @@ public class Widget extends LanguageMapping implements Serializable {
 			appearance = null;
 		}
 		
-		Logger.log("deserialized widget " + id + ": " + pattern);
+		Logger.log("deserialized widget " + id + ": " + pattern, Logger.LEVEL_FILE);
 	}
 	
 	/*
@@ -273,7 +273,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		private static Java2DFrameConverter toFrame; //BufferedImage to and from Frame 
 		private static OpenCVFrameConverter.ToOrgOpenCvCoreMat toMat; //Frame to and from Mat
 		
-		private ArrayList<Feature> features;
+		//private ArrayList<Feature> features;
 		private Mat template = null;
 		
 		public static void init() {
@@ -362,6 +362,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		 * 
 		 * Taken from: https://github.com/bytedeco/javacv/blob/master/samples/PrincipalComponentAnalysis.java: line 91
 		 */
+		/*
 		@SuppressWarnings("unused")
 		private Point2D.Double normalize(double cx, double cy) {
 			org.bytedeco.opencv.opencv_core.Mat pts = new org.bytedeco.opencv.opencv_core.Mat(features.size(), 2, CvType.CV_64F);
@@ -387,9 +388,39 @@ public class Widget extends LanguageMapping implements Serializable {
 			pca.close();
 			return evector;
 		}
+		*/
 		
 		public Dimension getDimensions() {
 			return new Dimension(template.cols(), template.rows());
+		}
+		
+		//serialization adapted from https://stackoverflow.com/a/29297123/10200417
+		private void writeObject(ObjectOutputStream stream) throws IOException {
+			//save template
+			int cols = template.cols();
+			stream.writeInt(cols);
+			
+			int rows = template.rows();
+			stream.writeInt(rows);
+			
+			int elemSize = (int) template.elemSize();
+			stream.writeInt(elemSize);
+			
+			byte[] templateBytes = new byte[cols * rows * elemSize];
+            template.get(0, 0, templateBytes);
+            stream.write(templateBytes);
+		}
+		
+		private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+			int cols = stream.readInt();
+			int rows = stream.readInt();
+			int elemSize = stream.readInt();
+			
+			byte[] templateBytes = new byte[cols * rows * elemSize];
+			stream.read(templateBytes);
+			
+			template = new org.opencv.core.Mat(rows, cols, CvType.CV_8UC1); //1B grayscale
+			template.put(0, 0, templateBytes);
 		}
 		
 		public String toString() {

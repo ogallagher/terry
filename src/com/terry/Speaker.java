@@ -26,7 +26,7 @@ public class Speaker {
 	private static File cmdDir; 
 	
 	private static String cmdListVoicesWin = binWin + " --list"; //converted to absolute path later
-	private static String cmdListVoicesMac = binMac + " --voice=?";
+	private static String cmdListVoicesMac = binMac + " --voice=\"?\"";
 	private static Pattern regexVoiceNameWin = Pattern.compile("^\".+\"");	//"Name Name" - age,gender,language
 	private static Pattern regexVoiceNameMac = Pattern.compile("^\\w+");	//Name   language: "message"
 	

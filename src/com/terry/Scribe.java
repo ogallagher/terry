@@ -79,7 +79,7 @@ public class Scribe {
 		state = new CharProperty(STATE_IDLE);
 		
 		DataLine.Info info = new DataLine.Info(TargetDataLine.class, FORMAT_WAV); // format is an AudioFormat object
-		Logger.log(info.toString());
+		Logger.log(info.toString(), Logger.LEVEL_FILE);
 		
 		speechDir = new File(Terry.class.getResource(TRANSCRIBE_PATH).getPath());
 		speechFile = new File(speechDir,SPEECH_FILE);
@@ -150,6 +150,7 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
+				"go to play",
 				"play is a button",
 				"move mouse to elephant",
 				"go to icecream cone",
