@@ -36,6 +36,7 @@ public class Memory {
 	private static ArrayList<String> trivials; //unimportant words commonly encountered that can be quickly ignored
 	private static HashMap<String,ArrayList<LanguageMapping>> dictionary; //token,references
 	private static HashMap<Integer,LanguageMapping> mappings; //key,mapping (action/lesson/widget)
+	private static LinkedList<Widget> widgets; //references to widget mappings
 	
 	public static boolean saved;
 	
@@ -63,6 +64,7 @@ public class Memory {
 		}
 		
 		mappings = new HashMap<Integer,LanguageMapping>();
+		widgets = new LinkedList<Widget>();
 		int lastId = 0; //int for generating unique ids
 		
 		actsFile = new File(memDir, ACTS_FILE);
@@ -212,6 +214,9 @@ public class Memory {
 								
 								//add to mappings
 								mappings.put(id, widget);
+								
+								//add to widgets
+								widgets.add(widget);
 							} 
 							catch (ClassNotFoundException | InvalidClassException e) {
 								e.printStackTrace();
@@ -415,6 +420,11 @@ public class Memory {
 			Logger.log("adding mapping " + mapping.id);
 			mappings.put(mapping.id, mapping);
 			
+			if (mapping.type == LanguageMapping.TYPE_WIDGET) {
+				//add new widget
+				widgets.add((Widget) mapping);
+			}
+			
 			//update dictionary
 			LinkedList<String> tokens = mapping.getLeaders();
 			ArrayList<LanguageMapping> entry = null;
@@ -442,6 +452,10 @@ public class Memory {
 			}
 			mapping.id = existing.id;
 			mappings.put(mapping.id, mapping);
+			
+			//replace existing widget
+			widgets.remove(existing);
+			widgets.add((Widget) mapping);
 		}
 		
 		saved = false;
@@ -449,6 +463,10 @@ public class Memory {
 	
 	public static Collection<LanguageMapping> getMappings() {
 		return mappings.values();
+	}
+	
+	public static LinkedList<Widget> getWidgets() {
+		return widgets;
 	}
 	
 	public static String printDictionary() {

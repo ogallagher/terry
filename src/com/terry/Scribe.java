@@ -150,14 +150,14 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
+				"type a hello from too#bck)#bck)erry!",
 				"go to play",
 				"play is a button",
+				"go to play",
 				"move mouse to elephant",
 				"go to icecream cone",
 				"look up aardvark",
-				"go to play",
 				"click",
-				"type a hello from terry",
 				"do overlay demo one",
 				"do driver demo one",
 				"show state",

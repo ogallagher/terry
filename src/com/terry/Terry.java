@@ -43,6 +43,8 @@
  *  + create speaker
  *  	+ windows
  *  	+ mac
+ *  - watcher recordings
+ *  	- 
  */
 
 package com.terry;
@@ -114,7 +116,7 @@ public class Terry {
 	public static final String KEY_STAR = "str";
 	public static final String KEY_LPAREN = "lpr";
 	public static final String KEY_RPAREN = "rpr";
-	public static final String KEY_DASH = "dsh";
+	public static final String KEY_UNDERSCORE = "udr";
 	public static final String KEY_PLUS = "pls";
 	public static final String KEY_LBRACE = "lbr";
 	public static final String KEY_RBRACE = "rbr";

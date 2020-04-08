@@ -5,8 +5,11 @@ import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
+
+import com.terry.Utilities.KeyComboException;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -103,46 +106,36 @@ public class Driver {
 	private static void typefx(String str) {
 		char[] chars = str.toLowerCase().toCharArray();
 		KeyCode key = KeyCode.UNDEFINED;
-		char[] alias = new char[3];
 		
 		try {
+			char[] alias = new char[3];
+			
 			for (int c=0; c<chars.length; c++) {
-				key = KeyCode.getKeyCode(String.valueOf(chars[c]));
-				
-				if (key == KeyCode.UNDEFINED) {
-					Logger.logError("unknown keycode for char " + chars[c]);
-				}
-				else if ((key.compareTo(KeyCode.DIGIT0) >= 0 && key.compareTo(KeyCode.DIGIT9) <= 0) || (key.compareTo(KeyCode.A) >= 0 && key.compareTo(KeyCode.Z) <= 0)) { 
-					//alphanumeric
-					robot.keyPress(key);
-					robot.keyRelease(key);
-				}
-				else if ((key == KeyCode.NUMBER_SIGN)) {
-					//control chars that cannot be expressed as chars in a string are escaped and given codes. ex: #cmd+del) #shf) #up)
+				if (chars[c] == '#') { //key aliases (without char representations) are referenced like so: #cmd+del)
 					c++; //skip hashtag
 					
-					char chr = '#';
+					char chr;
 					boolean go = true;
-					LinkedList<KeyCode> keys = new LinkedList<>();
+					LinkedList<KeyCode> combo = new LinkedList<>();
 					
 					for (int i=0; c<chars.length && go; c++) {
 						chr = chars[c];
 						
 						if (chr == '+') {
 							//key in combo, including shifts
-							keys.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
+							combo.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
 							
 							i=0;
 						}
 						else if (chr == ')') {
 							//keys done
-							keys.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
+							combo.addAll(Utilities.keyCodesFromAlias(String.valueOf(alias)));
 							
-							Iterator<KeyCode> iterator = keys.iterator();
+							Iterator<KeyCode> iterator = combo.iterator();
 							while (iterator.hasNext()) {
 								robot.keyPress(iterator.next());
 							}
-							iterator = keys.descendingIterator();
+							iterator = combo.descendingIterator();
 							while (iterator.hasNext()) {
 								robot.keyRelease(iterator.next());
 							}
@@ -156,30 +149,28 @@ public class Driver {
 						}
 					}
 				}
-				else { 
-					//control, punctuation
-					switch (key) {
-						case SPACE:
-						case PERIOD:
-						case COMMA:
-						case SLASH:
-						case SEMICOLON:
-						case QUOTE:
-						case OPEN_BRACKET:
-						case CLOSE_BRACKET:
-						case BACK_SLASH:
-						case BACK_QUOTE:
-						case EQUALS:
-						case ENTER:
-						case ACCEPT:
-						case TAB:
-						case MINUS:
+				else {
+					try {
+						key = Utilities.keyCodeFromChar(chars[c]);
+						
+						if (key == null || key == KeyCode.UNDEFINED) {
+							Logger.logError("unknown keycode for char " + chars[c]);
+						}
+						else {
 							robot.keyPress(key);
 							robot.keyRelease(key);
-							break;
-							
-						default:
-							break;
+						}
+					}
+					catch (KeyComboException e) {
+						//character requires key combo
+						ArrayList<KeyCode> combo = Utilities.keyCodesFromAlias(e.getMessage());
+						
+						for (KeyCode k : combo) {
+							robot.keyPress(k);
+						}
+						for (KeyCode k : combo) {
+							robot.keyRelease(k);
+						}
 					}
 				}
 				
@@ -227,6 +218,16 @@ public class Driver {
 				catch (InterruptedException e) {
 					//fail quietly
 				}
+			}
+		});
+	}
+	
+	public static void drag(int x, int y) {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				robot.mousePress(MouseButton.PRIMARY);
+				point(x, y);
+				robot.mouseRelease(MouseButton.PRIMARY);
 			}
 		});
 	}

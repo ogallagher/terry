@@ -1,6 +1,8 @@
 package com.terry;
 
 import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.logging.Level;
@@ -12,6 +14,11 @@ import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
+import com.terry.Widget.WidgetException;
+
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+import javafx.embed.swing.SwingFXUtils;
 import javafx.event.Event;
 import javafx.event.EventType;
 import javafx.scene.input.KeyCode;
@@ -650,10 +657,10 @@ public class Watcher {
 	 * along with screen data for determining selected widgets.
 	 */
 	public static class WatcherRecording {
-		LinkedList<Peripheral> manipulations;
+		LinkedList<Peripheral> peripherals;
 		
 		public WatcherRecording() {
-			manipulations = new LinkedList<>();
+			peripherals = new LinkedList<>();
 		}
 		
 		public void pressKey(long timestamp, KeyCode key) {
@@ -666,15 +673,15 @@ public class Watcher {
 		
 		private void addKey(EventType<KeyEvent> type, long timestamp, KeyCode key) {
 			try {
-				Keyboard last = (Keyboard) manipulations.getLast();
+				Keyboard last = (Keyboard) peripherals.getLast();
 				last = last.append(type, timestamp, key);
 				
 				if (last != null) {
-					manipulations.add(last);
+					peripherals.add(last);
 				}
 			}
 			catch (ClassCastException e) {
-				manipulations.add(new Keyboard(type, timestamp, key));
+				peripherals.add(new Keyboard(type, timestamp, key));
 			}
 		}
 		
@@ -696,21 +703,32 @@ public class Watcher {
 		
 		private void addMouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
 			try {
-				Mouse last = (Mouse) manipulations.getLast();
+				Mouse last = (Mouse) peripherals.getLast();
 				last = last.append(type, timestamp, x, y, button);
 				
 				if (last != null) {
-					manipulations.add(last);
+					peripherals.add(last);
 				}
 			}
 			catch (ClassCastException e) {
-				manipulations.add(new Mouse(type, timestamp, x, y, button));
+				peripherals.add(new Mouse(type, timestamp, x, y, button));
 			}
 		}
 		
 		//returns duration of full recording in milliseconds
 		public long duration() {
-			return manipulations.getLast().start - manipulations.getFirst().start;
+			return peripherals.getLast().start - peripherals.getFirst().start;
+		}
+		
+		@Override
+		public String toString() {
+			StringBuilder string = new StringBuilder("watcher recording:\n");
+			
+			for (Peripheral p : peripherals) {
+				string.append(p.toString());
+			}
+			
+			return string.toString();
 		}
 	}
 	
@@ -728,21 +746,37 @@ public class Watcher {
 			this.key = key;
 		}
 		
-		Keyboard append(EventType<KeyEvent> type, long timestamp, KeyCode key) {
+		public Keyboard append(EventType<KeyEvent> type, long timestamp, KeyCode key) {
 			return new Keyboard((EventType<KeyEvent>) type, timestamp, key);
+		}
+		
+		@Override
+		public String toString() {
+			String typeStr;
+			
+			if (type == KeyEvent.KEY_PRESSED) {
+				typeStr = "press";
+			}
+			else {
+				typeStr = "release";
+			}
+			
+			return "@" + start + " key " + typeStr + ": " + key.toString();
 		}
 	}
 	
 	/*
-	 * Moves are a straight line from orig to dest.
-	 * Presses are done in place, to begin a drag or click.
-	 * Drags are begun with a press, but not finished with a release. 
-	 * Releases are always done in place, to denote clicks.
+	 * Moves are a straight line from orig to dest
+	 * Drags are a straight line from orig to dest
+	 * Clicks are done in place, where orig==dest
+	 * Presses are not stored; they either start a click or a drag
+	 * Releases are not stored; they either finish a click or a drag
 	 */
 	public static class Mouse extends Peripheral {
 		private Point orig;
 		private Point dest;
 		private MouseButton button;
+		private Widget widget;
 		
 		public Mouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
 			this.type = type;
@@ -750,9 +784,10 @@ public class Watcher {
 			orig = new Point(x, y);
 			dest = new Point(x, y);
 			this.button = button;
+			widget = null;
 		}
 
-		Mouse append(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
+		public Mouse append(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
 			boolean newMouse = false;
 			
 			if (type == MouseEvent.MOUSE_MOVED) {
@@ -772,15 +807,11 @@ public class Watcher {
 				//else ignore duplicate press
 			}
 			else if (type == MouseEvent.MOUSE_RELEASED || type == MouseEvent.MOUSE_CLICKED) {
-				if (this.type == MouseEvent.MOUSE_DRAGGED) {
-					//end drag
-					dest.x = x;
-					dest.y = y;
+				if (this.type == MouseEvent.MOUSE_PRESSED) {
+					//convert press to click
+					this.type = MouseEvent.MOUSE_CLICKED;
 				}
-				else if (this.type == MouseEvent.MOUSE_PRESSED) {
-					newMouse = true;
-				}
-				//else ignore duplicate release
+				//else ignore duplicate release and drag finish
 			}
 			else if (type == MouseEvent.MOUSE_DRAGGED) {
 				if (this.type == type) {
@@ -788,17 +819,79 @@ public class Watcher {
 					dest.x = x;
 					dest.y = y;
 				}
+				else if (this.type == MouseEvent.MOUSE_PRESSED) {
+					//convert press to drag
+					this.type = MouseEvent.MOUSE_DRAGGED;
+				}
 				else {
 					newMouse = true;
 				}
 			}
 			
 			if (newMouse) {
+				findWidget();
+				
 				return new Mouse(type, timestamp, x, y, button);
 			}
 			else {
 				return null;
 			}
+		}
+		
+		private void findWidget() {
+			widget = Terry.dummyWidget; //set to dummy while widget search is unresolved
+			
+			//take screen capture
+			int captureWidth = Widget.WIDGET_SIZE_MAX;
+			Rectangle captureZone = new Rectangle(dest.x - captureWidth/2, dest.y - captureWidth/2, captureWidth, captureWidth);
+			
+			Driver.captured.addListener(new ChangeListener<Boolean>() {
+				public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+					if (newValue) {
+						//search screen capture for known widgets
+						BufferedImage capture = SwingFXUtils.fromFXImage(Driver.capture, null);
+						LinkedList<Widget> widgets = Memory.getWidgets();
+						
+						for (Widget w : widgets) {
+							try {
+								w.state.addListener(new ChangeListener<Character>() {
+									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										
+									}
+								});
+								
+								w.findInScreen(capture);
+							} 
+							catch (WidgetException e) {
+								Logger.logError("could not search for widget" + w.getName(), Logger.LEVEL_FILE);
+							}
+						}
+						
+						//set widget to best
+						
+						Driver.captured.removeListener(this);
+					}
+				}
+			});
+			
+			Driver.captureScreen(captureZone);
+		}
+		
+		@Override
+		public String toString() {
+			String typeStr;
+			
+			if (type == MouseEvent.MOUSE_MOVED) {
+				typeStr = "move";
+			}
+			else if (type == MouseEvent.MOUSE_DRAGGED) {
+				typeStr = "drag";
+			}
+			else {
+				typeStr = "click";
+			}
+			
+			return "@" + start + " mouse " + typeStr + orig.toString() + "-" + dest.toString() + button.toString();
 		}
 	}
 }

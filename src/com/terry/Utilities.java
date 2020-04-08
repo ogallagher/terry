@@ -169,7 +169,7 @@ public class Utilities {
 			keys.add(KeyCode.SHIFT);
 			keys.add(KeyCode.DIGIT0);
 		}
-		else if (alias.equals(Terry.KEY_DASH)) {
+		else if (alias.equals(Terry.KEY_UNDERSCORE)) {
 			keys.add(KeyCode.SHIFT);
 			keys.add(KeyCode.MINUS);
 		}
@@ -213,6 +213,137 @@ public class Utilities {
 		return keys;
 	}
 	
+	//assumes c is lowercase
+	public static KeyCode keyCodeFromChar(char c) throws KeyComboException {
+		String s = String.valueOf(c).toUpperCase();
+		KeyCode k = KeyCode.UNDEFINED;
+		
+		if ((c >= '0' && c <= '9') || (c >= 'a' && c <= 'z')) { //alphanumeric keys
+			k = KeyCode.getKeyCode(s);
+		}
+		else {
+			switch (c) {
+				//simple punctuation
+				case ' ':
+					k = KeyCode.SPACE;
+					break;
+					
+				case '.':
+					k = KeyCode.PERIOD;
+					break;
+					
+				case ',':
+					k = KeyCode.COMMA;
+					break;
+					
+				case '/':
+					k = KeyCode.SLASH;
+					break;
+					
+				case ';':
+					k = KeyCode.SEMICOLON;
+					break;
+					
+				case '\'':
+					k = KeyCode.QUOTE;
+					break;
+					
+				case '[':
+					k = KeyCode.OPEN_BRACKET;
+					break;
+					
+				case ']':
+					k = KeyCode.CLOSE_BRACKET;
+					break;
+					
+				case '\\':
+					k = KeyCode.BACK_SLASH;
+					break;
+					
+				case '`':
+					k = KeyCode.BACK_QUOTE;
+					break;
+					
+				case '=':
+					k = KeyCode.EQUALS;
+					break;
+					
+				case '-':
+					k = KeyCode.MINUS;
+					break;
+					
+				case '\"':
+					k = KeyCode.BACK_SLASH;
+					break;
+					
+				case '\n':
+					k = KeyCode.ENTER;
+					break;
+					
+				case '\t':
+					k = KeyCode.TAB;
+					break;
+					
+				//combo punctuation
+				case '!':
+					throw new KeyComboException(Terry.KEY_EXCLAMATION);
+					
+				case '@':
+					throw new KeyComboException(Terry.KEY_AT);
+					
+				case '$':
+					throw new KeyComboException(Terry.KEY_DOLLAR);
+					
+				case '%':
+					throw new KeyComboException(Terry.KEY_PERCENT);
+					
+				case '^':
+					throw new KeyComboException(Terry.KEY_CARROT);
+					
+				case '&':
+					throw new KeyComboException(Terry.KEY_AMPERSAND);
+					
+				case '*':
+					throw new KeyComboException(Terry.KEY_STAR);
+					
+				case '(':
+					throw new KeyComboException(Terry.KEY_LPAREN);
+					
+				case ')':
+					throw new KeyComboException(Terry.KEY_RPAREN);
+					
+				case '_':
+					throw new KeyComboException(Terry.KEY_UNDERSCORE);
+					
+				case '+':
+					throw new KeyComboException(Terry.KEY_PLUS);
+					
+				case '{':
+					throw new KeyComboException(Terry.KEY_LBRACE);
+					
+				case '}':
+					throw new KeyComboException(Terry.KEY_RBRACE);
+					
+				case '|':
+					throw new KeyComboException(Terry.KEY_PIPE);
+					
+				case ':':
+					throw new KeyComboException(Terry.KEY_COLON);
+					
+				case '<':
+					throw new KeyComboException(Terry.KEY_LESS);
+					
+				case '>':
+					throw new KeyComboException(Terry.KEY_GREATER);
+				
+				case '?':
+					throw new KeyComboException(Terry.KEY_QUERY);
+			}
+		}
+		
+		return k;
+	}
+	
 	public static void saveImage(BufferedImage img, String dirPath, String filePath) {
 		File dirFile = new File(Terry.class.getResource(dirPath).getPath());
 		
@@ -228,6 +359,14 @@ public class Utilities {
 		}
 		else {
 			Logger.logError("could not find destination directory for image file " + filePath);
+		}
+	}
+	
+	public static class KeyComboException extends Exception {
+		private static final long serialVersionUID = -570516750721532568L;
+
+		public KeyComboException(String message) {
+			super(message);
 		}
 	}
 }

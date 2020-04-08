@@ -3,6 +3,7 @@ package com.terry;
 import java.awt.Dimension;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import java.awt.Toolkit;
 import java.awt.geom.Path2D;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
@@ -27,6 +28,7 @@ import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.opencv.opencv_java;
 import org.bytedeco.opencv.opencv_core.PCA;
 import org.opencv.core.Core;
+import org.opencv.core.Core.MinMaxLocResult;
 import org.opencv.core.CvType;
 import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
@@ -80,10 +82,15 @@ public class Widget extends LanguageMapping implements Serializable {
 	
 	public CharProperty state;
 	
+	public static int WIDGET_SIZE_MAX; //max size of a widget
+	
 	public static void init() throws WidgetException {
 		Logger.log("initializing widget text and appearance finders");
 		TextFinderThread.init();
 		Appearance.init();
+		
+		WIDGET_SIZE_MAX = Toolkit.getDefaultToolkit().getScreenSize().width / 16;
+		
 		Logger.log("widget init success");
 	}
 	
@@ -130,11 +137,11 @@ public class Widget extends LanguageMapping implements Serializable {
 			findLabelInScreen(screen);
 		}
 		else {
-			findAppearanceInScreen(screen);
+			findAppearanceInScreen(screen, 0.25);
 		}
 	}
 	
-	public void findAppearanceInScreen(BufferedImage screen) throws WidgetException {
+	public void findAppearanceInScreen(BufferedImage screen, double threshold) throws WidgetException {
 		if (appearance != null) {	
 			state.set(STATE_SEARCHING);
 			
@@ -156,12 +163,21 @@ public class Widget extends LanguageMapping implements Serializable {
 								 grayscale.rows() - appearance.template.rows() + 1, 
 								 CvType.CV_8UC1);
 			
-			Imgproc.matchTemplate(grayscale, appearance.template, result, Imgproc.TM_CCOEFF_NORMED);
+			Imgproc.matchTemplate(grayscale, appearance.template, result, Imgproc.TM_CCORR_NORMED); //returns values [0..1]
 			
 			//analyze result
-			org.opencv.core.Point location = Core.minMaxLoc(result).maxLoc;
-			zone = new Rectangle((int) location.x, (int) location.y, bounds.width, bounds.height);
-			state.set(STATE_FOUND);
+			MinMaxLocResult results = Core.minMaxLoc(result);
+			double strength = results.maxVal;
+			Logger.log("appearance template match strength = " + strength, Logger.LEVEL_FILE);
+			
+			if (strength > threshold) {
+				org.opencv.core.Point location = results.maxLoc;
+				zone = new Rectangle((int) location.x, (int) location.y, bounds.width, bounds.height);
+				state.set(STATE_FOUND);
+			}
+			else {
+				state.set(STATE_NOT_FOUND);
+			}
 		}
 		else {
 			throw new WidgetException("widget " + id + " has no appearance and cannot be found");
