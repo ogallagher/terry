@@ -16,6 +16,7 @@ import org.jnativehook.mouse.NativeMouseInputListener;
 
 import com.terry.Widget.WidgetException;
 
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
@@ -852,22 +853,49 @@ public class Watcher {
 						BufferedImage capture = SwingFXUtils.fromFXImage(Driver.capture, null);
 						LinkedList<Widget> widgets = Memory.getWidgets();
 						
+						SimpleObjectProperty<Widget> bestWidget = new SimpleObjectProperty<>(null);
+						SimpleObjectProperty<Double> bestDiff = new SimpleObjectProperty<Double>(Widget.WIDGET_SEARCH_DIFF_MAX);
+						SimpleObjectProperty<Integer> searched = new SimpleObjectProperty<>(0);
+						
+						//set widget to best
+						searched.addListener(new ChangeListener<Integer>() {
+							public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+								if (searched.get() == widgets.size()) {
+									widget = bestWidget.get();
+								}
+							}	
+						});
+						
 						for (Widget w : widgets) {
 							try {
 								w.state.addListener(new ChangeListener<Character>() {
 									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										char c = newValue.charValue();
+										boolean removeme = false;
+										double diff = w.getDiff();
 										
+										if (c == Widget.STATE_FOUND && diff < bestDiff.get()) {
+											bestWidget.set(w);
+											bestDiff.set(diff);;
+											removeme = true;
+										}
+										else if (c == Widget.STATE_NOT_FOUND) {
+											removeme = true;
+										}
+										
+										if (removeme) {
+											searched.set(searched.get() + 1);
+											w.state.removeListener(this);
+										}
 									}
 								});
 								
-								w.findInScreen(capture);
+								w.findInScreen(capture, Widget.WIDGET_SEARCH_DIFF_MAX);
 							} 
 							catch (WidgetException e) {
 								Logger.logError("could not search for widget" + w.getName(), Logger.LEVEL_FILE);
 							}
 						}
-						
-						//set widget to best
 						
 						Driver.captured.removeListener(this);
 					}

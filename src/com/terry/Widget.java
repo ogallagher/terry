@@ -1,11 +1,9 @@
 package com.terry;
 
 import java.awt.Dimension;
-import java.awt.Graphics2D;
 import java.awt.Rectangle;
 import java.awt.Toolkit;
 import java.awt.geom.Path2D;
-import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -15,30 +13,19 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.imageio.ImageIO;
 
 import org.bytedeco.javacpp.Loader;
-import org.bytedeco.javacpp.indexer.DoubleIndexer;
 import org.bytedeco.javacv.Java2DFrameConverter;
 import org.bytedeco.javacv.OpenCVFrameConverter;
 import org.bytedeco.opencv.opencv_java;
-import org.bytedeco.opencv.opencv_core.PCA;
 import org.opencv.core.Core;
 import org.opencv.core.Core.MinMaxLocResult;
 import org.opencv.core.CvType;
-import org.opencv.core.KeyPoint;
 import org.opencv.core.Mat;
-import org.opencv.core.MatOfKeyPoint;
-import org.opencv.core.Rect;
-import org.opencv.features2d.DescriptorMatcher;
-import org.opencv.features2d.FastFeatureDetector;
-import org.opencv.features2d.Feature2D;
-import org.opencv.features2d.Features2d;
-import org.opencv.features2d.Params;
 import org.opencv.imgproc.Imgproc;
 
 import com.google.api.gax.core.CredentialsProvider;
@@ -74,6 +61,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	private Appearance appearance;	//associated icon
 	
 	private Rectangle zone;			//search result
+	private double diff;			//search diff (diff = 1/strength)
 	
 	public static final char STATE_IDLE = 0;
 	public static final char STATE_SEARCHING = 1;
@@ -83,6 +71,7 @@ public class Widget extends LanguageMapping implements Serializable {
 	public CharProperty state;
 	
 	public static int WIDGET_SIZE_MAX; //max size of a widget
+	public static double WIDGET_SEARCH_DIFF_MAX; //max template match squared difference threshold
 	
 	public static void init() throws WidgetException {
 		Logger.log("initializing widget text and appearance finders");
@@ -90,6 +79,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		Appearance.init();
 		
 		WIDGET_SIZE_MAX = Toolkit.getDefaultToolkit().getScreenSize().width / 16;
+		WIDGET_SEARCH_DIFF_MAX = WIDGET_SIZE_MAX*WIDGET_SIZE_MAX; //off by one bit everywhere
 		
 		Logger.log("widget init success");
 	}
@@ -102,6 +92,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		bounds = null;
 		appearance = null;
 		zone = null;
+		diff = -1;
 		state = new CharProperty(STATE_IDLE);
 	}
 	
@@ -111,6 +102,10 @@ public class Widget extends LanguageMapping implements Serializable {
 	
 	public Rectangle getZone() {
 		return zone;
+	}
+	
+	public double getDiff() {
+		return diff;
 	}
 	
 	/*
@@ -131,16 +126,21 @@ public class Widget extends LanguageMapping implements Serializable {
 	}
 	
 	public void findInScreen(BufferedImage screen) throws WidgetException {
+		findInScreen(screen,-1);
+	}
+	
+	public void findInScreen(BufferedImage screen, double threshold) throws WidgetException {
 		zone = null;
 		
 		if (type == TYPE_LABEL || appearance == null) {
 			findLabelInScreen(screen);
 		}
 		else {
-			findAppearanceInScreen(screen, 0.25);
+			findAppearanceInScreen(screen, threshold);
 		}
 	}
 	
+	//threshold = match diff must be less than this; -1 means no threshold
 	public void findAppearanceInScreen(BufferedImage screen, double threshold) throws WidgetException {
 		if (appearance != null) {	
 			state.set(STATE_SEARCHING);
@@ -163,15 +163,24 @@ public class Widget extends LanguageMapping implements Serializable {
 								 grayscale.rows() - appearance.template.rows() + 1, 
 								 CvType.CV_8UC1);
 			
-			Imgproc.matchTemplate(grayscale, appearance.template, result, Imgproc.TM_CCORR_NORMED); //returns values [0..1]
+			boolean thresheld = (threshold != -1);
+			int algorithm;
+			if (thresheld) {
+				algorithm = Imgproc.TM_SQDIFF; //returns values [0..255*255*w*h]
+			}
+			else {
+				algorithm = Imgproc.TM_SQDIFF_NORMED; //returns values [0..1]
+			}
+			
+			Imgproc.matchTemplate(grayscale, appearance.template, result, algorithm);
 			
 			//analyze result
 			MinMaxLocResult results = Core.minMaxLoc(result);
-			double strength = results.maxVal;
-			Logger.log("appearance template match strength = " + strength, Logger.LEVEL_FILE);
+			diff = results.minVal;
+			Logger.log("appearance template match diff = " + diff, Logger.LEVEL_FILE);
 			
-			if (strength > threshold) {
-				org.opencv.core.Point location = results.maxLoc;
+			if (!thresheld || diff < threshold) {
+				org.opencv.core.Point location = results.minLoc;
 				zone = new Rectangle((int) location.x, (int) location.y, bounds.width, bounds.height);
 				state.set(STATE_FOUND);
 			}
@@ -289,7 +298,6 @@ public class Widget extends LanguageMapping implements Serializable {
 		private static Java2DFrameConverter toFrame; //BufferedImage to and from Frame 
 		private static OpenCVFrameConverter.ToOrgOpenCvCoreMat toMat; //Frame to and from Mat
 		
-		//private ArrayList<Feature> features;
 		private Mat template = null;
 		
 		public static void init() {
@@ -316,95 +324,11 @@ public class Widget extends LanguageMapping implements Serializable {
 			
 			template = grayscale;
 			
-			/*
-			//create keypoints
-			MatOfKeyPoint keypoints = new MatOfKeyPoint();
-			FastFeatureDetector analyzer = FastFeatureDetector.create();
-			analyzer.detect(grayscale, keypoints);
-			KeyPoint[] kps = keypoints.toArray();
-			
-			//create descriptors and features and bounds
-			features = new ArrayList<>();
-			int x,y;
-			int w = original.width();
-			int h = original.height();
-			int bx=w,bX=0,by=h,bY=0;
-			
-			for (int i=0; i<kps.length; i++) {
-				x = (int) kps[i].pt.x;
-				y = (int) kps[i].pt.y;
-				
-				if (y > 0 && y < h-1 && x > 0 && x < w-1) {
-					
-					//create feature
-					features.add(new Feature(kps[i], original.get(y, x)));
-					
-					//update bounds
-					if (x < bx) {
-						bx = x;
-					}
-					if (x > bX) {
-						bX = x;
-					}
-					if (y < by) {
-						by = y;
-					}
-					if (y > bY) {
-						bY = y;
-					}
-				}
-				//else, ignore edge keypoint
-			}
-			
-			//define widget bounds
-			bounds = new Dimension(bX-bx,bY-by);
-			
-			//normalize
-			double cx = (bx+bX)/2.0;
-			double cy = (by+bY)/2.0;
-			Point2D.Double evector = normalize(cx,cy);
-			*/
-			
 			Logger.log(this.toString());
 			
 			//TODO remove testing
 			saveToFile(template);
 		}
-		
-		/*
-		 * To be robust against rotation and scaling, normalize features by:
-		 * 	- defining in terms of center
-		 * 	- rotating so the eigenvector's angle is 0
-		 * 
-		 * Taken from: https://github.com/bytedeco/javacv/blob/master/samples/PrincipalComponentAnalysis.java: line 91
-		 */
-		/*
-		@SuppressWarnings("unused")
-		private Point2D.Double normalize(double cx, double cy) {
-			org.bytedeco.opencv.opencv_core.Mat pts = new org.bytedeco.opencv.opencv_core.Mat(features.size(), 2, CvType.CV_64F);
-			
-			DoubleIndexer ptsIndexer = pts.createIndexer();
-			
-			//put keypoints into matrix and define in terms of data center
-			for (int f=0; f<features.size(); f++) {
-				ptsIndexer.put(f, 0, features.get(f).keypoint.pt.x - cx);
-				ptsIndexer.put(f, 1, features.get(f).keypoint.pt.y - cy);
-			}
-			
-			PCA pca = new PCA();
-			pca.apply(pts, 											//point data
-					  new org.bytedeco.opencv.opencv_core.Mat(),	//no known mean eigenvalue 
-					  PCA.DATA_AS_ROW,								//shape of data matrix
-					  1);											//care only about max eigenvalue
-			
-			//get principal component vector
-			DoubleIndexer evectorIndexer = pca.eigenvectors().createIndexer();
-			Point2D.Double evector = new Point2D.Double(evectorIndexer.get(0, 0), evectorIndexer.get(0,1));
-			
-			pca.close();
-			return evector;
-		}
-		*/
 		
 		public Dimension getDimensions() {
 			return new Dimension(template.cols(), template.rows());
@@ -471,33 +395,6 @@ public class Widget extends LanguageMapping implements Serializable {
 			else {
 				return toMat.convert(toFrame.convert(img));
 			}
-		}
-	}
-	
-	private static class Feature implements Serializable {
-		private static final long serialVersionUID = 9106278574480066191L;
-		
-		private KeyPoint keypoint;
-		private double[] descriptor;
-		
-		public Feature(KeyPoint kp, double[] desc) {
-			keypoint = kp;
-			descriptor = desc;
-		}
-		
-		public void draw(Graphics2D g) {
-			int x = (int)keypoint.pt.x;
-			int y = (int)keypoint.pt.y;
-			g.drawLine(x, y, x, y);
-		}
-		
-		public String toString() {
-			String string = "feature: p=(" + keypoint.pt.x + "," + keypoint.pt.y + ") size=" + (int)keypoint.size + " descriptor=";
-			
-			for (double d : descriptor) {
-				string += " " + d;
-			}
-			return string;
 		}
 	}
 	
