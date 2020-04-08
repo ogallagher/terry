@@ -79,7 +79,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		Appearance.init();
 		
 		WIDGET_SIZE_MAX = Toolkit.getDefaultToolkit().getScreenSize().width / 16;
-		WIDGET_SEARCH_DIFF_MAX = WIDGET_SIZE_MAX*WIDGET_SIZE_MAX; //off by one bit everywhere
+		WIDGET_SEARCH_DIFF_MAX = 100; //picked without testing
 		
 		Logger.log("widget init success");
 	}

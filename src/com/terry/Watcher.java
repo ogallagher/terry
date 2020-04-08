@@ -875,8 +875,13 @@ public class Watcher {
 										double diff = w.getDiff();
 										
 										if (c == Widget.STATE_FOUND && diff < bestDiff.get()) {
-											bestWidget.set(w);
-											bestDiff.set(diff);;
+											//check that cursor was within widget zone
+											Rectangle zone = w.getZone();
+											if (zone.contains(dest.x, dest.y)) {
+												bestWidget.set(w);
+												bestDiff.set(diff);
+											}
+											
 											removeme = true;
 										}
 										else if (c == Widget.STATE_NOT_FOUND) {

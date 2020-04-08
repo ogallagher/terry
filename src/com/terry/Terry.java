@@ -32,19 +32,17 @@
  *  = create action learner
  *  	= recognize unknown actions
  *  	- learn by instruction
- *  	- learn by demonstration
+ *  	= learn by demonstration
+ *  		= Watcher.WatcherRecording has list of peripherals, subclasses: Keyboard, Mouse
+ * 	 		= Watcher.Mouse.findWidget() tells if a click, move, or drag ended at a widget
+ *  		- convert keyboards into string compatible with Driver.type()
+ *  		- map keyboards to states
+ *  		- map mice to states
  *  = create watcher connected to keyboard and mouse
  *  	= create os input hooks to catch keystrokes and mouse updates
  *  	+ trigger scribe with key combination (not a good key combo; just what works on both win and mac right now)
  *  - ability to define Widget.zone, where a widget is expected to be found
  *  - hide overlay when no longer needed
- *  + create log files
- *  + create log levels
- *  + create speaker
- *  	+ windows
- *  	+ mac
- *  - watcher recordings
- *  	- 
  */
 
 package com.terry;
