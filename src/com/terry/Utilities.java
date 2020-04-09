@@ -5,12 +5,21 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.Random;
 
 import javax.imageio.ImageIO;
 
 import javafx.scene.input.KeyCode;
 
 public class Utilities {
+	private static Random randomizer;
+	
+	public static void init() {
+		randomizer = new Random();
+		randomizer.setSeed(System.currentTimeMillis());
+	}
+	
 	/*
 	 * Edit distance calculation uses the Wagner-Fischer algorithm for Levenshtein edit distance.
 	 * https://en.wikipedia.org/wiki/Wagner–Fischer_algorithm
@@ -209,8 +218,143 @@ public class Utilities {
 			keys.add(KeyCode.SHIFT);
 			keys.add(KeyCode.SLASH);
 		}
+		else if (alias.endsWith("__")) { //uppercase letters
+			keys.add(KeyCode.SHIFT);
+			keys.add(KeyCode.getKeyCode(alias.substring(0,1).toUpperCase()));
+		}
 		
 		return keys;
+	}
+	
+	public static String aliasFromKeyCode(KeyCode key) {
+		String alias = "";
+		
+		switch (key) {
+			case DELETE:
+				alias = "del";
+				break;
+				
+			case BACK_SPACE:
+				alias = "bck";
+				break;
+				
+			case SHIFT:
+				alias = "shf";
+				break;
+				
+			case CONTROL:
+				alias = "ctl";
+				break;
+				
+			case ALT:
+				alias = "alt";
+				break;
+				
+			case F1:
+				alias = "fn1";
+				break;
+				
+			case META:
+				alias = "cmd";
+				break;
+				
+			case CAPS:
+				alias = "cap";
+				break;
+				
+			case ESCAPE:
+				alias = "esc";
+				break;
+				
+			case UP:
+				alias = "up_";
+				break;
+				
+			case RIGHT:
+				alias = "rgt";
+				break;
+				
+			case DOWN:
+				alias = "dwn";
+				break;
+				
+			case LEFT:
+				alias = "lft";
+				break;
+				
+			case NUMBER_SIGN:
+				alias = "hsh";
+				break;
+				
+			case EXCLAMATION_MARK:
+				alias = "exl";
+				break;
+				
+			case AT:
+				alias = "at_";
+				break;
+				
+			case DOLLAR:
+				alias = "dol";
+				break;
+				
+			case CIRCUMFLEX:
+				alias = "crt";
+				break;
+				
+			case AMPERSAND:
+				alias = "amp";
+				break;
+				
+			case STAR:
+				alias = "str";
+				break;
+				
+			case LEFT_PARENTHESIS:
+				alias = "lpr";
+				break;
+				
+			case RIGHT_PARENTHESIS:
+				alias = "rpr";
+				break;
+				
+			case UNDERSCORE:
+				alias = "udr";
+				break;
+				
+			case PLUS:
+				alias = "pls";
+				break;
+				
+			case BRACELEFT:
+				alias = "lbr";
+				break;
+				
+			case BRACERIGHT:
+				alias = "rbr";
+				break;
+				
+			case COLON:
+				alias = "col";
+				break;
+				
+			case QUOTEDBL:
+				alias = "dqt";
+				break;
+				
+			case LESS:
+				alias = "lss";
+				break;
+				
+			case GREATER:
+				alias = "gtr";
+				break;
+				
+			default:
+				alias = null;
+		}
+		
+		return alias;
 	}
 	
 	//assumes c is lowercase
@@ -270,10 +414,6 @@ public class Utilities {
 					
 				case '-':
 					k = KeyCode.MINUS;
-					break;
-					
-				case '\"':
-					k = KeyCode.BACK_SLASH;
 					break;
 					
 				case '\n':
@@ -344,6 +484,173 @@ public class Utilities {
 		return k;
 	}
 	
+	public static char charTypedFromKeyCodes(KeyCode modifiable, LinkedList<KeyCode> controls) throws KeyComboException {
+		char c = modifiable.getName().toLowerCase().charAt(0);
+		
+		if (modifiable.isWhitespaceKey()) {
+			return c;
+		}
+		else if (modifiable.isLetterKey()) {
+			if (controls.contains(KeyCode.SHIFT)) {
+				throw new KeyComboException(c + "__");
+			}
+			else {
+				return c;
+			}
+		}
+		else if (controls.contains(KeyCode.SHIFT)) {
+			switch (modifiable) {
+				case COMMA:
+					return '<';
+					
+				case PERIOD:
+					return '>';
+					
+				case SLASH:
+					return '?';
+					
+				case SEMICOLON:
+					return ':';
+					
+				case QUOTE:
+					return '"';
+					
+				case OPEN_BRACKET:
+					return '[';
+					
+				case CLOSE_BRACKET:
+					return ']';
+					
+				case BACK_SLASH:
+					return '|';
+					
+				case BACK_QUOTE:
+					return '~';
+					
+				case DIGIT1:
+					return '!';
+					
+				case DIGIT2:
+					return '@';
+					
+				case DIGIT3:
+					return '#';
+					
+				case DIGIT4:
+					return '$';
+					
+				case DIGIT5:
+					return '%';
+					
+				case DIGIT6:
+					return '^';
+					
+				case DIGIT7:
+					return '&';
+					
+				case DIGIT8:
+					return '*';
+					
+				case DIGIT9:
+					return '(';
+					
+				case DIGIT0:
+					return ')';
+					
+				default:
+					return c;
+			}
+		}
+		else {
+			switch (modifiable) {
+				case COMMA:
+					return ',';
+					
+				case PERIOD:
+					return '.';
+					
+				case SLASH:
+					return '/';
+					
+				case SEMICOLON:
+					return ';';
+					
+				case QUOTE:
+					return '\'';
+					
+				case OPEN_BRACKET:
+					return '{';
+					
+				case CLOSE_BRACKET:
+					return '}';
+					
+				case BACK_SLASH:
+					return '\\';
+					
+				case BACK_QUOTE:
+					return '`';
+					
+				case DIGIT1:
+					return '1';
+					
+				case DIGIT2:
+					return '2';
+					
+				case DIGIT3:
+					return '3';
+					
+				case DIGIT4:
+					return '4';
+					
+				case DIGIT5:
+					return '5';
+					
+				case DIGIT6:
+					return '6';
+					
+				case DIGIT7:
+					return '7';
+					
+				case DIGIT8:
+					return '8';
+					
+				case DIGIT9:
+					return '9';
+					
+				case DIGIT0:
+					return '0';
+					
+				default:
+					return c;
+			}
+		}
+	}
+	
+	public static boolean keyIsModifiable(KeyCode key) {
+		if (key.isLetterKey() || key.isDigitKey() || key.isWhitespaceKey()) {
+			return true;
+		}
+		else {
+			switch (key) {
+				case PERIOD:
+				case COMMA:
+				case SLASH:
+				case SEMICOLON:
+				case QUOTE:
+				case OPEN_BRACKET:
+				case CLOSE_BRACKET:
+				case BACK_SLASH:
+				case BACK_QUOTE:
+				case EQUALS:
+				case MINUS:		
+					return true;
+					
+				default:
+					return false;	
+			}
+		}
+	}
+	
 	public static void saveImage(BufferedImage img, String dirPath, String filePath) {
 		File dirFile = new File(Terry.class.getResource(dirPath).getPath());
 		
@@ -360,6 +667,10 @@ public class Utilities {
 		else {
 			Logger.logError("could not find destination directory for image file " + filePath);
 		}
+	}
+	
+	public static long generateSerialVersionUID() {
+		return randomizer.nextLong();
 	}
 	
 	public static class KeyComboException extends Exception {

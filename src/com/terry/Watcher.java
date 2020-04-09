@@ -2,6 +2,7 @@ package com.terry;
 
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
@@ -14,6 +15,8 @@ import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
+import com.terry.State.StateException;
+import com.terry.Utilities.KeyComboException;
 import com.terry.Widget.WidgetException;
 
 import javafx.beans.property.SimpleObjectProperty;
@@ -39,6 +42,16 @@ public class Watcher {
 	private static boolean enabled = false;
 	private static boolean recording = false;
 	
+	public static final char STATE_DISABLED = 'd';
+	public static final char STATE_ENABLED = 'e';
+	public static final char STATE_RECORDING = 'r';
+	public static final char STATE_PAUSED = 'p';
+	public static final char STATE_DONE = 'z';
+	
+	public static CharProperty state = new CharProperty(STATE_DISABLED);
+	
+	public static WatcherRecording demonstration = null;
+	
 	public static void init() throws WatcherException {
 		//disable jnativehook logging
 		java.util.logging.Logger logger = java.util.logging.Logger.getLogger(GlobalScreen.class.getPackage().getName());
@@ -54,6 +67,11 @@ public class Watcher {
 				if (!keysPressed.contains(fxKey)) {
 					keysPressed.add(fxKey);
 					
+					if (recording) {
+						//update demonstration
+						demonstration.pressKey(System.currentTimeMillis(), fxKey);
+					}
+					
 					//check scribe key combo
 					if (keyCombo(Terry.keyComboScribe)) {
 						Terry.triggerScribe(true);
@@ -68,11 +86,23 @@ public class Watcher {
 					if (keyCombo(Prompter.keyComboAbort)) {
 						Prompter.abort();
 					}
+					
+					//check demonstration-done key combo
+					if (keyCombo(Terry.keyComboDemonstrationDone)) {
+						pause();
+					}
 				}
 			}
 			
 			public void nativeKeyReleased(NativeKeyEvent e) {
-				keysPressed.remove(nativeKeyToFxKey(e.getKeyCode()));
+				KeyCode fxKey = nativeKeyToFxKey(e.getKeyCode());
+				
+				keysPressed.remove(fxKey);
+				
+				if (recording) {
+					//update demonstration
+					demonstration.releaseKey(System.currentTimeMillis(), fxKey);
+				}
 			}
 			
 			public void nativeKeyTyped(NativeKeyEvent e) {
@@ -83,24 +113,95 @@ public class Watcher {
 		//handle mouse input
 		nativeMouseListener = new NativeMouseInputListener() {
 			public void nativeMouseClicked(NativeMouseEvent e) {
-				
+				if (recording) {
+					//update demonstration
+					MouseButton button = MouseButton.NONE;
+					
+					switch (e.getButton()) {
+						case NativeMouseEvent.BUTTON1:
+							button = MouseButton.PRIMARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON2:
+							button = MouseButton.SECONDARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON3:
+							button = MouseButton.MIDDLE;
+							break;
+							
+						default:
+							button = MouseButton.NONE;
+					}
+					
+					demonstration.releaseMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
+				}
 			}
 
 			public void nativeMousePressed(NativeMouseEvent e) {
-				
+				if (recording) {
+					//update demonstration
+					MouseButton button = MouseButton.NONE;
+					
+					switch (e.getButton()) {
+						case NativeMouseEvent.BUTTON1:
+							button = MouseButton.PRIMARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON2:
+							button = MouseButton.SECONDARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON3:
+							button = MouseButton.MIDDLE;
+							break;
+							
+						default:
+							button = MouseButton.NONE;
+					}
+					
+					demonstration.pressMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
+				}
 			}
 
 			public void nativeMouseReleased(NativeMouseEvent e) {
-				
+				if (recording) {
+					//update demonstration
+					MouseButton button = MouseButton.NONE;
+					
+					switch (e.getButton()) {
+						case NativeMouseEvent.BUTTON1:
+							button = MouseButton.PRIMARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON2:
+							button = MouseButton.SECONDARY;
+							break;
+							
+						case NativeMouseEvent.BUTTON3:
+							button = MouseButton.MIDDLE;
+							break;
+							
+						default:
+							button = MouseButton.NONE;
+					}
+					
+					demonstration.releaseMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
+				}
 			}
 			
 			public void nativeMouseMoved(NativeMouseEvent e) {
-				System.out.println("native mouse movement " + e.getX() + " " + e.getY());
-				Logger.log("native mouse movement " + e.getX() + " " + e.getY());
+				if (recording) {
+					//update demonstration					
+					demonstration.moveMouse(System.currentTimeMillis(), e.getX(), e.getY());
+				}
 			}
 
 			public void nativeMouseDragged(NativeMouseEvent e) {
-				
+				if (recording) {
+					//update demonstration
+					demonstration.dragMouse(System.currentTimeMillis(), e.getX(), e.getY());
+				}
 			}
 		};
 		
@@ -112,52 +213,75 @@ public class Watcher {
 	public static void enable() throws WatcherException {
 		Logger.log("enabling watcher");
 		
-		try {
-			//register native hook for terry
-			GlobalScreen.registerNativeHook();
-			
-			//add native key listener
-			GlobalScreen.addNativeKeyListener(nativeKeyListener);
-			
-			//add native mouse listener
-			
-			enabled = true;
-		} 
-		catch (NativeHookException e) {
-			throw new WatcherException("terry failed to register native hooks for mouse and keyboard events");
-		} 
+		if (!enabled && !recording) {
+			try {
+				//register native hook for terry
+				GlobalScreen.registerNativeHook();
+				
+				//add native key listener
+				GlobalScreen.addNativeKeyListener(nativeKeyListener);
+				
+				//add native mouse listener
+				
+				enabled = true;
+				state.set(STATE_ENABLED);
+			} 
+			catch (NativeHookException e) {
+				throw new WatcherException("terry failed to register native hooks for mouse and keyboard events");
+			} 
+		}
 	}
 	
 	public static void disable() throws WatcherException {
 		Logger.log("disabling watcher");
 		
 		if (recording) {
-			ignore();
+			pause();
 		}
 		
-		try {
-			//remove native input listeners
-			GlobalScreen.removeNativeKeyListener(nativeKeyListener);
-			
-			//unregister native hook
-			GlobalScreen.unregisterNativeHook();
-			
-			enabled = false;
-		} 
-		catch (NativeHookException e) {
-			throw new WatcherException("unable to unregister native hooks for watcher");
+		if (enabled) {
+			try {
+				//remove native input listeners
+				GlobalScreen.removeNativeKeyListener(nativeKeyListener);
+				
+				//unregister native hook
+				GlobalScreen.unregisterNativeHook();
+				
+				enabled = false;
+				state.set(STATE_DISABLED);
+			} 
+			catch (NativeHookException e) {
+				throw new WatcherException("unable to unregister native hooks for watcher");
+			}
 		}
 	}
 	
 	public static void record() throws WatcherException {
-		if (!enabled) {
-			enable();
+		if (!recording) {
+			if (!enabled) {
+				enable();
+			}
+			
+			demonstration = new WatcherRecording();
+			recording = true;
+			state.set(STATE_RECORDING);
 		}
-		recording = true;
 	}
 	
-	public static void ignore() {
-		recording = false;
+	public static void pause() {
+		if (recording) {
+			recording = false;
+			state.set(STATE_PAUSED);
+		}
+	}
+	
+	public static Action compile(String actionName) {
+		if (demonstration != null) {
+			return demonstration.compile(actionName);
+		}
+		else {
+			return null;
+		}
 	}
 	
 	private static boolean keyCombo(KeyCode[] combo) {
@@ -660,8 +784,29 @@ public class Watcher {
 	public static class WatcherRecording {
 		LinkedList<Peripheral> peripherals;
 		
+		public static final char STATE_RECORDING = Watcher.STATE_RECORDING;
+		public static final char STATE_COMPILED = 'c';
+		
+		public char state;
+		
+		private State<String> typedState; //convenience references to demonstratable states
+		private State<Point2D> movedState;
+		private State<Point2D> draggedState;
+		private State<Widget> movedWidgetState;
+		private State<Widget> draggedWidgetState;
+		private State<MouseButton> clickedState;
+		
+		@SuppressWarnings("unchecked")
 		public WatcherRecording() {
 			peripherals = new LinkedList<>();
+			state = STATE_RECORDING;
+			
+			typedState = (State<String>) Terry.states.get("typed");
+			movedState = (State<Point2D>) Terry.states.get("mouseat");
+			draggedState = (State<Point2D>) Terry.states.get("mousedragged");
+			movedWidgetState = (State<Widget>) Terry.states.get("mouseatwidget");
+			draggedWidgetState = (State<Widget>) Terry.states.get("mousedraggedwidget");
+			clickedState = (State<MouseButton>) Terry.states.get("clickbtn");
 		}
 		
 		public void pressKey(long timestamp, KeyCode key) {
@@ -716,6 +861,140 @@ public class Watcher {
 			}
 		}
 		
+		public Action compile(String actionName) {
+			Action compositeAction = new Action(actionName);
+			
+			ArrayList<State<?>> states = new ArrayList<>();
+			ArrayList<Arg[]> argArrays = new ArrayList<>();
+			int s = 0;
+			
+			LinkedList<KeyCode> keysPressed = new LinkedList<KeyCode>();
+			StringBuilder stringTyped = new StringBuilder();
+			KeyCode key;
+			
+			for (Peripheral p : peripherals) {
+				if (p instanceof Keyboard) {
+					if (p.type == KeyEvent.KEY_PRESSED) {
+						key = ((Keyboard)p).key;
+						
+						if (Utilities.keyIsModifiable(key)) {
+							try {
+								stringTyped.append(Utilities.charTypedFromKeyCodes(key, keysPressed));
+							} 
+							catch (KeyComboException e) {
+								stringTyped.append(e.getMessage());
+							}
+						}
+						else {
+							keysPressed.add(key);
+						}
+					}
+					else { //released
+						keysPressed.remove(((Keyboard)p).key);
+					}
+				}
+				else { //Mouse
+					//convert completed keyboard to state
+					states.add(s-1, typedState);
+					argArrays.add(s-1, new Arg[] {new Arg("str",stringTyped.toString(),null)});
+					
+					Mouse m = (Mouse) p;
+					if (m.type == MouseEvent.MOUSE_CLICKED) {
+						//convert mouse click
+						states.add(s, clickedState);
+						
+						String direction;
+						switch (m.button) {
+							case SECONDARY:
+								direction = Arg.DIRARG_RIGHT;
+								break;
+								
+							case MIDDLE:
+								direction = Arg.DIRARG_MIDDLE;
+								break;
+								
+							case PRIMARY:
+							default:
+								direction = Arg.DIRARG_LEFT;
+								break;
+						}
+						argArrays.add(s, new Arg[] { new Arg("btn", direction, null) });
+					}
+					else {
+						int ms = s; //s will change as other mice are searched in parallel; create local copy
+						
+						//handle widget search result
+						m.defined.addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+								if (newValue) {
+									Widget w = m.widget;
+									
+									if (w == null) {
+										//convert completed to-location mouse
+										if (m.type == MouseEvent.MOUSE_MOVED) {
+											states.add(ms, movedState);
+										}
+										else { //drag
+											states.add(ms, draggedState);
+										}
+										
+										argArrays.add(ms, new Arg[] {
+														new Arg("x", m.dest.x, null),
+														new Arg("y", m.dest.y, null)});
+									}
+									else {
+										//convert completed to-widget mouse
+										if (m.type == MouseEvent.MOUSE_MOVED) {
+											states.add(ms, movedWidgetState);
+										}
+										else { //drag
+											states.add(ms, draggedWidgetState);
+										}
+										
+										argArrays.add(ms, new Arg[] {new Arg("widget", w, null)});
+									}
+									
+									m.defined.removeListener(this);
+								}
+							}
+						});
+						
+						/*
+						 * determine whether the target is a location or a widget
+						 * for clicks we don't check target; target is derived from location (move/drag)
+						 */
+						m.findWidget();
+					}
+				}
+				
+				s++;
+			}
+			
+			State<Boolean> compositeState = new State<Boolean>(actionName.replaceAll("\\s+", "").toLowerCase() + "state", false, new String[] {}, new DriverExecution<Boolean>() {				
+				private static final long serialVersionUID = 4490776432548709253L;
+				
+				private ArrayList<State<?>> subStates = states;
+				private ArrayList<Arg[]> subArgs = argArrays;
+
+				public Boolean execute(Boolean stateOld, Arg[] args) {
+					try {
+						for (int i=0; i<states.size(); i++) {
+							subStates.get(i).transition(subArgs.get(i));
+						}
+						
+						return true;
+					} 
+					catch (StateException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+						return false;
+					}
+				}
+			});
+			compositeAction.addState(compositeState);
+			
+			return compositeAction;
+		}
+		
 		//returns duration of full recording in milliseconds
 		public long duration() {
 			return peripherals.getLast().start - peripherals.getFirst().start;
@@ -735,7 +1014,7 @@ public class Watcher {
 	
 	protected abstract static class Peripheral {
 		EventType<? extends Event> type;
-		long start;			
+		long start;		
 	}
 	
 	public static class Keyboard extends Peripheral {
@@ -779,6 +1058,8 @@ public class Watcher {
 		private MouseButton button;
 		private Widget widget;
 		
+		public SimpleObjectProperty<Boolean> defined;
+		
 		public Mouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
 			this.type = type;
 			start = timestamp;
@@ -786,6 +1067,7 @@ public class Watcher {
 			dest = new Point(x, y);
 			this.button = button;
 			widget = null;
+			defined = new SimpleObjectProperty<>(false);
 		}
 
 		public Mouse append(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
@@ -830,8 +1112,6 @@ public class Watcher {
 			}
 			
 			if (newMouse) {
-				findWidget();
-				
 				return new Mouse(type, timestamp, x, y, button);
 			}
 			else {
@@ -862,6 +1142,7 @@ public class Watcher {
 							public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
 								if (searched.get() == widgets.size()) {
 									widget = bestWidget.get();
+									defined.set(true);
 								}
 							}	
 						});

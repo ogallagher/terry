@@ -31,9 +31,12 @@ public class Action extends LanguageMapping implements Serializable {
 		}
 	}
 	
+	//add states to global Terry.states
 	public void addStates() {
 		for (State<?> state : states) {
-			Terry.states.put(state.getName(), state);
+			if (Terry.states.get(state.getName()) == null) {
+				Terry.states.put(state.getName(), state);
+			}
 		}
 	}
 	

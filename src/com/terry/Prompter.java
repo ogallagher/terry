@@ -505,6 +505,27 @@ public class Prompter extends Application {
 		}
 	}
 	
+	public static ButtonType prompt(String title, String message, ButtonType... buttons) throws PrompterException {
+		if (Toolkit.getToolkit().isFxUserThread()) {
+			Logger.log("prompting" + title);
+			Alert alert = new Alert(AlertType.NONE, message, buttons);
+			alert.initOwner(intercom);
+			alert.setTitle(title);
+			
+			Optional<ButtonType> response = alert.showAndWait();
+			
+			if (response.isPresent()) {
+				return response.get();
+			}
+			else {
+				return null;
+			}
+		}
+		else {
+			throw new PrompterException("prompter prompt method must be run on fx thread");
+		}
+	}
+	
 	// these stage controls must be run on the JavaFX app thread; hence platform.runlater
 	public static void hide() {
 		Platform.runLater(new Runnable() {

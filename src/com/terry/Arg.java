@@ -53,6 +53,7 @@ public class Arg {
 	public static final String DIRARG_RIGHT = "right";
 	public static final String DIRARG_DOWN = "down";
 	public static final String DIRARG_LEFT = "left";
+	public static final String DIRARG_MIDDLE = "middle";
 	public static ArrayList<String> dirargs;
 	
 	//number word arg values

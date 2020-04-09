@@ -222,6 +222,22 @@ public class Driver {
 		});
 	}
 	
+	public static void clickMiddle() {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				try {
+					robot.mousePress(MouseButton.MIDDLE);
+					Thread.sleep(DELAY_CLICK);
+					robot.mouseRelease(MouseButton.MIDDLE);
+					Thread.sleep(DELAY_CLICK);
+				}
+				catch (InterruptedException e) {
+					//fail quietly
+				}
+			}
+		});
+	}
+	
 	public static void drag(int x, int y) {
 		Platform.runLater(new Runnable() {
 			public void run() {

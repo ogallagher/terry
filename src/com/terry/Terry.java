@@ -35,7 +35,7 @@
  *  	= learn by demonstration
  *  		= Watcher.WatcherRecording has list of peripherals, subclasses: Keyboard, Mouse
  * 	 		= Watcher.Mouse.findWidget() tells if a click, move, or drag ended at a widget
- *  		- convert keyboards into string compatible with Driver.type()
+ * 			- create lessons for demonstration
  *  		- map keyboards to states
  *  		- map mice to states
  *  = create watcher connected to keyboard and mouse
@@ -49,7 +49,6 @@ package com.terry;
 
 import java.awt.Dimension;
 import java.awt.Rectangle;
-import java.awt.event.MouseEvent;
 import java.awt.geom.AffineTransform;
 import java.awt.geom.Ellipse2D;
 import java.awt.geom.Point2D;
@@ -72,7 +71,10 @@ import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.scene.control.ButtonBar.ButtonData;
+import javafx.scene.control.ButtonType;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.MouseButton;
 import javafx.scene.paint.Color;
 
 public class Terry {
@@ -80,7 +82,7 @@ public class Terry {
 	
 	public static Widget dummyWidget;
 	
-	public static HashMap<String,State<?>> states = new HashMap<>();
+	public static HashMap<String,State<?>> states = new HashMap<>(); //global state table
 	
 	public static final String RES_PATH = "res/";
 	
@@ -124,9 +126,11 @@ public class Terry {
 	public static final String KEY_LESS = "lss";
 	public static final String KEY_GREATER = "gtr";
 	public static final String KEY_QUERY = "qry";
+	//uppercase letters: X = x__
 	
 	public static KeyCode[] keyComboScribe;
 	public static KeyCode[] keyComboScribeDone;
+	public static KeyCode[] keyComboDemonstrationDone;
 	
 	public static final int EXITCODE_OS = 1;
 	public static final int EXITCODE_WATCHER = 2;
@@ -140,12 +144,14 @@ public class Terry {
 			osMessage = "detected win os";
 			
 			keyComboScribe = new KeyCode[] {KeyCode.CONTROL, KeyCode.ALT, KeyCode.T};
+			keyComboDemonstrationDone = new KeyCode[] {KeyCode.CONTROL, KeyCode.ESCAPE};
 		}
 		else if (osName.startsWith("mac")) {
 			os = OS_MAC;
 			osMessage = "detected mac os";
 			
 			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
+			keyComboDemonstrationDone = new KeyCode[] {KeyCode.META, KeyCode.ESCAPE};
 		}
 		else {
 			os = OS_OTHER;
@@ -157,6 +163,8 @@ public class Terry {
 		
 		Logger.init();
 		Logger.log(osMessage, Logger.LEVEL_CONSOLE);
+		
+		Utilities.init();
 		
 		try {
 			Speaker.init();
@@ -294,11 +302,11 @@ public class Terry {
 		//--- click mouse button ---//
 		Action mouseClickBtn = new Action("?@dbtn) click");
 		
-		State<Integer> clickbtn = new State<Integer>("clickbtn", 0, new String[] {"btn"}, new DriverExecution<Integer>() {
+		State<MouseButton> clickbtn = new State<MouseButton>("clickbtn", MouseButton.NONE, new String[] {"btn"}, new DriverExecution<MouseButton>() {
 			private static final long serialVersionUID = -3163938142402546869L;
 
-			public Integer execute(Integer stateOld, Arg[] args) {
-		        Integer button = MouseEvent.BUTTON1;
+			public MouseButton execute(MouseButton stateOld, Arg[] args) {
+		        MouseButton button = MouseButton.PRIMARY;
 		        
 		        //map args
 		        for (Arg arg : args) {
@@ -310,19 +318,25 @@ public class Terry {
 		        	else if (arg.name.equals("btn")) {
 		        		String direction = (String) value;
 		        		
-		        		if (direction.equals("right")) {
-		        			button = MouseEvent.BUTTON2;
+		        		if (direction.equals(Arg.DIRARG_RIGHT)) {
+		        			button = MouseButton.SECONDARY;
+		        		}
+		        		else if (direction.equals(Arg.DIRARG_MIDDLE)) {
+		        			button = MouseButton.MIDDLE;
 		        		}
 		        		//else, assume button 1
 		        	}
 		        }
 		        
 		        //direct driver
-		        if (button == MouseEvent.BUTTON1) {
+		        if (button == MouseButton.PRIMARY) {
 		            Driver.clickLeft();
 		        }
-		        else if (button == MouseEvent.BUTTON2) {
+		        else if (button == MouseButton.SECONDARY) {
 		            Driver.clickRight();
+		        }
+		        else if (button == MouseButton.MIDDLE) {
+		        	Driver.clickMiddle();
 		        }
 		        
 		        //update state
@@ -332,6 +346,44 @@ public class Terry {
 		mouseClickBtn.addState(clickbtn);
 		
 		Memory.addMapping(mouseClickBtn);
+		
+		//--- drag mouse to screen location ---//
+		Action mouseDragXY = new Action("?drag) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y) ?y)");
+		
+		State<Point2D> mousedragged = new State<>("mousedragged", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
+			private static final long serialVersionUID = 8098973136515206171L;
+
+			public Point2D execute(Point2D stateOld, Arg[] args) {
+				Float x = Float.valueOf(0);
+				Float y = Float.valueOf(0);
+				
+				//map args
+				for (Arg arg : args) {
+					Object value = arg.getValue();
+					
+					if (value == null) {
+						Logger.log("null arg");
+					}
+					else if (arg.name.equals("x")) {
+						x = (Float) value;
+					}
+					else if (arg.name.equals("y")) {
+						y = (Float) value;
+					}
+				}
+				
+				//direct driver
+				Driver.drag(x.intValue(), y.intValue());
+				
+				//update state(s)
+				Point2D.Float dest = new Point2D.Float(x, y);
+				mouseat.getProperty().set(dest);
+				return dest;
+			}
+		});
+		mouseDragXY.addState(mousedragged);
+		
+		Memory.addMapping(mouseDragXY);
 		
 		//--- type string ---//
 		Action typeStr = new Action("type ?out) ?following string) @$str ?end quote)");
@@ -630,6 +682,71 @@ public class Terry {
 		
 		Memory.addMapping(mouseToWidget);
 		
+		//--- drag mouse to widget ---//
+		Action mouseDragWidget = new Action("drag ?|mouse,cursor,pointer,)) to @wwidget");
+		
+		State<Widget> mousedraggedwidget = new State<Widget>("mousedraggedwidget", dummyWidget, new String[] {"widget"}, new DriverExecution<Widget>() {
+			private static final long serialVersionUID = 6240024334541248565L;
+
+			public Widget execute(Widget stateOld, Arg[] args) {
+				//map args
+				Widget widget = null;
+				Arg widgetArg = null;
+				
+				for (Arg arg : args) {	
+					if (arg != null && arg.name.equals("widget")) {
+						widget = (Widget) arg.getValue();
+						widgetArg = arg;
+					}
+				}
+				
+				if (widget != null) {
+					//get widget location
+					HashMap<String,Arg> locateWidgetArgs = new HashMap<>();
+					locateWidgetArgs.put("widget", widgetArg);
+					
+					try {
+						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
+								if (newValue) {
+									//move mouse to widget location
+									Point2D location = widgetlocation.getProperty().get();
+									int x = (int) location.getX();
+									int y = (int) location.getY();
+									
+									//direct driver
+									Driver.drag(x, y);
+									
+									//update mouse location
+									Point2D.Float dest = new Point2D.Float(x,y);
+									mouseat.getProperty().set(dest);
+									mousedragged.getProperty().set(dest);
+									
+									widgetlocationupdated.getProperty().removeListener(this);
+								}
+							}
+						});
+						
+						locateWidget.execute(locateWidgetArgs);
+						
+						//update moused widget
+						mouseatwidget.getProperty().set(widget);
+						return widget;
+					}
+					catch (StateException e) {
+						//widget location failure
+						return null;
+					}					
+				}
+				else {
+					return null;
+				}
+			}
+		});
+		mouseDragWidget.addState(mousedraggedwidget);
+		
+		Memory.addMapping(mouseDragWidget);
+		
 		//--- demos ---//
 		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");
 		
@@ -756,7 +873,7 @@ public class Terry {
 	public static void createLessons() {
 		Logger.log("creating lessons");
 		
-		//--- create widget ---//
+		//--- learn widget ---//
 		Lesson newWidget = new Lesson("@$name is @ttype ?|has,with,says,) @$label)", Lesson.TYPE_WIDGET);
 		
 		Definition newwidget = new Definition(new String[] {"name","type","label"}) {
@@ -772,7 +889,6 @@ public class Terry {
 					Object value = arg.getValue();
 					
 					if (value != null) {
-						Logger.log("arg: " + arg.name + " = " + value);
 						if (arg.name.equals("name")) {
 							name = (String) value;
 						}
@@ -826,5 +942,87 @@ public class Terry {
 		newWidget.setDefinition(newwidget);
 		
 		Memory.addMapping(newWidget);
+		
+		//--- learn action by demonstration ---///
+		Lesson demonstrateAction = new Lesson("?is) |show,demonstrate,demonstration,) ?how to) @$action", Lesson.TYPE_ACTION);
+		
+		Definition demonstration = new Definition(new String[] {"action"}) {
+			private static final long serialVersionUID = 7662523659663777292L;
+
+			public void learn(Arg[] args) {
+				String name = null;
+				
+				//map args
+				for (Arg arg : args) {
+					Object value = arg.getValue();
+					
+					if (value != null && arg.name.equals("action")) {
+						name= (String) value;
+					}
+				}
+				
+				//enable demonstration recording and notify
+				if (name != null) {
+					try {
+						Watcher.enable();
+						
+						Logger.log("i'm ready to record your demonstration", Logger.LEVEL_SPEECH);
+						ButtonType response = Prompter.prompt(
+							"Demonstrate " + name, 
+							"Hit the READY button to begin demonstrating how to " + name + ". To end the demonstration, type CMD/CTRL + ESC.", 
+							new ButtonType(name, ButtonData.BIG_GAP),
+							ButtonType.CANCEL);
+						
+						if (response == null || response == ButtonType.CANCEL) {
+							Logger.log("demonstration aborted");
+						}
+						else {
+							String finalName = name;
+							try {
+								//handle demonstration end
+								Watcher.state.addListener(new ChangeListener<Character>() {
+									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										char c = newValue.charValue();
+										
+										if (c == Watcher.STATE_RECORDING) {
+											Logger.log("when you're finished hit the command/control and escape keys", Logger.LEVEL_SPEECH);
+										}
+										else if (c == Watcher.STATE_PAUSED) {
+											//map demonstration to state transitions
+											Action newAction = Watcher.compile(finalName);
+											Logger.log("i'm reviewing your demonstration now", Logger.LEVEL_SPEECH);
+											Logger.log(Watcher.demonstration.toString(), Logger.LEVEL_CONSOLE);
+										}
+										else if (c == Watcher.STATE_DONE) {
+											
+										}
+									}
+								});
+								
+								//start recording
+								Watcher.record();
+							} 
+							catch (WatcherException e) {
+								Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+								Logger.logError("i failed to record your demonstration", Logger.LEVEL_SPEECH);
+							}
+						}
+					} 
+					catch (WatcherException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+						Logger.logError("i won't be able to record your demonstration", Logger.LEVEL_SPEECH);
+					} 
+					catch (PrompterException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+					}
+				}
+				else {
+					Logger.logError("cannot learn a new action without knowing what it's called", Logger.LEVEL_SPEECH);
+				}
+			}
+		};
+		demonstrateAction.setDefinition(demonstration);
+		
+		Memory.addMapping(demonstrateAction);
 	}
 }
