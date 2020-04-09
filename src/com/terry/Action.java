@@ -20,6 +20,10 @@ public class Action extends LanguageMapping implements Serializable {
 		states = new ArrayList<>();
 	}
 	
+	public static void init() throws LanguageMappingException {
+		Terry.dummyAction = new Action("ddummya");
+	}
+	
 	public void addState(State<?> state) {
 		//add entry to global state table
 		if (Terry.states.get(state.getName()) == null) {

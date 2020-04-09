@@ -116,7 +116,7 @@ public class Watcher {
 		
 		//handle mouse input
 		nativeMouseListener = new NativeMouseInputListener() {
-			public void nativeMouseClicked(NativeMouseEvent e) {
+			private void handleMouseRelease(NativeMouseEvent e) {
 				if (recording) {
 					//update demonstration
 					MouseButton button = MouseButton.NONE;
@@ -140,6 +140,10 @@ public class Watcher {
 					
 					demonstration.releaseMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
 				}
+			}
+			
+			public void nativeMouseClicked(NativeMouseEvent e) {
+				handleMouseRelease(e);
 			}
 
 			public void nativeMousePressed(NativeMouseEvent e) {
@@ -169,32 +173,11 @@ public class Watcher {
 			}
 
 			public void nativeMouseReleased(NativeMouseEvent e) {
-				if (recording) {
-					//update demonstration
-					MouseButton button = MouseButton.NONE;
-					
-					switch (e.getButton()) {
-						case NativeMouseEvent.BUTTON1:
-							button = MouseButton.PRIMARY;
-							break;
-							
-						case NativeMouseEvent.BUTTON2:
-							button = MouseButton.SECONDARY;
-							break;
-							
-						case NativeMouseEvent.BUTTON3:
-							button = MouseButton.MIDDLE;
-							break;
-							
-						default:
-							button = MouseButton.NONE;
-					}
-					
-					demonstration.releaseMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
-				}
+				handleMouseRelease(e);
 			}
 			
 			public void nativeMouseMoved(NativeMouseEvent e) {
+				Logger.log(e.toString());
 				if (recording) {
 					//update demonstration					
 					demonstration.moveMouse(System.currentTimeMillis(), e.getX(), e.getY());
@@ -202,6 +185,7 @@ public class Watcher {
 			}
 
 			public void nativeMouseDragged(NativeMouseEvent e) {
+				Logger.log(e.toString());
 				if (recording) {
 					//update demonstration
 					demonstration.dragMouse(System.currentTimeMillis(), e.getX(), e.getY());
@@ -226,6 +210,7 @@ public class Watcher {
 				GlobalScreen.addNativeKeyListener(nativeKeyListener);
 				
 				//add native mouse listener
+				GlobalScreen.addNativeMouseListener(nativeMouseListener);
 				
 				enabled = true;
 				state.set(STATE_ENABLED);
@@ -285,14 +270,28 @@ public class Watcher {
 			new Thread() {
 				public void run() {
 					try {
-						demonstratedAction = demonstration.compile(actionName);
+						SimpleObjectProperty<Action> actionProperty = new SimpleObjectProperty<>(Terry.dummyAction);
+						actionProperty.addListener(new ChangeListener<Action>() {
+							public void changed(ObservableValue<? extends Action> observable, Action oldValue, Action newValue) {
+								boolean removeme = false;
+								
+								if (newValue == null) {
+									removeme = true;
+									state.set(STATE_FAILED);
+								}
+								else if (newValue != Terry.dummyAction) {
+									removeme = true;
+									demonstratedAction = newValue;
+									state.set(STATE_DONE);
+								}
+								
+								if (removeme) {
+									actionProperty.removeListener(this);
+								}
+							}
+						});
 						
-						if (demonstratedAction == null) {
-							state.set(STATE_FAILED);
-						}
-						else {
-							state.set(STATE_DONE);
-						}
+						demonstration.compile(actionName, actionProperty);
 					}
 					catch (LanguageMappingException e) {
 						demonstratedAction = null;
@@ -868,6 +867,8 @@ public class Watcher {
 		}
 		
 		private void addMouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
+			Logger.log("mouse @" + timestamp + " to " + x + " " + y, Logger.LEVEL_CONSOLE);
+			
 			try {
 				Mouse last = (Mouse) peripherals.getLast();
 				last = last.append(type, timestamp, x, y, button);
@@ -876,17 +877,26 @@ public class Watcher {
 					peripherals.add(last);
 				}
 			}
-			catch (ClassCastException e) {
+			catch (ClassCastException | NoSuchElementException e) {
 				peripherals.add(new Mouse(type, timestamp, x, y, button));
 			}
 		}
 		
-		public Action compile(String actionName) throws LanguageMappingException {
+		public void compile(String actionName, SimpleObjectProperty<Action> actionProperty) throws LanguageMappingException {
 			Action compositeAction = new Action(actionName);
 			
-			ArrayList<State<?>> states = new ArrayList<>();
-			ArrayList<Arg[]> argArrays = new ArrayList<>();
+			int n = peripherals.size();
+			State<?>[] states = new State<?>[n];
+			Arg[][] argArrays = new Arg[n][];
+			
+			/*
+			 * s increments each time a new state is needed.
+			 * Not all peripherals convert to their own states, and some are ignored
+			 */
 			int s = 0;
+			
+			//converted increments each time a new state added.
+			SimpleObjectProperty<Integer> progress = new SimpleObjectProperty<Integer>(0);
 			
 			LinkedList<KeyCode> keysPressed = new LinkedList<KeyCode>();
 			StringBuilder stringTyped = new StringBuilder();
@@ -915,14 +925,20 @@ public class Watcher {
 				}
 				else { //Mouse
 					//convert completed keyboard to state
-					states.add(s-1, typedState);
-					argArrays.add(s-1, new Arg[] {new Arg("str",stringTyped.toString(),null)});
+					if (stringTyped.length() != 0) {
+						states[s] = typedState;
+						argArrays[s] = new Arg[] {new Arg("str",stringTyped.toString(),null)};
+						s++;
+						stringTyped = new StringBuilder();
+						
+						synchronized (progress) {
+							progress.set(progress.get() + 1);
+						}
+					}
 					
 					Mouse m = (Mouse) p;
 					if (m.type == MouseEvent.MOUSE_CLICKED) {
 						//convert mouse click
-						states.add(s, clickedState);
-						
 						String direction;
 						switch (m.button) {
 							case SECONDARY:
@@ -938,10 +954,18 @@ public class Watcher {
 								direction = Arg.DIRARG_LEFT;
 								break;
 						}
-						argArrays.add(s, new Arg[] { new Arg("btn", direction, null) });
+						
+						states[s] = clickedState;
+						argArrays[s] = new Arg[] { new Arg("btn", direction, null) };
+						s++;
+						
+						synchronized (progress) {
+							progress.set(progress.get() + 1);
+						}
 					}
 					else {
 						int ms = s; //s will change as other mice are searched in parallel; create local copy
+						s++;
 						
 						//handle widget search result
 						m.defined.addListener(new ChangeListener<Boolean>() {
@@ -952,26 +976,35 @@ public class Watcher {
 									if (w == null) {
 										//convert completed to-location mouse
 										if (m.type == MouseEvent.MOUSE_MOVED) {
-											states.add(ms, movedState);
+											states[ms] = movedState;
 										}
 										else { //drag
-											states.add(ms, draggedState);
+											states[ms] = draggedState;
 										}
 										
-										argArrays.add(ms, new Arg[] {
+										argArrays[ms] = new Arg[] {
 														new Arg("x", m.dest.x, null),
-														new Arg("y", m.dest.y, null)});
+														new Arg("y", m.dest.y, null)
+														};
+										
+										synchronized (progress) {
+											progress.set(progress.get() + 1);
+										}
 									}
 									else {
 										//convert completed to-widget mouse
 										if (m.type == MouseEvent.MOUSE_MOVED) {
-											states.add(ms, movedWidgetState);
+											states[ms] = movedWidgetState;
 										}
 										else { //drag
-											states.add(ms, draggedWidgetState);
+											states[ms] = draggedWidgetState;
 										}
 										
-										argArrays.add(ms, new Arg[] {new Arg("widget", w, null)});
+										argArrays[ms] = new Arg[] {new Arg("widget", w, null)};
+										
+										synchronized (progress) {
+											progress.set(progress.get() + 1);
+										}
 									}
 									
 									m.defined.removeListener(this);
@@ -986,33 +1019,72 @@ public class Watcher {
 						m.findWidget();
 					}
 				}
-				
-				s++;
 			}
 			
-			State<Boolean> compositeState = new State<Boolean>(actionName.replaceAll("\\s+", "").toLowerCase() + "state", false, new String[] {}, new DriverExecution<Boolean>() {				
-				private static final long serialVersionUID = 4490776432548709253L;
+			//convert last completed keyboard to state
+			if (stringTyped.length() != 0) {
+				states[s] = typedState;
+				argArrays[s] = new Arg[] {new Arg("str",stringTyped.toString(),null)};
+				s++;
+				stringTyped = new StringBuilder();
 				
-				private ArrayList<State<?>> subStates = states;
-				private ArrayList<Arg[]> subArgs = argArrays;
-
-				public Boolean execute(Boolean stateOld, Arg[] args) {
-					try {
-						for (int i=0; i<states.size(); i++) {
-							subStates.get(i).transition(subArgs.get(i));
+				synchronized (progress) {
+					progress.set(progress.get() + 1);
+				}
+			}
+			
+			int finals = s;
+			
+			//handle when conversion completes
+			progress.addListener(new ChangeListener<Integer>() {
+				public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+					if (newValue == finals) {
+						State<?>[] finalStates = new State<?>[finals];
+						Arg[][] finalArgArrays = new Arg[finals][];
+						
+						for (int i=0; i<finals; i++) {
+							if (states[i] != null) {
+								finalStates[i] = states[i];
+								finalArgArrays[i] = argArrays[i];
+							}
 						}
 						
-						return true;
-					} 
-					catch (StateException e) {
-						Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
-						return false;
+						State<Boolean> compositeState = new State<Boolean>(actionName.replaceAll("\\s+", "").toLowerCase() + "state", false, new String[] {}, new DriverExecution<Boolean>() {				
+							private static final long serialVersionUID = 4490776432548709253L;
+							
+							private State<?>[] subStates = finalStates;
+							private Arg[][] subArgs = finalArgArrays;
+							
+							public Boolean execute(Boolean stateOld, Arg[] args) {
+								try {
+									for (int i=0; i<subStates.length; i++) {
+										subStates[i].transition(subArgs[i]);
+									}
+									
+									return true;
+								} 
+								catch (StateException e) {
+									Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+									return false;
+								}
+							}
+						});
+						
+						compositeAction.addState(compositeState);
+						actionProperty.set(compositeAction);
+						
+						progress.removeListener(this);
 					}
 				}
 			});
-			compositeAction.addState(compositeState);
 			
-			return compositeAction;
+			//notify listener in case converted reached s before the listener was registered
+			synchronized (progress) {
+				if (progress.get() == s) {
+					progress.set(s-1);
+					progress.set(s);
+				}
+			}
 		}
 		
 		//returns duration of full recording in milliseconds
@@ -1047,7 +1119,12 @@ public class Watcher {
 		}
 		
 		public Keyboard append(EventType<KeyEvent> type, long timestamp, KeyCode key) {
-			return new Keyboard((EventType<KeyEvent>) type, timestamp, key);
+			if (type != this.type || key != this.key) {
+				return new Keyboard((EventType<KeyEvent>) type, timestamp, key);
+			}
+			else {
+				return null;
+			}
 		}
 		
 		@Override
@@ -1225,7 +1302,7 @@ public class Watcher {
 				typeStr = "click";
 			}
 			
-			return "@" + start + " mouse " + typeStr + orig.toString() + "-" + dest.toString() + button.toString();
+			return "@" + start + " mouse " + typeStr + "(" + orig.x + "," + orig.y + ") -> (" + dest.x + "," + dest.y + ") " + button.toString();
 		}
 	}
 }

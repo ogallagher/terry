@@ -82,6 +82,7 @@ public class Terry {
 	public static Prompter prompter;
 	
 	public static Widget dummyWidget;
+	public static Action dummyAction;
 	
 	public static HashMap<String,State<?>> states = new HashMap<>(); //global state table
 	
@@ -177,10 +178,16 @@ public class Terry {
 		
 		try {
 			Widget.init();
-			dummyWidget = new Widget("ddumy"); //purposefully misspelled so widgets called "dummy" can still be created
 		} 
 		catch (WidgetException | LanguageMappingException e) {
 			Logger.logError("widget init failed. " + e.getMessage());
+		}
+		
+		try {
+			Action.init();
+		} 
+		catch (LanguageMappingException e) {
+			Logger.logError("action init failed. " + e.getMessage());
 		}
 		
 		Arg.init();

@@ -223,7 +223,7 @@ public class Speaker {
 		public void run() {
 			while (!speeches.isEmpty()) {
 				try {
-					Process speech = Runtime.getRuntime().exec(cmd.replace("<transcript>", speeches.getFirst()), null, cmdDir);
+					Process speech = Runtime.getRuntime().exec(cmd.replace("<transcript>", speeches.removeFirst()), null, cmdDir);
 					
 					try {
 						speech.waitFor();

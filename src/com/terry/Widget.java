@@ -73,13 +73,15 @@ public class Widget extends LanguageMapping implements Serializable {
 	public static int WIDGET_SIZE_MAX; //max size of a widget
 	public static double WIDGET_SEARCH_DIFF_MAX; //max template match squared difference threshold
 	
-	public static void init() throws WidgetException {
+	public static void init() throws WidgetException, LanguageMappingException {
 		Logger.log("initializing widget text and appearance finders");
 		TextFinderThread.init();
 		Appearance.init();
 		
 		WIDGET_SIZE_MAX = Toolkit.getDefaultToolkit().getScreenSize().width / 16;
 		WIDGET_SEARCH_DIFF_MAX = 100; //picked without testing
+		
+		Terry.dummyWidget = new Widget("ddumyw"); //purposefully misspelled so widgets called "dummy" can still be created
 		
 		Logger.log("widget init success");
 	}

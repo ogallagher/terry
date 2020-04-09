@@ -443,7 +443,7 @@ public class InstructionPossibilities {
 					if ( nextCount[0] > bestCount[0] || 
 						(nextCount[0] == bestCount[0] && nextCount[1] > bestCount[1]) || 
 						(bestCount[0] == 0 && bestCount[1] == 0)) {
-						Logger.log("new completion (" + nextCount[0] + "," + nextCount[1] + "): " + subcompletion.size());
+						Logger.log("new completion (" + nextCount[0] + "," + nextCount[1] + "): " + subcompletion.size(), Logger.LEVEL_FILE);
 						completion = subcompletion;
 						bestCount[0] = nextCount[0];
 						bestCount[1] = nextCount[1];
