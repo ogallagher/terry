@@ -4,6 +4,9 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.NoSuchElementException;
@@ -17,6 +20,7 @@ import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
 import com.terry.LanguageMapping.LanguageMappingException;
+import com.terry.State.Execution;
 import com.terry.State.StateException;
 import com.terry.Utilities.KeyComboException;
 import com.terry.Widget.WidgetException;
@@ -1049,27 +1053,10 @@ public class Watcher {
 							}
 						}
 						
-						State<Boolean> compositeState = new State<Boolean>(actionName.replaceAll("\\s+", "").toLowerCase() + "state", false, new String[] {}, new DriverExecution<Boolean>() {				
-							private static final long serialVersionUID = 4490776432548709253L;
-							
-							private State<?>[] subStates = finalStates;
-							private Arg[][] subArgs = finalArgArrays;
-							
-							public Boolean execute(Boolean stateOld, Arg[] args) {
-								try {
-									for (int i=0; i<subStates.length; i++) {
-										subStates[i].transition(subArgs[i]);
-									}
-									
-									return true;
-								} 
-								catch (StateException e) {
-									Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
-									return false;
-								}
-							}
-						});
-						
+						State<Boolean> compositeState = new State<Boolean>(
+								actionName.replaceAll("\\s+", "").toLowerCase() + "state", 
+								false, new String[] {}, 
+								new DemonstratedExecution(finalStates, finalArgArrays));
 						compositeAction.addState(compositeState);
 						actionProperty.set(compositeAction);
 						
@@ -1166,7 +1153,7 @@ public class Watcher {
 			widget = null;
 			defined = new SimpleObjectProperty<>(false);
 		}
-
+		
 		public Mouse append(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
 			boolean newMouse = false;
 			
@@ -1303,6 +1290,60 @@ public class Watcher {
 			}
 			
 			return "@" + start + " mouse " + typeStr + "(" + orig.x + "," + orig.y + ") -> (" + dest.x + "," + dest.y + ") " + button.toString();
+		}
+	}
+	
+	private static class DemonstratedExecution extends Execution<Boolean> {
+		private static final long serialVersionUID = 4490776432548709253L;
+		
+		private State<?>[] subStates;
+		private Arg[][] subArgs;
+		
+		@SuppressWarnings("unused")
+		public DemonstratedExecution() {
+			subStates = null;
+			subArgs = null;
+		}
+		
+		public DemonstratedExecution(State<?>[] stateSequence, Arg[][] argSequence) {
+			subStates = stateSequence;
+			subArgs = argSequence;
+		}
+		
+		public Boolean execute(Boolean stateOld, Arg[] args) {
+			if (subStates != null && subArgs != null) {
+				try {
+					for (int i=0; i<subStates.length; i++) {
+						subStates[i].transition(subArgs[i]);
+					}
+					
+					return true;
+				} 
+				catch (StateException e) {
+					Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+					return false;
+				}
+			}
+			else {
+				return false;
+			}
+		}
+		
+		//this implementation of DriverExecution now has properties that need to be serialized explicitly
+		private void writeObject(ObjectOutputStream stream) throws IOException {
+			//save substates
+			stream.writeObject(subStates);
+			
+			//save subargs
+			stream.writeObject(subArgs);
+		}
+		
+		private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+			//read substates
+			subStates = (State<?>[]) stream.readObject();
+			
+			//read subargs
+			subArgs = (Arg[][]) stream.readObject();
 		}
 	}
 }

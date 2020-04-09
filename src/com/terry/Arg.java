@@ -1,11 +1,17 @@
 package com.terry;
 
 import java.awt.Color;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import com.terry.Memory.Lookup;
 
-public class Arg {
+public class Arg implements Serializable {
+	private static final long serialVersionUID = -2128209531468776229L;
+	
 	public String name;				//name of arg in language mapping expression
 	private Object value = null;	//usable arg value
 	private String text = "";		//tokens that created the value
@@ -189,6 +195,28 @@ public class Arg {
 			value = newValue;
 			return true;
 		}
+	}
+	
+	private void writeObject(ObjectOutputStream stream) throws IOException {
+		//save name
+		stream.writeObject(name);
+		
+		//save value
+		stream.writeObject(value);
+		
+		//save text
+		stream.writeObject(text);
+	}
+	
+	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
+		//read name
+		name = (String) stream.readObject();
+		
+		//read value
+		value = stream.readObject();
+		
+		//read text
+		text = (String) stream.readObject();
 	}
 	
 	@Override

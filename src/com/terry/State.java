@@ -23,9 +23,9 @@ public class State<T> implements Serializable {
 	private char type;
 	private SimpleObjectProperty<T> value;
 	private String[] argNames;
-	private DriverExecution<T> transition;
+	private Execution<T> transition;
 	
-	public State(String name, T value, String[] args, DriverExecution<T> transition) {
+	public State(String name, T value, String[] args, Execution<T> transition) {
 		this.name = name;
 		this.value = new SimpleObjectProperty<T>(value);
 		argNames = args;
@@ -115,7 +115,7 @@ public class State<T> implements Serializable {
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
 		name = (String) stream.readObject();
 		type = stream.readChar();
-		transition = (DriverExecution<T>) stream.readObject();
+		transition = (Execution<T>) stream.readObject();
 		argNames = (String[]) stream.readObject();
 		value = new SimpleObjectProperty<T>();
 	}
@@ -131,6 +131,12 @@ public class State<T> implements Serializable {
 		public void quit() {
 			interrupt();
 		}
+	}
+	
+	public static abstract class Execution<T> implements Serializable {
+		private static final long serialVersionUID = -4703545545934408077L;
+		
+		public abstract T execute(T stateOld, Arg[] args);
 	}
 	
 	public static class StateException extends Exception {

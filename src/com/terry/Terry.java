@@ -66,6 +66,7 @@ import com.terry.Speaker.SpeakerException;
 import com.terry.State.StateException;
 import com.terry.Watcher.WatcherException;
 import com.terry.Widget.WidgetException;
+import com.terry.State.Execution;
 
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -281,7 +282,7 @@ public class Terry {
 		//--- move mouse to screen location ---//
 		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
 		
-		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
+		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new Execution<Point2D>() {
 			private static final long serialVersionUID = -5509580894164954809L;
 			
 			public Point2D execute(Point2D stateOld, Arg[] args) {
@@ -317,7 +318,7 @@ public class Terry {
 		//--- click mouse button ---//
 		Action mouseClickBtn = new Action("?@dbtn) click");
 		
-		State<MouseButton> clickbtn = new State<MouseButton>("clickbtn", MouseButton.NONE, new String[] {"btn"}, new DriverExecution<MouseButton>() {
+		State<MouseButton> clickbtn = new State<MouseButton>("clickbtn", MouseButton.NONE, new String[] {"btn"}, new Execution<MouseButton>() {
 			private static final long serialVersionUID = -3163938142402546869L;
 
 			public MouseButton execute(MouseButton stateOld, Arg[] args) {
@@ -365,7 +366,7 @@ public class Terry {
 		//--- drag mouse to screen location ---//
 		Action mouseDragXY = new Action("?drag) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
 		
-		State<Point2D> mousedragged = new State<>("mousedragged", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
+		State<Point2D> mousedragged = new State<>("mousedragged", new Point2D.Float(), new String[] {"x","y"}, new Execution<Point2D>() {
 			private static final long serialVersionUID = 8098973136515206171L;
 
 			public Point2D execute(Point2D stateOld, Arg[] args) {
@@ -403,7 +404,7 @@ public class Terry {
 		//--- type string ---//
 		Action typeStr = new Action("type ?out) ?following string) @$str ?end quote)");
 		
-		State<String> typed = new State<String>("typed", "", new String[] {"str"}, new DriverExecution<String>() {
+		State<String> typed = new State<String>("typed", "", new String[] {"str"}, new Execution<String>() {
 			private static final long serialVersionUID = 6266250470624001432L;
 
 			public String execute(String stateOld, Arg[] args) {
@@ -430,7 +431,7 @@ public class Terry {
 		//--- shutdown ---//
 		Action shutdown = new Action("|[shut_down],[turn_off],quit,)");
 		
-		State<Boolean> quitted = new State<Boolean>("quitted", false, new String[] {}, new DriverExecution<Boolean>() {
+		State<Boolean> quitted = new State<Boolean>("quitted", false, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = -7508747835691544792L;
 
 			public Boolean execute(Boolean stateOld, Arg[] args) {
@@ -455,7 +456,7 @@ public class Terry {
 		//--- show state ---//
 		Action showstate = new Action("|show,[what_is],log,) ?current) state");
 		
-		State<Boolean> stateshown = new State<Boolean>("stateshown", true, new String[] {}, new DriverExecution<Boolean>() {
+		State<Boolean> stateshown = new State<Boolean>("stateshown", true, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = -4961265132685762301L;
 
 			public Boolean execute(Boolean stateOld, Arg[] args) {
@@ -477,7 +478,7 @@ public class Terry {
 		Action captureScreen = new Action("?|create,take,)) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
 		
 		//set captureupdated to false, which statecaptured will then set to true when the screen capture is obtained
-		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
+		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = -5850373248159506280L;
 
 			@Override
@@ -487,7 +488,7 @@ public class Terry {
 		});
 		captureScreen.addState(statecaptureupdated);
 		
-		State<BufferedImage> statecaptured = new State<BufferedImage>("statecaptured", new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), new String[] {}, new DriverExecution<BufferedImage>() {
+		State<BufferedImage> statecaptured = new State<BufferedImage>("statecaptured", new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), new String[] {}, new Execution<BufferedImage>() {
 			private static final long serialVersionUID = 4607129019674379163L;
 
 			public BufferedImage execute(BufferedImage stateOld, Arg[] args) {
@@ -530,7 +531,7 @@ public class Terry {
 		//--- find widget location in screen ---//
 		Action locateWidget = new Action("|find,locate,show,) ?where) ?is) @wwidget ?is)");
 		
-		State<Boolean> widgetlocationupdated = new State<Boolean>("widgetlocationupdated", Boolean.FALSE, new String[] {}, new DriverExecution<Boolean>() {
+		State<Boolean> widgetlocationupdated = new State<Boolean>("widgetlocationupdated", Boolean.FALSE, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = 1721914958113344877L;
 			
 			public Boolean execute(Boolean stateOld, Arg[] args) {
@@ -539,7 +540,7 @@ public class Terry {
 		});
 		locateWidget.addState(widgetlocationupdated);
 		
-		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new DriverExecution<Point2D>() {
+		State<Point2D> widgetlocation = new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new Execution<Point2D>() {
 			private static final long serialVersionUID = 3281519688836173335L;
 
 			public Point2D execute(Point2D stateOld, Arg[] args) {
@@ -638,7 +639,7 @@ public class Terry {
 		//--- move mouse to widget ---//
 		Action mouseToWidget = new Action("|[?move)_|mouse,cursor,pointer,)],go,) to @wwidget");
 		
-		State<Widget> mouseatwidget = new State<Widget>("mouseatwidget", dummyWidget, new String[] {"widget"}, new DriverExecution<Widget>() {
+		State<Widget> mouseatwidget = new State<Widget>("mouseatwidget", dummyWidget, new String[] {"widget"}, new Execution<Widget>() {
 			private static final long serialVersionUID = 4934794946741729275L;
 
 			public Widget execute(Widget stateOld, Arg[] args) {
@@ -700,7 +701,7 @@ public class Terry {
 		//--- drag mouse to widget ---//
 		Action mouseDragWidget = new Action("drag ?|mouse,cursor,pointer,)) to @wwidget");
 		
-		State<Widget> mousedraggedwidget = new State<Widget>("mousedraggedwidget", dummyWidget, new String[] {"widget"}, new DriverExecution<Widget>() {
+		State<Widget> mousedraggedwidget = new State<Widget>("mousedraggedwidget", dummyWidget, new String[] {"widget"}, new Execution<Widget>() {
 			private static final long serialVersionUID = 6240024334541248565L;
 
 			public Widget execute(Widget stateOld, Arg[] args) {
@@ -765,7 +766,7 @@ public class Terry {
 		//--- demos ---//
 		Action driverDemo1 = new Action("driver |demo,demonstration,) |one,1,)");
 		
-		State<Integer> driverDemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new DriverExecution<Integer>() {
+		State<Integer> driverDemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() {
 			private static final long serialVersionUID = 7287040985627859604L;
 
 			public Integer execute(Integer stateOld, Arg[] args) {
@@ -831,7 +832,7 @@ public class Terry {
 		
 		Action overlayDemo1 = new Action("overlay |demo,demonstration,) |one,1,)");
 		
-		State<Integer> overlayDemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new DriverExecution<Integer>() {
+		State<Integer> overlayDemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>() {
 			private static final long serialVersionUID = -7000513250778527982L;
 			
 			@SuppressWarnings("unchecked")

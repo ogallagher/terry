@@ -442,7 +442,7 @@ public class LanguageMapping {
 				}
 			}
 			catch (EmptyStackException e) {
-				throw new LanguageMappingException("failed at position [" + i + "] to create pattern graph for the given expression " + expr);
+				throw new LanguageMappingException("failed at position [" + i + "] to create pattern graph for the given expression " + String.valueOf(expr));
 			}
 			
 			//end of expr
