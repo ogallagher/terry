@@ -84,7 +84,7 @@ public class Widget extends LanguageMapping implements Serializable {
 		Logger.log("widget init success");
 	}
 	
-	public Widget(String expr) {
+	public Widget(String expr) throws LanguageMappingException {
 		super(TYPE_WIDGET, expr);
 		
 		type = TYPE_BUTTON;
@@ -266,7 +266,12 @@ public class Widget extends LanguageMapping implements Serializable {
 	}
 	
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-		fromString((String) stream.readObject());
+		try {
+			fromString((String) stream.readObject());
+		}
+		catch (LanguageMappingException e) {
+			throw new ClassNotFoundException(e.getMessage());
+		}
 		type = stream.readChar();
 		label = (String) stream.readObject();
 		

@@ -11,13 +11,11 @@ import com.terry.Speaker.SpeakerException;
 import javafx.application.Platform;
 
 public class Logger {
-	private static final int LOG_MAX = 200;
 	private static final String FILE_NAME = "log_";
 	private static final String FILE_EXT = ".txt";
 	private static final String LOG_PATH = "logs/";
 	
 	private static LinkedList<String> backlog;
-	private static int logLen;
 	
 	private static File logDir;
 	private static FileLogger fileLogger = null;
@@ -105,7 +103,7 @@ public class Logger {
 	
 	public static void emptyBacklog() {
 		while (!backlog.isEmpty()) {
-			log(backlog.getFirst());
+			Platform.runLater(new ConsoleLogger(backlog.getFirst()));
 			backlog.removeFirst();
 		}
 	}

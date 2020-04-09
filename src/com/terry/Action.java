@@ -14,7 +14,7 @@ public class Action extends LanguageMapping implements Serializable {
 	
 	private ArrayList<State<?>> states;
 	
-	public Action(String expr) {
+	public Action(String expr) throws LanguageMappingException {
 		super(TYPE_ACTION, expr);
 		
 		states = new ArrayList<>();
@@ -90,8 +90,12 @@ public class Action extends LanguageMapping implements Serializable {
 	}
 	
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-		String lm = (String) stream.readObject();
-		fromString(lm);
+		try {
+			fromString((String) stream.readObject());
+		}
+		catch (LanguageMappingException e) {
+			throw new ClassNotFoundException(e.getMessage());
+		}
 		
 		int ns = stream.readInt();
 		

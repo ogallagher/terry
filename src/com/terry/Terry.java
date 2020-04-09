@@ -35,11 +35,11 @@
  *  	= learn by demonstration
  *  		= Watcher.WatcherRecording has list of peripherals, subclasses: Keyboard, Mouse
  * 	 		= Watcher.Mouse.findWidget() tells if a click, move, or drag ended at a widget
- * 			- create lessons for demonstration
- *  		- map keyboards to states
- *  		- map mice to states
+ * 			= create lessons for demonstration
+ *  		= map keyboards to states
+ *  		= map mice to states
  *  = create watcher connected to keyboard and mouse
- *  	= create os input hooks to catch keystrokes and mouse updates
+ *  	= create os input hooks to catch keystrokes and mouse updates (bugs on mac... ugh)
  *  	+ trigger scribe with key combination (not a good key combo; just what works on both win and mac right now)
  *  - ability to define Widget.zone, where a widget is expected to be found
  *  - hide overlay when no longer needed
@@ -57,6 +57,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
+import com.terry.LanguageMapping.LanguageMappingException;
 import com.terry.Lesson.Definition;
 import com.terry.Memory.MemoryException;
 import com.terry.Prompter.PrompterException;
@@ -135,6 +136,7 @@ public class Terry {
 	public static final int EXITCODE_OS = 1;
 	public static final int EXITCODE_WATCHER = 2;
 	public static final int EXITCODE_MEMORY = 3;
+	public static final int EXITCODE_MAPPINGS = 4;
 	
 	public static void main(String[] args) {
 		String osName = System.getProperty("os.name").toLowerCase();
@@ -150,8 +152,8 @@ public class Terry {
 			os = OS_MAC;
 			osMessage = "detected mac os";
 			
-			keyComboScribe = new KeyCode[] {KeyCode.SHIFT, KeyCode.ALT, KeyCode.META};
-			keyComboDemonstrationDone = new KeyCode[] {KeyCode.META, KeyCode.ESCAPE};
+			keyComboScribe = new KeyCode[] {KeyCode.META, KeyCode.ALT, KeyCode.SHIFT};
+			keyComboDemonstrationDone = new KeyCode[] {KeyCode.META, KeyCode.SHIFT}; //TODO change this to escape
 		}
 		else {
 			os = OS_OTHER;
@@ -177,7 +179,7 @@ public class Terry {
 			Widget.init();
 			dummyWidget = new Widget("ddumy"); //purposefully misspelled so widgets called "dummy" can still be created
 		} 
-		catch (WidgetException e) {
+		catch (WidgetException | LanguageMappingException e) {
 			Logger.logError("widget init failed. " + e.getMessage());
 		}
 		
@@ -211,8 +213,14 @@ public class Terry {
 		}
 		
 		if (LanguageMapping.empty()) {
-			createPrimitiveActions();
-			createLessons();
+			try {
+				createPrimitiveActions();
+				createLessons();
+			}
+			catch (LanguageMappingException e) {
+				e.printStackTrace();
+				System.exit(EXITCODE_MAPPINGS);
+			}
 		}
 		
 		Logger.log(Memory.printDictionary());
@@ -260,7 +268,7 @@ public class Terry {
 		}
 	}
 	
-	private static void createPrimitiveActions() {
+	private static void createPrimitiveActions() throws LanguageMappingException {
 		Logger.log("no mappings found; creating primitive actions corpus");
 		
 		//--- move mouse to screen location ---//
@@ -348,7 +356,7 @@ public class Terry {
 		Memory.addMapping(mouseClickBtn);
 		
 		//--- drag mouse to screen location ---//
-		Action mouseDragXY = new Action("?drag) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y) ?y)");
+		Action mouseDragXY = new Action("?drag) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
 		
 		State<Point2D> mousedragged = new State<>("mousedragged", new Point2D.Float(), new String[] {"x","y"}, new DriverExecution<Point2D>() {
 			private static final long serialVersionUID = 8098973136515206171L;
@@ -748,7 +756,7 @@ public class Terry {
 		Memory.addMapping(mouseDragWidget);
 		
 		//--- demos ---//
-		Action driverDemo1 = new Action("?do) driver |demo,demonstration,) |one,1,)");
+		Action driverDemo1 = new Action("driver |demo,demonstration,) |one,1,)");
 		
 		State<Integer> driverDemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = 7287040985627859604L;
@@ -814,7 +822,7 @@ public class Terry {
 		
 		Memory.addMapping(driverDemo1);
 		
-		Action overlayDemo1 = new Action("?do) overlay |demo,demonstration,) |one,1,)");
+		Action overlayDemo1 = new Action("overlay |demo,demonstration,) |one,1,)");
 		
 		State<Integer> overlayDemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new DriverExecution<Integer>() {
 			private static final long serialVersionUID = -7000513250778527982L;
@@ -870,7 +878,7 @@ public class Terry {
 		Memory.addMapping(overlayDemo1);
 	}
 	
-	public static void createLessons() {
+	public static void createLessons() throws LanguageMappingException {
 		Logger.log("creating lessons");
 		
 		//--- learn widget ---//
@@ -902,41 +910,47 @@ public class Terry {
 				}
 				
 				//create widget
-				Widget widget = new Widget(name);
-				widget.setType(type);
-				widget.setLabel(label);
-				
-				//ask for appearance, askYesNo requires fx thread
-				final String finalName = name;
-				Platform.runLater(new Runnable() {
-					public void run() {
-						try {
-							boolean appears = Prompter.askYesNo("Define appearance for " + finalName, null, "Does " + finalName + " have any other visuals/graphics that can help me find it (an icon, for example)?");
-							if (appears) {
-								Prompter.state.addListener(new ChangeListener<Character>() {
-									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
-										char state = newValue.charValue();
-										
-										if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
-											//update memory
-											Memory.addMapping(widget);
-											Prompter.state.removeListener(this);
+				try {
+					Widget widget = new Widget(name);
+					widget.setType(type);
+					widget.setLabel(label);
+					
+					//ask for appearance, askYesNo requires fx thread
+					final String finalName = name;
+					Platform.runLater(new Runnable() {
+						public void run() {
+							try {
+								boolean appears = Prompter.askYesNo("Define appearance for " + finalName, null, "Does " + finalName + " have any other visuals/graphics that can help me find it (an icon, for example)?");
+								if (appears) {
+									Prompter.state.addListener(new ChangeListener<Character>() {
+										public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+											char state = newValue.charValue();
+											
+											if (state == Prompter.STATE_ZONE_COMPLETE || state == Prompter.STATE_ZONE_ABORTED) {
+												//update memory
+												Memory.addMapping(widget);
+												Prompter.state.removeListener(this);
+											}
 										}
-									}
-								});
-								
-								Prompter.requestAppearance(widget);
+									});
+									
+									Prompter.requestAppearance(widget);
+								}
+								else {
+									//update memory
+									Memory.addMapping(widget);
+								}
 							}
-							else {
-								//update memory
-								Memory.addMapping(widget);
+							catch (PrompterException e) {
+								Logger.logError(e.getMessage());
 							}
 						}
-						catch (PrompterException e) {
-							Logger.logError(e.getMessage());
-						}
-					}
-				});
+					});
+				}
+				catch (LanguageMappingException e) {
+					Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+					Logger.logError("i could not create a widget named " + name, Logger.LEVEL_SPEECH);
+				}
 			}
 		};
 		newWidget.setDefinition(newwidget);
@@ -944,7 +958,7 @@ public class Terry {
 		Memory.addMapping(newWidget);
 		
 		//--- learn action by demonstration ---///
-		Lesson demonstrateAction = new Lesson("?is) |show,demonstrate,demonstration,) ?how to) @$action", Lesson.TYPE_ACTION);
+		Lesson demonstrateAction = new Lesson("?is) ?to) |show,demonstrate,demonstration,) how to @$action", Lesson.TYPE_ACTION);
 		
 		Definition demonstration = new Definition(new String[] {"action"}) {
 			private static final long serialVersionUID = 7662523659663777292L;
@@ -968,9 +982,9 @@ public class Terry {
 						
 						Logger.log("i'm ready to record your demonstration", Logger.LEVEL_SPEECH);
 						ButtonType response = Prompter.prompt(
-							"Demonstrate " + name, 
-							"Hit the READY button to begin demonstrating how to " + name + ". To end the demonstration, type CMD/CTRL + ESC.", 
-							new ButtonType(name, ButtonData.BIG_GAP),
+							"Demonstrate \"" + name + "\"", 
+							"Hit the READY button to begin demonstrating how to \"" + name + "\". To end the demonstration, type CMD/CTRL + ESC.", 
+							new ButtonType(" Ready ", ButtonData.BIG_GAP),
 							ButtonType.CANCEL);
 						
 						if (response == null || response == ButtonType.CANCEL) {

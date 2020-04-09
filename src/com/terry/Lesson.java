@@ -17,7 +17,7 @@ public class Lesson extends LanguageMapping implements Serializable {
 	private char type = TYPE_UNKNOWN;
 	private Definition definition = null;
 	
-	public Lesson(String expr, char typ) {
+	public Lesson(String expr, char typ) throws LanguageMappingException {
 		super(TYPE_LESSON, expr);
 		type = typ;
 	}
@@ -55,7 +55,12 @@ public class Lesson extends LanguageMapping implements Serializable {
 	}
 	
 	private void readObject(ObjectInputStream stream) throws IOException, ClassNotFoundException {
-		fromString((String) stream.readObject());
+		try {
+			fromString((String) stream.readObject());
+		}
+		catch (LanguageMappingException e) {
+			throw new ClassNotFoundException(e.getMessage());
+		}
 		type = stream.readChar();
 		definition = (Definition) stream.readObject();
 		

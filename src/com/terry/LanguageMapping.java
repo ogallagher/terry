@@ -1,6 +1,7 @@
 package com.terry;
 
 import java.util.ArrayList;
+import java.util.EmptyStackException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.Stack;
@@ -49,7 +50,7 @@ public class LanguageMapping {
 		pattern = null;
 	}
 	
-	public LanguageMapping(char typ, String expr) {
+	public LanguageMapping(char typ, String expr) throws LanguageMappingException {
 		id = count++;
 		type = typ;
 		pattern = new LanguagePattern(expr);
@@ -98,12 +99,20 @@ public class LanguageMapping {
 		return string;
 	}
 	
-	public void fromString(String string) {
+	public void fromString(String string) throws LanguageMappingException {
 		String[] fields = string.split("\t");
 		
 		type = fields[0].charAt(0);
 		id = Integer.parseInt(fields[1]);
 		pattern = new LanguagePattern(fields[2]);
+	}
+	
+	public static class LanguageMappingException extends Exception {
+		private static final long serialVersionUID = -7211680574658064887L;
+
+		public LanguageMappingException(String message) {
+			super(message);
+		}
 	}
 	
 	/*
@@ -114,7 +123,7 @@ public class LanguageMapping {
 		private String expression;
 		private PatternNode graph;
 		
-		public LanguagePattern(String expr) {
+		public LanguagePattern(String expr) throws LanguageMappingException {
 			expression = expr;
 			graph = PatternNode.newGraph(expr.toCharArray());
 		}
@@ -259,7 +268,7 @@ public class LanguageMapping {
 			return finalCount;
 		}
 		
-		public static PatternNode newGraph(char[] expr) {
+		public static PatternNode newGraph(char[] expr) throws LanguageMappingException {
 			PatternNode root = new PatternNode();
 			PatternNode node = root;
 			Stack<PatternNode> last = new Stack<PatternNode>();
@@ -272,163 +281,168 @@ public class LanguageMapping {
 			int a=0;
 			int n = expr.length;
 			
-			while (i < n) {
-				c = expr[i];
-				
-				if (c == qop) {			//? = optional
-					PatternNode in = new PatternNode();
-					node.followers.add(in);
+			try {
+				while (i < n) {
+					c = expr[i];
 					
-					PatternNode out = new PatternNode();
-					node.followers.add(out);
-					last.push(out);
-					
-					i++;
-					node = in;
-					a = i;
-					
-					nully.add(in);
-					nully.add(out);
-				}
-				else if (c == sop) {	//* = 0 or more
-					PatternNode in = new PatternNode();
-					node.followers.add(in);
-					
-					PatternNode out = new PatternNode();
-					out.followers.add(in);
-					node.followers.add(out);
-					last.push(out);
-					
-					i++;
-					node = in;
-					a = i;
-					
-					nully.add(in);
-					nully.add(out);
-				}
-				else if (c == top) {	//+ = 1 or more
-					PatternNode in = new PatternNode();
-					node.followers.add(in);
-					
-					PatternNode out = new PatternNode();
-					out.followers.add(in);
-					last.push(out);
-					
-					i++;
-					node = in;
-					a = i;
-
-					nully.add(in);
-					nully.add(out);
-				}
-				else if (c == pop) {	//| = selection
-					PatternNode out = new PatternNode();
-					last.push(out);
-					
-					i++;
-					a = i;
-					
-					nully.add(out);
-				}
-				else if (c == cma) {	//, = selection option
-					PatternNode option = new PatternNode();
-					option.followers.add(last.peek());
-					option.setToken(String.copyValueOf(expr,a,i-a));
-					
-					node.followers.add(option);
-					
-					i++;
-					if (expr[i] == rpr) {	//end selection
+					if (c == qop) {			//? = optional
+						PatternNode in = new PatternNode();
+						node.followers.add(in);
+						
+						PatternNode out = new PatternNode();
+						node.followers.add(out);
+						last.push(out);
+						
 						i++;
-						node = last.pop();
+						node = in;
+						a = i;
+						
+						nully.add(in);
+						nully.add(out);
 					}
-					a = i;
-					
-					nully.add(option);
-				}
-				else if (c == rpr) {	//) = end group (non-selection)
-					String str = String.copyValueOf(expr,a,i-a);
-					if (str.length() != 0) {
-						node.setToken(str);
+					else if (c == sop) {	//* = 0 or more
+						PatternNode in = new PatternNode();
+						node.followers.add(in);
+						
+						PatternNode out = new PatternNode();
+						out.followers.add(in);
+						node.followers.add(out);
+						last.push(out);
+						
+						i++;
+						node = in;
+						a = i;
+						
+						nully.add(in);
+						nully.add(out);
 					}
-					
-					PatternNode tail = last.pop();
-					node.followers.add(tail);
-					
-					PatternNode next = new PatternNode();
-					tail.followers.add(next);
-					
-					i++;
-					node = next;
-					a = i;
-				}
-				else if (c == spc) {	//space = finish this token, begin next token
-					String str = String.copyValueOf(expr,a,i-a);
-					
-					if (str.length() != 0) {
-						node.setToken(str);
+					else if (c == top) {	//+ = 1 or more
+						PatternNode in = new PatternNode();
+						node.followers.add(in);
+						
+						PatternNode out = new PatternNode();
+						out.followers.add(in);
+						last.push(out);
+						
+						i++;
+						node = in;
+						a = i;
+
+						nully.add(in);
+						nully.add(out);
+					}
+					else if (c == pop) {	//| = selection
+						PatternNode out = new PatternNode();
+						last.push(out);
+						
+						i++;
+						a = i;
+						
+						nully.add(out);
+					}
+					else if (c == cma) {	//, = selection option
+						PatternNode option = new PatternNode();
+						option.followers.add(last.peek());
+						option.setToken(String.copyValueOf(expr,a,i-a));
+						
+						node.followers.add(option);
+						
+						i++;
+						if (expr[i] == rpr) {	//end selection
+							i++;
+							node = last.pop();
+						}
+						a = i;
+						
+						nully.add(option);
+					}
+					else if (c == rpr) {	//) = end group (non-selection)
+						String str = String.copyValueOf(expr,a,i-a);
+						if (str.length() != 0) {
+							node.setToken(str);
+						}
+						
+						PatternNode tail = last.pop();
+						node.followers.add(tail);
 						
 						PatternNode next = new PatternNode();
+						tail.followers.add(next);
+						
+						i++;
+						node = next;
+						a = i;
+					}
+					else if (c == spc) {	//space = finish this token, begin next token
+						String str = String.copyValueOf(expr,a,i-a);
+						
+						if (str.length() != 0) {
+							node.setToken(str);
+							
+							PatternNode next = new PatternNode();
+							node.followers.add(next);
+							
+							i++;
+							node = next;
+							
+							nully.add(next);
+						}
+						else {
+							i++;
+						}
+						a = i;
+					}
+					else if (c == lbr) {	//[ = begin composite option
+						last.push(node);
+						i++;			
+						a = i;
+					}
+					else if (c == usr) {	//_ = space for selection
+						PatternNode next = new PatternNode();
+						next.setToken(String.copyValueOf(expr,a,i-a));
+						
 						node.followers.add(next);
 						
 						i++;
 						node = next;
+						a = i;
 						
 						nully.add(next);
 					}
-					else {
+					else if (c == rbr) {	//] = end composite option
+						PatternNode leader = last.pop();
+						
+						PatternNode next = new PatternNode();
+						String str = String.copyValueOf(expr,a,i-a);
+						
+						if (str.length() != 0) {
+							next.setToken(str);
+							
+							node.followers.add(next);
+							next.followers.add(last.peek());
+							
+							nully.add(next);
+						}
+						else {
+							node.followers.add(last.peek());
+						}
+						
+						i += 2;
+						if (expr[i] == rpr) {	//end selection
+							i++;
+							node = last.pop();
+						}
+						else {
+							node = leader;
+						}
+						a = i;
+					}
+					else {						//token chars
 						i++;
 					}
-					a = i;
 				}
-				else if (c == lbr) {	//[ = begin composite option
-					last.push(node);
-					i++;			
-					a = i;
-				}
-				else if (c == usr) {	//_ = space for selection
-					PatternNode next = new PatternNode();
-					next.setToken(String.copyValueOf(expr,a,i-a));
-					
-					node.followers.add(next);
-					
-					i++;
-					node = next;
-					a = i;
-					
-					nully.add(next);
-				}
-				else if (c == rbr) {	//] = end composite option
-					PatternNode leader = last.pop();
-					
-					PatternNode next = new PatternNode();
-					String str = String.copyValueOf(expr,a,i-a);
-					
-					if (str.length() != 0) {
-						next.setToken(str);
-						
-						node.followers.add(next);
-						next.followers.add(last.peek());
-						
-						nully.add(next);
-					}
-					else {
-						node.followers.add(last.peek());
-					}
-					
-					i += 2;
-					if (expr[i] == rpr) {	//end selection
-						i++;
-						node = last.pop();
-					}
-					else {
-						node = leader;
-					}
-					a = i;
-				}
-				else {						//token chars
-					i++;
-				}
+			}
+			catch (EmptyStackException e) {
+				throw new LanguageMappingException("failed at position [" + i + "] to create pattern graph for the given expression " + expr);
 			}
 			
 			//end of expr

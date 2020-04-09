@@ -6,6 +6,7 @@ import java.awt.geom.Point2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.logging.Level;
 
 import org.jnativehook.GlobalScreen;
@@ -15,6 +16,7 @@ import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
 
+import com.terry.LanguageMapping.LanguageMappingException;
 import com.terry.State.StateException;
 import com.terry.Utilities.KeyComboException;
 import com.terry.Widget.WidgetException;
@@ -282,13 +284,20 @@ public class Watcher {
 		if (demonstration != null) {
 			new Thread() {
 				public void run() {
-					demonstratedAction = demonstration.compile(actionName);
-					
-					if (demonstratedAction == null) {
-						state.set(STATE_FAILED);
+					try {
+						demonstratedAction = demonstration.compile(actionName);
+						
+						if (demonstratedAction == null) {
+							state.set(STATE_FAILED);
+						}
+						else {
+							state.set(STATE_DONE);
+						}
 					}
-					else {
-						state.set(STATE_DONE);
+					catch (LanguageMappingException e) {
+						demonstratedAction = null;
+						Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
+						state.set(STATE_FAILED);
 					}
 				}
 			}.start();
@@ -837,7 +846,7 @@ public class Watcher {
 					peripherals.add(last);
 				}
 			}
-			catch (ClassCastException e) {
+			catch (ClassCastException | NoSuchElementException e) {
 				peripherals.add(new Keyboard(type, timestamp, key));
 			}
 		}
@@ -872,7 +881,7 @@ public class Watcher {
 			}
 		}
 		
-		public Action compile(String actionName) {
+		public Action compile(String actionName) throws LanguageMappingException {
 			Action compositeAction = new Action(actionName);
 			
 			ArrayList<State<?>> states = new ArrayList<>();
@@ -1016,7 +1025,7 @@ public class Watcher {
 			StringBuilder string = new StringBuilder("watcher recording:\n");
 			
 			for (Peripheral p : peripherals) {
-				string.append(p.toString());
+				string.append(p.toString() + "\n");
 			}
 			
 			return string.toString();

@@ -150,7 +150,8 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
-				//"type a hello from too#bck)#bck)erry!",
+				"i want to show you how to type hello in spotlight",
+				"type a hello from too#bck)#bck)erry!",
 				"go to play",
 				"play is a button",
 				"go to play",

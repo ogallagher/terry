@@ -68,7 +68,7 @@ public class InstructionPossibilities {
 			}
 		}
 		
-		return (possibilities != null && possibilities.size() == 1);
+		return (possibilities != null && possibilities.size() == 1 && !trivialLeader); //whether to hone in on one mapping
 	}
 	
 	/*

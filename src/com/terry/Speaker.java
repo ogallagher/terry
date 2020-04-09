@@ -3,9 +3,9 @@ package com.terry;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.LinkedList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -33,6 +33,7 @@ public class Speaker {
 	private static ArrayList<String> voices;
 	private static ArrayList<String> voicesInfo;
 	
+	private static SpeechThread speechThread;
 	private static boolean enabled = true;
 	
 	public static void init() throws SpeakerException {
@@ -95,6 +96,8 @@ public class Speaker {
 			Logger.logError("speaker interrupted when reading available voices");
 		}
 		
+		speechThread = null;
+		
 		Logger.log("speaker init success");
 	}
 	
@@ -139,11 +142,12 @@ public class Speaker {
 	
 	public static void speak(String transcript) throws SpeakerException {
 		if (enabled) {
-			try {
-				Runtime.getRuntime().exec(cmd.replace("<transcript>", transcript), null, cmdDir);
-			} 
-			catch (IOException e) {
-				throw new SpeakerException("speaker failed to speak");
+			if (speechThread == null || !speechThread.isAlive()) {
+				speechThread = new SpeechThread(transcript);
+				speechThread.start();
+			}
+			else {
+				speechThread.say(transcript);
 			}
 		}
 	}
@@ -201,6 +205,38 @@ public class Speaker {
 		
 		public SpeakerException(String message) {
 			super(message);
+		}
+	}
+	
+	protected static class SpeechThread extends Thread {
+		private LinkedList<String> speeches;
+		
+		public SpeechThread(String speech) {
+			speeches = new LinkedList<String>();
+			speeches.add(speech);
+		}
+		
+		public void say(String speech) {
+			speeches.add(speech);
+		}
+		
+		public void run() {
+			while (!speeches.isEmpty()) {
+				try {
+					Process speech = Runtime.getRuntime().exec(cmd.replace("<transcript>", speeches.getFirst()), null, cmdDir);
+					
+					try {
+						speech.waitFor();
+					} 
+					catch (InterruptedException e) {
+						//continue on to next speech
+					}
+				} 
+				catch (IOException e) {
+					Logger.logError("speaker failed to speak", Logger.LEVEL_CONSOLE);
+				}
+			}
+			//done; kill thread
 		}
 	}
 }

@@ -507,7 +507,7 @@ public class Prompter extends Application {
 	
 	public static ButtonType prompt(String title, String message, ButtonType... buttons) throws PrompterException {
 		if (Toolkit.getToolkit().isFxUserThread()) {
-			Logger.log("prompting" + title);
+			Logger.log("prompting " + title);
 			Alert alert = new Alert(AlertType.NONE, message, buttons);
 			alert.initOwner(intercom);
 			alert.setTitle(title);
