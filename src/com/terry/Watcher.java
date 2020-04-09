@@ -47,10 +47,12 @@ public class Watcher {
 	public static final char STATE_RECORDING = 'r';
 	public static final char STATE_PAUSED = 'p';
 	public static final char STATE_DONE = 'z';
+	public static final char STATE_FAILED = 'f';
 	
 	public static CharProperty state = new CharProperty(STATE_DISABLED);
 	
 	public static WatcherRecording demonstration = null;
+	public static Action demonstratedAction = null;
 	
 	public static void init() throws WatcherException {
 		//disable jnativehook logging
@@ -263,6 +265,7 @@ public class Watcher {
 			}
 			
 			demonstration = new WatcherRecording();
+			demonstratedAction = null;
 			recording = true;
 			state.set(STATE_RECORDING);
 		}
@@ -275,12 +278,20 @@ public class Watcher {
 		}
 	}
 	
-	public static Action compile(String actionName) {
+	public static void compile(String actionName) {
 		if (demonstration != null) {
-			return demonstration.compile(actionName);
-		}
-		else {
-			return null;
+			new Thread() {
+				public void run() {
+					demonstratedAction = demonstration.compile(actionName);
+					
+					if (demonstratedAction == null) {
+						state.set(STATE_FAILED);
+					}
+					else {
+						state.set(STATE_DONE);
+					}
+				}
+			}.start();
 		}
 	}
 	

@@ -978,23 +978,37 @@ public class Terry {
 						}
 						else {
 							String finalName = name;
+							
 							try {
 								//handle demonstration end
 								Watcher.state.addListener(new ChangeListener<Character>() {
 									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 										char c = newValue.charValue();
+										boolean removeme = false;
 										
 										if (c == Watcher.STATE_RECORDING) {
 											Logger.log("when you're finished hit the command/control and escape keys", Logger.LEVEL_SPEECH);
 										}
 										else if (c == Watcher.STATE_PAUSED) {
 											//map demonstration to state transitions
-											Action newAction = Watcher.compile(finalName);
+											Watcher.compile(finalName);
+											
 											Logger.log("i'm reviewing your demonstration now", Logger.LEVEL_SPEECH);
 											Logger.log(Watcher.demonstration.toString(), Logger.LEVEL_CONSOLE);
 										}
 										else if (c == Watcher.STATE_DONE) {
-											
+											//add new action to memory
+											Memory.addMapping(Watcher.demonstratedAction);
+											Logger.log("new demonstrated action " + finalName + " successfully learned", Logger.LEVEL_SPEECH);
+											removeme = true;
+										}
+										else if (c == Watcher.STATE_FAILED) {
+											Logger.logError("failed to learn from your demonstration", Logger.LEVEL_SPEECH);
+											removeme = true;
+										}
+										
+										if (removeme) {
+											Watcher.state.removeListener(this);
 										}
 									}
 								});
