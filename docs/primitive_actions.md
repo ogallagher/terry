@@ -12,18 +12,34 @@ Moves the mouse to screen coordinates (`x`,`y`), where both are integer numbers.
 
 ### Pattern
 
-`?move) |mouse,cursor,pointer,) to ?|location,position,coordinates,)) ?ex) @#x |ex,comma,why) @#y ?why)`
+`?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)`
 
 ### States
 
 ```java
 new State<Point2D>("mouseat", new Point2D.Float(0,0), new String[] {"x","y"}, new DriverExecution<Point2D>() {
-    public Point2D execute(Point2D stateOld, Arg[] args) {
-        Float x = (Float) args[0].value;
-        Float y = (Float) args[1].value;
-        Driver.point(x,y);
-        return new Point2D.Float(x,y);
-    }
+	public Point2D execute(Point2D stateOld, Arg[] args) {
+		Float x = Float.valueOf(0);
+		Float y = Float.valueOf(0);
+
+		//map args
+		for (Arg arg : args) {
+			Object value = arg.getValue();
+
+			if (arg.name.equals("x")) {
+				x = (Float) value;
+			}
+			else if (arg.name.equals("y")) {
+				y = (Float) value;
+			}
+		}
+
+		//direct driver
+		Driver.point(x.intValue(), y.intValue());
+
+		//update state
+		return new Point2D.Float(x, y);
+	}
 });
 ```
 
@@ -44,9 +60,20 @@ Controls the keyboard to type a string `str`. Later on I want this to have a tim
 ```java
 new State<String>("typed", "", new String[] {"str"}, new DriverExecution<String>() {
     public String execute(String stateOld, Arg[] args) {
-        String string = (String) args[0].value;
-        Driver.type(string);
-        return string;
+		String string = "";
+				
+		//map args
+		for (Arg arg : args) {
+			if (arg.name.equals("str")) {
+				string = (String) arg.getValue();
+			}
+		}
+		
+		//direct driver
+		Driver.type(string);
+		
+		//update state
+		return string;
     }
 });
 ```
@@ -57,28 +84,100 @@ new State<String>("typed", "", new String[] {"str"}, new DriverExecution<String>
 
 ### Description
 
-Clicks a mouse button (left or right) specified by the `btn` argument.
+Clicks a mouse button (left or right) specified by the `btn` argument, of type direction.
 
 ### Pattern
 
-`?|left,right,)) click`
+`?@dbtn) click`
 
 ### States
 
 ```java
 new State<Integer>("clickbtn", new Integer(), new String[] {"btn"}, new DriverExecution<Integer>() {
     public Integer execute(Integer stateOld, Arg[] args) {
-        Integer button = (Integer) args[0].value;
-        if (button == MouseEvent.BUTTON1) {
-            Driver.clickLeft();
-        }
-        else if (button == MouseEvent.BUTTON2) {
-            Driver.clickRight();
-        }
-        return button;
+        MouseButton button = MouseButton.PRIMARY;
+        
+		//map args
+		for (Arg arg : args) {
+			Object value = arg.getValue();
+
+			if (value == null) {
+				Logger.log("null arg");
+			}
+			else if (arg.name.equals("btn")) {
+				String direction = (String) value;
+
+				if (direction.equals(Arg.DIRARG_RIGHT)) {
+					button = MouseButton.SECONDARY;
+				}
+				else if (direction.equals(Arg.DIRARG_MIDDLE)) {
+					button = MouseButton.MIDDLE;
+				}
+				//else, assume button 1
+			}
+		}
+
+		//direct driver
+		if (button == MouseButton.PRIMARY) {
+			Driver.clickLeft();
+		}
+		else if (button == MouseButton.SECONDARY) {
+			Driver.clickRight();
+		}
+		else if (button == MouseButton.MIDDLE) {
+			Driver.clickMiddle();
+		}
+
+		//update state
+		return button;
     }
 });
 ```
+
+<hr>
+
+## mouseDragXY
+
+### Description
+
+Drags the mouse to screen coordinates (`x`,`y`), both being integers.
+
+### Pattern
+
+`?drag) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)`
+
+### States
+
+```java
+new State<>("mousedragged", new Point2D.Float(), new String[] {"x","y"}, new Execution<Point2D>() {
+	public Point2D execute(Point2D stateOld, Arg[] args) {
+		Float x = Float.valueOf(0);
+		Float y = Float.valueOf(0);
+		
+		//map args
+		for (Arg arg : args) {
+			Object value = arg.getValue();
+			
+			if (arg.name.equals("x")) {
+				x = (Float) value;
+			}
+			else if (arg.name.equals("y")) {
+				y = (Float) value;
+			}
+		}
+		
+		//direct driver
+		Driver.drag(x.intValue(), y.intValue());
+		
+		//update state(s)
+		Point2D.Float dest = new Point2D.Float(x, y);
+		mouseat.getProperty().set(dest);
+		return dest;
+	}
+});
+```
+
+<hr>
 
 ## shutdown
 
@@ -109,6 +208,353 @@ new State<Boolean>("quitted", false, new String[] {}, new DriverExecution<Boolea
 });
 ```
 
+<hr>
+
+## showState
+
+### Description
+
+Prints out all actions' states' current values from the state table `Terry.states`.
+
+### Pattern
+
+`|show,[what_is],log,) ?current) state`
+
+### States
+
+```java
+new State<Boolean>("stateshown", true, new String[] {}, new Execution<Boolean>() {
+	public Boolean execute(Boolean stateOld, Arg[] args) {
+		//no args
+		//direct controller
+		Logger.log("states: ");
+		for (String state : Terry.printState()) {
+			Logger.log(state);
+		}
+		
+		return true;
+	}
+});
+```
+
+<hr>
+
+## captureScreen
+
+### Description
+
+Takes a full-screen screen capture. The `statecaptureupdated` state is a convenience for other actions to know when `statecaptured` is ready to have its image read.
+
+### Pattern
+
+`?|create,take,)) |screenshot,[screen_shot],[screen_capture],[capture_screen],)`
+
+### States
+
+```java
+new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new Execution<Boolean>() {
+	public Boolean execute(Boolean stateOld, Arg[] args) {
+		return false;
+	}
+});
+
+new State<BufferedImage>("statecaptured", new BufferedImage(1, 1, BufferedImage.TYPE_INT_RGB), new String[] {}, new Execution<BufferedImage>() {
+	public BufferedImage execute(BufferedImage stateOld, Arg[] args) {
+		//no args
+		//direct driver and prompter
+		Prompter.hide();
+		
+		Dimension screen = Driver.getScreen();
+		BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
+		
+		//capture screen
+		Driver.captured.addListener(new ChangeListener<Boolean>() {
+			public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+				if (newValue) {
+					SwingFXUtils.fromFXImage(Driver.capture, capture);
+					
+					//update statecaptureupdated when the capture object contains the data
+					SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+					captureUpdated.set(true);
+					
+					if (capture != null) {
+						Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
+					}
+					
+					Prompter.show();
+					
+					Driver.captured.removeListener(this);
+				}
+			}
+		});
+		Driver.captureScreen();
+		
+		return capture;
+	}
+});
+```
+
+<hr>
+
+## locateWidget
+
+### Description
+
+Takes a screen capture and then searches for the widget specified by the `widget` argument in the image. Details as to whether to use text recognition or image recognition are left to the widget to determine. `widgetlocationupdated` notifies that the search result is ready, and `widgetlocation` stores the result.
+
+### Pattern
+
+`?|find,locate,show,) ?where) ?is) @wwidget ?is)`
+
+### States
+
+```java
+new State<Boolean>("widgetlocationupdated", Boolean.FALSE, new String[] {}, new Execution<Boolean>() {
+	public Boolean execute(Boolean stateOld, Arg[] args) {
+		return false;
+	}
+});
+
+new State<Point2D>("widgetlocation", new Point2D.Double(), new String[] {"widget"}, new Execution<Point2D>() {
+	public Point2D execute(Point2D stateOld, Arg[] args) {
+		//map args
+		Widget widget = null;
+		
+		for (Arg arg : args) {	
+			if (arg != null && arg.name.equals("widget")) {
+				widget = (Widget) arg.getValue();
+			}
+		}
+		
+		Point2D location = new Point2D.Double(-1,-1);
+		
+		//direct various modules
+		if (widget != null) {										
+			//direct driver to capture screen
+			Logger.log("preparing to locate widget " + widget.getName());
+			final Widget finalWidget = widget;
+			
+			HashMap<String,Arg> captureScreenArgs = new HashMap<>();
+			try {
+				//listen for when screen capture is complete
+				SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+				captureUpdated.set(false);
+				captureUpdated.addListener(new ChangeListener<Boolean>() {
+					public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+						if (newValue.booleanValue()) {
+							//get capture and search
+							BufferedImage screenshot;
+							try {
+								screenshot = statecaptured.getValue();
+								
+								//handle result of widget search
+								finalWidget.state.set(Widget.STATE_IDLE);
+								finalWidget.state.addListener(new ChangeListener<Character>() {
+									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+										boolean removeme = false;
+										
+										if (newValue == Widget.STATE_FOUND) {
+											Rectangle zone = finalWidget.getZone();
+											
+											//direct prompter to highlight found widget
+											Prompter.clearOverlay();
+											Prompter.showOverlay();
+											Prompter.colorOverlay(new Color(0.8,0.1,0.6,0.2), Color.MEDIUMVIOLETRED);
+											Prompter.drawOverlay(zone.getPathIterator(null), true, true);
+											
+											//update state(s)
+											location.setLocation(zone.getCenterX(), zone.getCenterY());
+											widgetlocationupdated.getProperty().set(true);
+											removeme = true;
+										}
+										else if (newValue == Widget.STATE_NOT_FOUND) {
+											Logger.log("widget not found");
+											removeme = true;
+										}
+										
+										if (removeme) {
+											finalWidget.state.removeListener(this);
+										}
+									}
+								});
+								
+								//direct widget to find itself
+								finalWidget.findInScreen(screenshot);
+							}
+							catch (WidgetException e) {
+								Logger.logError("widget search failed: " + e.getMessage());
+							}
+							
+							captureUpdated.removeListener(this);
+						}
+					}
+				});
+				
+				//execute screen capture action
+				captureScreen.execute(captureScreenArgs);
+			} 
+			catch (StateException e) {
+				Logger.logError(e.getMessage());
+			}
+		}
+		else {
+			Logger.logError("widget to find was not given");
+		}
+		
+		return location;
+	}
+});
+```
+
+<hr>
+
+## mouseToWidget
+
+### Description
+
+Moves the mouse to a widget specified by the `widget` argument. Calls subaction `locateWidget` to determine the destination for the cursor movement.
+
+### Pattern
+
+`|[?move)_|mouse,cursor,pointer,)],go,) to @wwidget`
+
+### States
+
+```java
+new State<Widget>("mouseatwidget", dummyWidget, new String[] {"widget"}, new Execution<Widget>() {
+	public Widget execute(Widget stateOld, Arg[] args) {
+		//map args
+		Widget widget = null;
+		Arg widgetArg = null;
+		
+		for (Arg arg : args) {	
+			if (arg != null && arg.name.equals("widget")) {
+				widget = (Widget) arg.getValue();
+				widgetArg = arg;
+			}
+		}
+		
+		if (widget != null) {
+			//get widget location
+			HashMap<String,Arg> locateWidgetArgs = new HashMap<>();
+			locateWidgetArgs.put("widget", widgetArg);
+			
+			try {
+				SimpleObjectProperty<Boolean> widgetLocationUpdated = widgetlocationupdated.getProperty();
+				widgetLocationUpdated.set(false);
+				widgetLocationUpdated.addListener(new ChangeListener<Boolean>() {
+					public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
+						if (newValue) {
+							//move mouse to widget location
+							Point2D location = widgetlocation.getProperty().get();
+							int x = (int) location.getX();
+							int y = (int) location.getY();
+			
+							//direct driver
+							Driver.point(x, y);
+			
+							//update mouse location
+							mouseat.getProperty().set(new Point2D.Float(x,y));
+			
+							widgetLocationUpdated.removeListener(this);
+						}
+					}
+				});
+				
+				locateWidget.execute(locateWidgetArgs);
+				
+				//update moused widget
+				return widget;
+			}
+			catch (StateException e) {
+				//widget location failure
+				return null;
+			}					
+		}
+		else {
+			return null;
+		}
+	}
+});
+```
+
+<hr>
+
+## mouseDragWidget
+
+### Description
+
+Like `mouseToWidget`, but the mouse is dragged instead of moved. The `dummyWidget` argument refers to `Terry.dummyWidget`, which has a few purposes throughout the program. Generally, it's a placeholder for a widget referring to nothing, without being equal to null.
+
+### Pattern
+
+`drag ?|mouse,cursor,pointer,)) to @wwidget`
+
+### States
+
+```java
+new State<Widget>("mousedraggedwidget", dummyWidget, new String[] {"widget"}, new Execution<Widget>() {
+	public Widget execute(Widget stateOld, Arg[] args) {
+		//map args
+		Widget widget = null;
+		Arg widgetArg = null;
+	
+		for (Arg arg : args) {	
+			if (arg != null && arg.name.equals("widget")) {
+				widget = (Widget) arg.getValue();
+				widgetArg = arg;
+			}
+		}
+	
+		if (widget != null) {
+			//get widget location
+			HashMap<String,Arg> locateWidgetArgs = new HashMap<>();
+			locateWidgetArgs.put("widget", widgetArg);
+		
+			try {
+				SimpleObjectProperty<Boolean> widgetLocationUpdated = widgetlocationupdated.getProperty();
+				widgetLocationUpdated.set(false);
+				widgetLocationUpdated.addListener(new ChangeListener<Boolean>() {
+					public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
+						if (newValue) {
+							//move mouse to widget location
+							Point2D location = widgetlocation.getProperty().get();
+							int x = (int) location.getX();
+							int y = (int) location.getY();
+						
+							//direct driver
+							Driver.drag(x, y);
+						
+							//update mouse location
+							Point2D.Float dest = new Point2D.Float(x,y);
+							mouseat.getProperty().set(dest);
+							mousedragged.getProperty().set(dest);
+						
+							widgetLocationUpdated.removeListener(this);
+						}
+					}
+				});
+			
+				locateWidget.execute(locateWidgetArgs);
+			
+				//update moused widget
+				mouseatwidget.getProperty().set(widget);
+				return widget;
+			}
+			catch (StateException e) {
+				//widget location failure
+				return null;
+			}					
+		}
+		else {
+			return null;
+		}
+	}
+});
+```
+
+<hr>
+
 ## driverDemo1
 
 ### Description
@@ -122,40 +568,99 @@ Executes a hardcoded set of driver pointer and typer commands, showing full mous
 ### States
 
 ```java
-new State<Integer>("demoed", 0, new String[] {}, new DriverExecution<Integer>() {
+new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() {
 	public Integer execute(Integer stateOld, Arg[] args) {
 		//no args
 		//direct driver
-		new DriverThread() {
-			public void run() {
-				Logger.log("typing in spotlight...");
-				Driver.point(930, 30); //go to eclipse
-				try {Thread.sleep(500);} catch (InterruptedException e) {}
-				Driver.clickLeft(); //click window
-				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
-				Driver.point(1375, 12); //go to spotlight
-				try {Thread.sleep(500);} catch (InterruptedException e) {}
-				Driver.clickLeft(); //click icon
-				try {Thread.sleep(1000);} catch (InterruptedException e) {}
-				Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
-				try {Thread.sleep(1000);} catch (InterruptedException e) {}
-				Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
-				try {Thread.sleep(1000);} catch (InterruptedException e) {}
-				Driver.type("#cmd+bck)"); //clear search
-				try {Thread.sleep(500);} catch (InterruptedException e) {}
-				Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
-				try {Thread.sleep(1000);} catch (InterruptedException e) {}
-				Driver.type("#cmd+bck)#esc)"); //clear search and exit
-				try {Thread.sleep(1000);} catch (InterruptedException e) {}
-				Logger.log("quitting via mouse...");
-				Driver.point(755, 899); //go to dock
-				try {Thread.sleep(500);} catch (InterruptedException e) {}
-				Driver.point(908, 860); //go to java
-				Driver.clickRight(); //right-click menu
-				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
-				Driver.point(934, 771); //close option
+		Logger.log("typing in spotlight...");
+		Driver.point(930, 30); //go to eclipse
+		try {Thread.sleep(500);} catch (InterruptedException e) {}
+		Driver.clickLeft(); //click window
+		try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
+		Driver.point(1375, 12); //go to spotlight
+		try {Thread.sleep(500);} catch (InterruptedException e) {}
+		Driver.clickLeft(); //click icon
+		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
+		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
+		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		Driver.type("#cmd+bck)"); //clear search
+		try {Thread.sleep(500);} catch (InterruptedException e) {}
+		Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
+		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		Driver.type("#cmd+bck)#esc)"); //clear search and exit
+		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		Logger.log("quitting via mouse...");
+		Driver.point(755, 899); //go to dock
+		try {Thread.sleep(500);} catch (InterruptedException e) {}
+		Driver.point(908, 860); //go to java
+		Driver.clickRight(); //right-click menu
+		try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
+		Driver.point(934, 771); //close option
+		//update state
+		return 1;
+	}
+});
+```
+
+<hr>
+
+## overlayDemo1
+
+### Description
+
+Demonstrates the `Prompter.overlay` window by animating a colored circle over it.
+
+### Pattern
+
+`overlay |demo,demonstration,) |one,1,)`
+
+### States
+
+```java
+new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>() {	
+	public Integer execute(Integer stateOld, Arg[] args) {
+		//no args
+		//direct prompter
+		Prompter.showOverlay();
+		Prompter.colorOverlay(Color.MEDIUMPURPLE, Color.PURPLE);
+		
+		Dimension screen = Driver.getScreen();
+		Ellipse2D ball = new Ellipse2D.Double(20,20,20,20);
+		AffineTransform t = new AffineTransform();
+		int vx = 1; int vy = 1;
+		
+		SimpleObjectProperty<Integer> overlaydemoed = (SimpleObjectProperty<Integer>) states.get("overlaydemoed").getProperty();
+		overlaydemoed.set(1);
+		
+		boolean go = true;
+		Logger.log("drawing overlay circle");
+		while (go && overlaydemoed.get().equals(1)) {
+			t.translate(vx, vy);
+			
+			if (t.getTranslateX() > screen.width || t.getTranslateX() < 0) {
+				vx = -vx;
+				t.translate(vx, 0);
 			}
-		}.start();
+			if (t.getTranslateY() > screen.height || t.getTranslateY() < 0) {
+				vy = -vy;
+				t.translate(0, vy);
+			}
+			
+			Prompter.clearOverlay();
+			Prompter.drawOverlay(ball.getPathIterator(t), true, true);
+			
+			try {
+				Thread.sleep(10);
+			} 
+			catch (InterruptedException e) {
+				go = false;
+			}
+		}
+		Logger.log("drawing done");
+		Prompter.hideOverlay();
+		
 		//update state
 		return 1;
 	}

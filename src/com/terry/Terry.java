@@ -277,7 +277,7 @@ public class Terry {
 	}
 	
 	private static void createPrimitiveActions() throws LanguageMappingException {
-		Logger.log("no mappings found; creating primitive actions corpus");
+		Logger.log("no mappings found; creating primitive actions");
 		
 		//--- move mouse to screen location ---//
 		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
@@ -454,7 +454,7 @@ public class Terry {
 		Memory.addMapping(shutdown);
 		
 		//--- show state ---//
-		Action showstate = new Action("|show,[what_is],log,) ?current) state");
+		Action showState = new Action("|show,[what_is],log,) ?current) state");
 		
 		State<Boolean> stateshown = new State<Boolean>("stateshown", true, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = -4961265132685762301L;
@@ -470,9 +470,9 @@ public class Terry {
 				return true;
 			}
 		});
-		showstate.addState(stateshown);
+		showState.addState(stateshown);
 		
-		Memory.addMapping(showstate);
+		Memory.addMapping(showState);
 		
 		//--- capture screen/take screenshot ---//
 		Action captureScreen = new Action("?|create,take,)) |screenshot,[screen_shot],[screen_capture],[capture_screen],)");
@@ -480,8 +480,7 @@ public class Terry {
 		//set captureupdated to false, which statecaptured will then set to true when the screen capture is obtained
 		State<Boolean> statecaptureupdated = new State<Boolean>("statecaptureupdated", Boolean.FALSE, new String[] {}, new Execution<Boolean>() {
 			private static final long serialVersionUID = -5850373248159506280L;
-
-			@Override
+			
 			public Boolean execute(Boolean stateOld, Arg[] args) {
 				return false;
 			}
@@ -563,11 +562,9 @@ public class Terry {
 					
 					HashMap<String,Arg> captureScreenArgs = new HashMap<>();
 					try {
-						//execute screen capture action
-						captureScreen.execute(captureScreenArgs);
-						
 						//listen for when screen capture is complete
 						SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+						captureUpdated.set(false);
 						captureUpdated.addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
 								if (newValue.booleanValue()) {
@@ -577,7 +574,7 @@ public class Terry {
 										screenshot = statecaptured.getValue();
 										
 										//handle result of widget search
-										finalWidget.state = new CharProperty(Widget.STATE_IDLE);
+										finalWidget.state.set(Widget.STATE_IDLE);
 										finalWidget.state.addListener(new ChangeListener<Character>() {
 											public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 												boolean removeme = false;
@@ -620,6 +617,9 @@ public class Terry {
 								}
 							}
 						});
+						
+						//execute screen capture action
+						captureScreen.execute(captureScreenArgs);
 					} 
 					catch (StateException e) {
 						Logger.logError(e.getMessage());
@@ -660,7 +660,9 @@ public class Terry {
 					locateWidgetArgs.put("widget", widgetArg);
 					
 					try {
-						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
+						SimpleObjectProperty<Boolean> widgetLocationUpdated = widgetlocationupdated.getProperty();
+						widgetLocationUpdated.set(false);
+						widgetLocationUpdated.addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
 								if (newValue) {
 									//move mouse to widget location
@@ -674,7 +676,7 @@ public class Terry {
 									//update mouse location
 									mouseat.getProperty().set(new Point2D.Float(x,y));
 									
-									widgetlocationupdated.getProperty().removeListener(this);
+									widgetLocationUpdated.removeListener(this);
 								}
 							}
 						});
@@ -722,7 +724,9 @@ public class Terry {
 					locateWidgetArgs.put("widget", widgetArg);
 					
 					try {
-						widgetlocationupdated.getProperty().addListener(new ChangeListener<Boolean>() {
+						SimpleObjectProperty<Boolean> widgetLocationUpdated = widgetlocationupdated.getProperty();
+						widgetLocationUpdated.set(false);
+						widgetLocationUpdated.addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
 								if (newValue) {
 									//move mouse to widget location
@@ -738,7 +742,7 @@ public class Terry {
 									mouseat.getProperty().set(dest);
 									mousedragged.getProperty().set(dest);
 									
-									widgetlocationupdated.getProperty().removeListener(this);
+									widgetLocationUpdated.removeListener(this);
 								}
 							}
 						});
