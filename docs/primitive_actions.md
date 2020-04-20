@@ -606,6 +606,165 @@ new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() 
 
 <hr>
 
+## setSpeakerVolume
+
+### Description
+
+Exposes Speaker.setVolume() to the user. Accepts a range from 1-10 by default, but supports percentages if "percent" is said explicitly, or 0-1 range if the value is less than 1.
+
+### Pattern
+
+`?set) ?|speaker,speech,spoken)) volume to @#level ?@$percent)`
+
+### States
+
+```java
+new State<Float>("speakervolume", 0.5f, new String[] {"level","percent"}, new Execution<Float>() {	
+	public Float execute(Float stateOld, Arg[] args) {
+		//map args
+		Float volume = null;
+		String percent = null;
+		
+		for (Arg arg : args) {
+			if (arg != null) {
+				if (arg.name.equals("level")) {
+					volume = (Float) arg.getValue();
+				}
+				else if (arg.name.equals("percent")) {
+					percent = (String) arg.getValue();
+				}
+			}
+		}
+		
+		//control speaker
+		if (volume != null && volume > 0) {
+			if (percent != null && percent.equals("percent")) { //percent was said explicitly, 0-100 range
+				volume = volume / 100;
+			}
+			else if (volume >= 1 && volume <= 10) { //assume 0-10 range
+				volume = volume / 10;
+			}
+			//else assume 0-1 range
+			
+			try {
+				Speaker.setVolume(volume);
+				Logger.log("now i speak this loud", Logger.LEVEL_SPEECH);
+				return volume;
+			}
+			catch (SpeakerException e) {
+				Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+				return null;
+			}
+		}
+		else {
+			//no volume specified
+			Logger.logError("volume level " + volume + " not specified or invalid", Logger.LEVEL_CONSOLE);
+			return null;
+		}
+	}
+});
+```
+
+## setSpeakerSpeed
+
+### Description
+
+Exposes Speaker.setSpeed() to the user. This action uses the same value ranges as setSpeakerVolume.
+
+### Pattern
+
+`?set) ?|speaker,speech,spoken,)) speed to @#speed ?@$percent)`
+
+### States
+
+new State<Float>("speakerspeed", 0.5f, new String[] {"speed","percent"}, new Execution<Float>() {
+	public Float execute(Float stateOld, Arg[] args) {
+		//map args
+		Float speed = null;
+		String percent = null;
+		
+		for (Arg arg : args) {
+			if (arg != null) {
+				if (arg.name.equals("speed")) {
+					speed = (Float) arg.getValue();
+				}
+				else if (arg.name.equals("percent")) {
+					percent = (String) arg.getValue();
+				}
+			}
+		}
+		
+		//control speaker
+		if (speed != null && speed > 0) {
+			if (percent != null && percent.equals("percent")) { //percent was said explicitly, 0-100 range
+				speed = speed / 100;
+			}
+			else if (speed >= 1 && speed <= 10) { //assume 0-10 range
+				speed = speed / 10;
+			}
+			//else assume 0-1 range
+			
+			try {
+				Speaker.setSpeed(speed);
+				Logger.log("now i speak this fast", Logger.LEVEL_SPEECH);
+				return speed;
+			}
+			catch (SpeakerException e) {
+				Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+				return null;
+			}
+		}
+		else {
+			//no volume specified
+			Logger.logError("speech speed " + speed + " not specified or invalid", Logger.LEVEL_CONSOLE);
+			return null;
+		}
+	}
+});
+
+## setSpeakerVoice
+
+### Description
+
+Exposes Speaker.setVoice() to the user. If the specified voice name corresponds to a valid voice on the machine, the speaker's voice is changed accordingly.
+
+### Pattern
+
+`?set) ?|speaker,speech,spoken,)) voice to @$voice`
+
+### States
+
+new State<String>("speakervoice", "", new String[] {"voice"}, new Execution<String>() {
+	public String execute(String stateOld, Arg[] args) {
+		//map args
+		String voice = null;
+		
+		for (Arg arg : args) {
+			if (arg.name.equals("voice")) {
+				voice = (String) arg.getValue();
+			}
+		}
+		
+		//control speaker
+		if (voice != null) {
+			try {
+				Speaker.setVoice(voice);
+				Logger.log("speaker voice changed to " + voice, Logger.LEVEL_SPEECH);
+				return voice;
+			} 
+			catch (SpeakerException e) {
+				Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+				return null;
+			}
+		}
+		else {
+			Logger.logError("no voice was specified", Logger.LEVEL_SPEECH);
+			return null;
+		}
+	}
+	
+});
+
 ## overlayDemo1
 
 ### Description

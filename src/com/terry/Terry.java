@@ -231,7 +231,7 @@ public class Terry {
 			}
 		}
 		
-		Logger.log(Memory.printDictionary());
+		Logger.log(Memory.printDictionary(), Logger.LEVEL_FILE);
 		
 		prompter = new Prompter();
 		prompter.init(args); //calls Driver.init() since jfx robot needs jfx toolkit initialization
@@ -766,6 +766,151 @@ public class Terry {
 		mouseDragWidget.addState(mousedraggedwidget);
 		
 		Memory.addMapping(mouseDragWidget);
+		
+		//--- adjust speaker volume ---//
+		Action setSpeakerVolume = new Action("?set) ?|speaker,speech,spoken)) volume to @#level ?@$percent)");
+		
+		State<Float> speakervolume = new State<Float>("speakervolume", 0.5f, new String[] {"level","percent"}, new Execution<Float>() {
+			private static final long serialVersionUID = 2959383880513305366L;
+			
+			public Float execute(Float stateOld, Arg[] args) {
+				//map args
+				Float volume = null;
+				String percent = null;
+				
+				for (Arg arg : args) {
+					if (arg != null) {
+						if (arg.name.equals("level")) {
+							volume = (Float) arg.getValue();
+						}
+						else if (arg.name.equals("percent")) {
+							percent = (String) arg.getValue();
+						}
+					}
+				}
+				
+				//control speaker
+				if (volume != null && volume > 0) {
+					if (percent != null && percent.equals("percent")) { //percent was said explicitly, 0-100 range
+						volume = volume / 100;
+					}
+					else if (volume >= 1 && volume <= 10) { //assume 0-10 range
+						volume = volume / 10;
+					}
+					//else assume 0-1 range
+					
+					try {
+						Speaker.setVolume(volume);
+						Logger.log("now i speak this loud", Logger.LEVEL_SPEECH);
+						return volume;
+					}
+					catch (SpeakerException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+						return null;
+					}
+				}
+				else {
+					//no volume specified
+					Logger.logError("volume level " + volume + " not specified or invalid", Logger.LEVEL_CONSOLE);
+					return null;
+				}
+			}
+		});
+		setSpeakerVolume.addState(speakervolume);
+		
+		Memory.addMapping(setSpeakerVolume);
+		
+		//--- adjust speaker speed ---//
+		Action setSpeakerSpeed = new Action("?set) ?|speaker,speech,spoken,)) speed to @#speed ?@$percent)");
+		
+		State<Float> speakerspeed = new State<Float>("speakerspeed", 0.5f, new String[] {"speed","percent"}, new Execution<Float>() {
+			private static final long serialVersionUID = -8572398699178191929L;
+
+			public Float execute(Float stateOld, Arg[] args) {
+				//map args
+				Float speed = null;
+				String percent = null;
+				
+				for (Arg arg : args) {
+					if (arg != null) {
+						if (arg.name.equals("speed")) {
+							speed = (Float) arg.getValue();
+						}
+						else if (arg.name.equals("percent")) {
+							percent = (String) arg.getValue();
+						}
+					}
+				}
+				
+				//control speaker
+				if (speed != null && speed > 0) {
+					if (percent != null && percent.equals("percent")) { //percent was said explicitly, 0-100 range
+						speed = speed / 100;
+					}
+					else if (speed >= 1 && speed <= 10) { //assume 0-10 range
+						speed = speed / 10;
+					}
+					//else assume 0-1 range
+					
+					try {
+						Speaker.setSpeed(speed);
+						Logger.log("now i speak this fast", Logger.LEVEL_SPEECH);
+						return speed;
+					}
+					catch (SpeakerException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+						return null;
+					}
+				}
+				else {
+					//no volume specified
+					Logger.logError("speech speed " + speed + " not specified or invalid", Logger.LEVEL_CONSOLE);
+					return null;
+				}
+			}
+		});
+		setSpeakerSpeed.addState(speakerspeed);
+		
+		Memory.addMapping(setSpeakerSpeed);
+		
+		//--- adjust speaker voice ---//
+		Action setSpeakerVoice = new Action("?set) ?|speaker,speech,spoken,)) voice to @$voice");
+		
+		State<String> speakervoice = new State<String>("speakervoice", "", new String[] {"voice"}, new Execution<String>() {
+			private static final long serialVersionUID = 4847183368300490585L;
+
+			public String execute(String stateOld, Arg[] args) {
+				//map args
+				String voice = null;
+				
+				for (Arg arg : args) {
+					if (arg.name.equals("voice")) {
+						voice = (String) arg.getValue();
+					}
+				}
+				
+				//control speaker
+				if (voice != null) {
+					try {
+						Speaker.setVoice(voice);
+						Logger.log("speaker voice changed to " + voice, Logger.LEVEL_SPEECH);
+						return voice;
+					} 
+					catch (SpeakerException e) {
+						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
+						return null;
+					}
+				}
+				else {
+					Logger.logError("no voice was specified", Logger.LEVEL_SPEECH);
+					return null;
+				}
+			}
+			
+		});
+		setSpeakerVoice.addState(speakervoice);
+		
+		Memory.addMapping(setSpeakerVoice);
 		
 		//--- demos ---//
 		Action driverDemo1 = new Action("driver |demo,demonstration,) |one,1,)");

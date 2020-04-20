@@ -82,7 +82,7 @@ public class Speaker {
 					voices.add(voiceName);
 					voicesInfo.add(voiceInfo);
 					
-					Logger.log(voiceInfo);
+					Logger.log(voiceName, Logger.LEVEL_CONSOLE);
 				}
 				
 				voiceInfo = voicesReader.readLine();
@@ -164,7 +164,7 @@ public class Speaker {
 			}
 		}
 		else if (Terry.os == Terry.OS_MAC) {
-			throw new SpeakerException("cannot change volume on mac");
+			throw new SpeakerException("i cannot change volume on a mac");
 		}
 	}
 	
@@ -174,7 +174,7 @@ public class Speaker {
 			updateCmd();
 		}
 		else {
-			throw new SpeakerException("speaker voice " + v + " not in list of available voices");
+			throw new SpeakerException("speaker voice " + v + " not in my list of available voices");
 		}
 	}
 	

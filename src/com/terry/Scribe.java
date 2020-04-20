@@ -150,6 +150,9 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
+				"set volume to 5",
+				"set speaker voice to daniel",
+				"set speed to 25 percent",
 				"i want to show you how to type hello in spotlight",
 				"type a hello from too#bck)#bck)erry!",
 				"go to play",

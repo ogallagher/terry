@@ -89,7 +89,7 @@ public class Logger {
 		//say entry
 		if (level >= LEVEL_SPEECH) {
 			try {
-				Speaker.speak(entry);
+				Speaker.speak(entry.replace("e_", ""));
 			} 
 			catch (SpeakerException e) {
 				logError(e.getMessage(), LEVEL_CONSOLE);
