@@ -13,6 +13,7 @@ import com.terry.Driver.DriverException;
 import com.terry.Memory.MemoryException;
 import com.terry.Watcher.WatcherException;
 
+import javafx.animation.FadeTransition;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.beans.property.SimpleObjectProperty;
@@ -21,6 +22,7 @@ import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 import javafx.embed.swing.SwingFXUtils;
+import javafx.event.ActionEvent;
 import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
@@ -40,6 +42,7 @@ import javafx.scene.paint.Color;
 import javafx.stage.Stage;
 import javafx.stage.StageStyle;
 import javafx.util.Callback;
+import javafx.util.Duration;
 
 public class Prompter extends Application {
 	private static Stage intercom; //main window for recording instructions
@@ -61,6 +64,9 @@ public class Prompter extends Application {
 	private static final int CONSOLE_OUT_MAX = 200;
 	
 	private static ListView<String> consoleOutView;
+	
+	public static final int WIDGET_HIGHLIGHT_TIME = 800;
+	public static final int OVERLAY_FADE_TIME = 1700;
 	
 	private static Stage overlay; //transparent full-screen window for drawing over GUI. Hidden most of the time
 	private static int OVERLAY_WIDTH;
@@ -595,6 +601,25 @@ public class Prompter extends Application {
 		});
 	}
 	
+	public static void fadeOverlay(PathIterator pi, boolean fill, boolean stroke, SimpleObjectProperty<Boolean> notifier) {
+		Platform.runLater(new Runnable() {
+			public void run() {				
+				FadeTransition fade = new FadeTransition();
+				fade.setDuration(Duration.millis(Prompter.OVERLAY_FADE_TIME));
+				fade.setFromValue(1);
+				fade.setToValue(0);
+				fade.setNode(overlay.getScene().getRoot());
+				fade.setOnFinished(new EventHandler<ActionEvent>() {
+					public void handle(ActionEvent event) {
+						graphics.clearRect(0, 0, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+						hideOverlay(notifier);
+					}
+				});
+				fade.play();
+			}
+		});
+	}
+	
 	public static void colorOverlay(Color fill, Color stroke) {
 		graphics.setFill(fill);
 		graphics.setStroke(stroke);
@@ -667,6 +692,7 @@ public class Prompter extends Application {
 		//show overlay, accept zone
 		overlayZone = null;
 		pendingWidget = widget;
+		hide(null);
 		showOverlay(null);
 		zoneNotifier = notifier;
 		state.set(STATE_ACCEPTING_ZONE);

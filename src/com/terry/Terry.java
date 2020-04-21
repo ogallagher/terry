@@ -1,48 +1,7 @@
 /*
- * Author:	Owen Gallagher
- * Start:	December 2019
- * 
- * Notes:
- * 	- dictionary 
- * 		- an entry is token paired with LangMapping ids whose patterns contain that token
- * 		- only keywords and widgets can have entries; value args would not have entries
- * 		- an entry is in the form: token ref_1 ref_2 ... ref_n
- * 	- LanguageMapping/LangMap
- * 		- superclass for lessons, actions and widgets, with a pattern and mappings for keywords and args
- * 		- LangMap.id is a unique int id for each
- * - Action
- * 		- inherited member LangMap.value is an state name and value pairing as Entry<String,Object>
- * 		- args define what widget to perform the action on and how to do the action
- * - State
- * 		- member name is a String
- * 		- member value is an Object (observable)
- * 		- member execution is a DriverExecution: { abstract T execute(T oldState, Arg[] args) }
- * 		- member transition() calls execution.execute()
- * - Widget
- * 		- member type is the widget interaction type (label, button, text area, etc)
- * 		- member label is the string contained within the widget's bounds
- * 		- member bounds is a rectangle to define the size and shape of the widget
- * 		- member appearance is a collection of features (keypoint-descriptor pairs) for visual identification
- * - Lesson
- * 		- member type
- * 		- member definition
- * 
- * TODO:
- * 	= recognize unknown widgets
- *  = create action learner
- *  	= recognize unknown actions
- *  	- learn by instruction
- *  	= learn by demonstration
- *  		= Watcher.WatcherRecording has list of peripherals, subclasses: Keyboard, Mouse
- * 	 		= Watcher.Mouse.findWidget() tells if a click, move, or drag ended at a widget
- * 			= create lessons for demonstration
- *  		= map keyboards to states
- *  		= map mice to states
- *  = create watcher connected to keyboard and mouse
- *  	= create os input hooks to catch keystrokes and mouse updates (bugs on mac... ugh)
- *  	+ trigger scribe with key combination (not a good key combo; just what works on both win and mac right now)
- *  - ability to define Widget.zone, where a widget is expected to be found
- *  - hide overlay when no longer needed
+ * Author:		Owen Gallagher
+ * Start Date:	December 2019
+ * End Date:	May 2020
  */
 
 package com.terry;
@@ -56,6 +15,8 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map.Entry;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import com.terry.LanguageMapping.LanguageMappingException;
 import com.terry.Lesson.Definition;
@@ -591,6 +552,15 @@ public class Terry {
 													Prompter.colorOverlay(new Color(0.8,0.1,0.6,0.2), Color.MEDIUMVIOLETRED);
 													Prompter.drawOverlay(zone.getPathIterator(null), true, true, null);
 													
+													//hide overlay after waiting
+													Timer fader = new Timer();
+													fader.schedule(new TimerTask() {
+														public void run() {
+															Logger.log("fading overlay", Logger.LEVEL_FILE);
+															Prompter.fadeOverlay(zone.getPathIterator(null), true, true, null);
+														}
+													}, Prompter.WIDGET_HIGHLIGHT_TIME);
+													
 													//update state(s)
 													location.setLocation(zone.getCenterX(), zone.getCenterY());
 													widgetlocationupdated.getProperty().set(true);
@@ -917,7 +887,7 @@ public class Terry {
 		//--- demos ---//
 		Action driverDemo1 = new Action("driver |demo,demonstration,) |one,1,)");
 		
-		State<Integer> driverDemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() {
+		State<Integer> driverdemoed = new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() {
 			private static final long serialVersionUID = 7287040985627859604L;
 
 			public Integer execute(Integer stateOld, Arg[] args) {
@@ -977,13 +947,13 @@ public class Terry {
 				return 1;
 			}
 		});
-		driverDemo1.addState(driverDemoed);
+		driverDemo1.addState(driverdemoed);
 		
 		Memory.addMapping(driverDemo1);
 		
 		Action overlayDemo1 = new Action("overlay |demo,demonstration,) |one,1,)");
 		
-		State<Integer> overlayDemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>() {
+		State<Integer> overlaydemoed = new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>() {
 			private static final long serialVersionUID = -7000513250778527982L;
 			
 			@SuppressWarnings("unchecked")
@@ -1001,9 +971,19 @@ public class Terry {
 				SimpleObjectProperty<Integer> overlaydemoed = (SimpleObjectProperty<Integer>) states.get("overlaydemoed").getProperty();
 				overlaydemoed.set(1);
 				
-				boolean go = true;
-				Logger.log("drawing overlay circle");
-				while (go && overlaydemoed.get().equals(1)) {
+				SimpleObjectProperty<Boolean> go = new SimpleObjectProperty<>(true);
+				
+				Scribe.state.addListener(new ChangeListener<Character>() {
+					public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
+						if (newValue == Scribe.STATE_RECORDING || newValue == Scribe.STATE_TRANSCRIBING) {
+							go.set(false);
+							Scribe.state.removeListener(this);
+						}
+					}
+				});
+				
+				Logger.log("showing overlay demo one", Logger.LEVEL_SPEECH);
+				while (go.get()) {
 					t.translate(vx, vy);
 					
 					if (t.getTranslateX() > screen.width || t.getTranslateX() < 0) {
@@ -1022,10 +1002,11 @@ public class Terry {
 						Thread.sleep(10);
 					} 
 					catch (InterruptedException e) {
-						go = false;
+						go.set(false);
 					}
 				}
-				Logger.log("drawing done");
+				Logger.log("overlay demo stopped");
+				Prompter.clearOverlay(null);
 				Prompter.hideOverlay(null);
 				
 				//update state
@@ -1033,7 +1014,7 @@ public class Terry {
 				return 1;
 			}
 		});
-		overlayDemo1.addState(overlayDemoed);
+		overlayDemo1.addState(overlaydemoed);
 		
 		Memory.addMapping(overlayDemo1);
 	}

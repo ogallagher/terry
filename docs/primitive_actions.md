@@ -451,7 +451,7 @@ new State<Widget>("mouseatwidget", dummyWidget, new String[] {"widget"}, new Exe
 							int y = (int) location.getY();
 			
 							//direct driver
-							Driver.point(x, y);
+							Driver.point(x, y, notifier);
 			
 							//update mouse location
 							mouseat.getProperty().set(new Point2D.Float(x,y));
@@ -523,7 +523,7 @@ new State<Widget>("mousedraggedwidget", dummyWidget, new String[] {"widget"}, ne
 							int y = (int) location.getY();
 						
 							//direct driver
-							Driver.drag(x, y);
+							Driver.drag(x, y, notifier);
 						
 							//update mouse location
 							Point2D.Float dest = new Point2D.Float(x,y);
@@ -573,31 +573,55 @@ new State<Integer>("driverdemoed", 0, new String[] {}, new Execution<Integer>() 
 		//no args
 		//direct driver
 		Logger.log("typing in spotlight...");
-		Driver.point(930, 30); //go to eclipse
+		Driver.point(930, 30, null); //go to eclipse
+		
 		try {Thread.sleep(500);} catch (InterruptedException e) {}
-		Driver.clickLeft(); //click window
+		
+		Driver.clickLeft(null); //click window
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
-		Driver.point(1375, 12); //go to spotlight
+		
+		Driver.point(1375, 12, null); //go to spotlight
+		
 		try {Thread.sleep(500);} catch (InterruptedException e) {}
-		Driver.clickLeft(); //click icon
+		
+		Driver.clickLeft(null); //click icon
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {}
-		Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
+		
+		Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ", null);
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {}
-		Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
+		
+		Driver.type("#cmd+rgt)#exl)", null); //shift to end and add !
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {}
-		Driver.type("#cmd+bck)"); //clear search
+		
+		Driver.type("#cmd+bck)", null); //clear search
+		
 		try {Thread.sleep(500);} catch (InterruptedException e) {}
-		Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
+		
+		Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)", null); //show off punctuation
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {}
-		Driver.type("#cmd+bck)#esc)"); //clear search and exit
+		
+		Driver.type("#cmd+bck)#esc)", null); //clear search and exit
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {}
+		
 		Logger.log("quitting via mouse...");
-		Driver.point(755, 899); //go to dock
+		Driver.point(755, 899, null); //go to dock
+		
 		try {Thread.sleep(500);} catch (InterruptedException e) {}
-		Driver.point(908, 860); //go to java
-		Driver.clickRight(); //right-click menu
+		
+		Driver.point(908, 860, null); //go to java
+		
+		Driver.clickRight(null); //right-click menu
+		
 		try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
-		Driver.point(934, 771); //close option
+		
+		Driver.point(934, 771, notifier); //close option. last action; attach notifier
+		
 		//update state
 		return 1;
 	}
@@ -782,7 +806,7 @@ new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>()
 	public Integer execute(Integer stateOld, Arg[] args) {
 		//no args
 		//direct prompter
-		Prompter.showOverlay();
+		Prompter.showOverlay(null);
 		Prompter.colorOverlay(Color.MEDIUMPURPLE, Color.PURPLE);
 		
 		Dimension screen = Driver.getScreen();
@@ -807,8 +831,8 @@ new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>()
 				t.translate(0, vy);
 			}
 			
-			Prompter.clearOverlay();
-			Prompter.drawOverlay(ball.getPathIterator(t), true, true);
+			Prompter.clearOverlay(null);
+			Prompter.drawOverlay(ball.getPathIterator(t), true, true, null);
 			
 			try {
 				Thread.sleep(10);
@@ -818,9 +842,10 @@ new State<Integer>("overlaydemoed", 0, new String[] {}, new Execution<Integer>()
 			}
 		}
 		Logger.log("drawing done");
-		Prompter.hideOverlay();
+		Prompter.hideOverlay(null);
 		
 		//update state
+		notifier.set(true);
 		return 1;
 	}
 });

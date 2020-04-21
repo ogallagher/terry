@@ -150,7 +150,8 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
-				//"take a screenshot",
+				"do overlay demo one",
+				"show dock terminal",
 				"dock terminal is a button",
 				//"go to dock terminal",
 				"move the cursor to x 1200 y 899 then go to dock terminal and click then type echo hello there#ret)",
