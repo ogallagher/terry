@@ -12,7 +12,7 @@ Moves the mouse to screen coordinates (`x`,`y`), where both are integer numbers.
 
 ### Pattern
 
-`?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)`
+`?|move,go,)) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)`
 
 ### States
 

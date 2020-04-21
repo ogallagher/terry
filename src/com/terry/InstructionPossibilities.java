@@ -7,17 +7,22 @@ import java.util.Scanner;
 import com.terry.LanguageMapping.PatternNode;
 import com.terry.State.StateException;
 
-import javafx.application.Platform;
-
 public class InstructionPossibilities {
+	public static String[] actionDelimiters;
+	
 	private ArrayList<InstructionPossibility> possibilities;
 	boolean trivialLeader;
+	
+	public static void init() {
+		actionDelimiters = new String[] {"and","then"};
+	}
 	
 	public InstructionPossibilities() {
 		possibilities = null;
 		trivialLeader = false;
 	}
 	
+	//returns true if a possibilities have narrowed down to a single language mapping
 	public boolean resolve(String token) {
 		if (possibilities == null) {
 			//first word, dictionary lookup
@@ -42,26 +47,45 @@ public class InstructionPossibilities {
 		else {
 			//subsequent words, check against followers
 			int n = possibilities.size();
-			for (int i=0; i<n; i++) {
-				InstructionPossibility p = possibilities.get(i);
+			
+			boolean go = true;
+			if (isActionDelimiter(token)) {
+				InstructionPossibility p = finish(false);
 				
-				Logger.log("resolve " + token + " against possibility " + i);
-				if (!p.resolve(token) && p.complete() == null) { //possibility no longer possible
-					Logger.log("eliminated possibility " + p.mapping);
-					possibilities.remove(i);
-					i--;
-					n--;
+				if (p != null) {
+					//completed current instruction and moving on to next one
+					go = false;
+					
+					Compiler.enqueue(p); //enqueue current instruction
+					
+					possibilities = null; //reset possibilities
+					
+					return false; //continue to next instruction
 				}
 			}
 			
-			if (trivialLeader && !Memory.isTrivial(token)) { //keyword and arg leader mappings can now all attempt leader resolution
-				trivialLeader = false;
-				ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token, true, true);
+			if (go) { //current possibilities are still being resolved
+				for (int i=0; i<n; i++) {
+					InstructionPossibility p = possibilities.get(i);
+					
+					Logger.log("resolve " + token + " against possibility " + i);
+					if (!p.resolve(token) && p.complete() == null) { //possibility no longer possible
+						Logger.log("eliminated possibility " + p.mapping);
+						possibilities.remove(i);
+						i--;
+						n--;
+					}
+				}
 				
-				for (Memory.Lookup entry : entries) {
-					for (LanguageMapping lm : entry.mappings) {
-						for (PatternNode leader : lm.getLeaders(entry.token)) {
-							possibilities.add(new InstructionPossibility(lm, leader, token));
+				if (trivialLeader && !Memory.isTrivial(token)) { //keyword and arg leader mappings can now all attempt leader resolution
+					trivialLeader = false;
+					ArrayList<Memory.Lookup> entries = Memory.dictionaryLookup(token, true, true);
+					
+					for (Memory.Lookup entry : entries) {
+						for (LanguageMapping lm : entry.mappings) {
+							for (PatternNode leader : lm.getLeaders(entry.token)) {
+								possibilities.add(new InstructionPossibility(lm, leader, token));
+							}
 						}
 					}
 				}
@@ -84,11 +108,18 @@ public class InstructionPossibilities {
 			return possibility;
 		}
 		else {
-			Logger.log("finishing mapping");
+			Logger.log("finishing mapping", Logger.LEVEL_FILE);
 			String token;
 			
 			while (scanner.hasNext()) {
 				token = scanner.next();
+				
+				if (isActionDelimiter(token)) { //try moving on to next instruction
+					if (possibility.complete() != null) {
+						possibilities = null;
+						return possibility;
+					}
+				}
 				
 				if (possibility.resolve(token)) { //possibility remains possible
 					 if (possibility.complete() != null) { //all tokens are mapped
@@ -110,7 +141,7 @@ public class InstructionPossibilities {
 	 * When there are still multiple possible mappings given the instruction, rank based on number of arguments
 	 * in the mapping's pattern and pick the best.
 	 */
-	public InstructionPossibility finish() {
+	public InstructionPossibility finish(boolean clear) {
 		if (possibilities == null || possibilities.isEmpty()) {
 			return null;
 		}
@@ -149,7 +180,10 @@ public class InstructionPossibilities {
 					}
 				}
 			}
-			possibilities.clear();
+			
+			if (clear) {
+				possibilities = null;
+			}
 			
 			return best;
 		}
@@ -157,6 +191,16 @@ public class InstructionPossibilities {
 	
 	public LanguageMapping getMapping() {
 		return possibilities.get(0).mapping;
+	}
+	
+	public static boolean isActionDelimiter(String token) {
+		for (String ad : actionDelimiters) {
+			if (ad.equals(token)) {
+				return true;
+			}
+		}
+		
+		return false;
 	}
 	
 	public static class InstructionPossibility {

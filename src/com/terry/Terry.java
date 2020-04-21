@@ -280,7 +280,7 @@ public class Terry {
 		Logger.log("no mappings found; creating primitive actions");
 		
 		//--- move mouse to screen location ---//
-		Action mouseToXY = new Action("?move) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
+		Action mouseToXY = new Action("?|move,go,)) ?|mouse,cursor,pointer,)) to ?|location,position,coordinates,)) ?x) @#x |x,comma,y,) @#y ?y)");
 		
 		State<Point2D> mouseat = new State<Point2D>("mouseat", new Point2D.Float(), new String[] {"x","y"}, new Execution<Point2D>() {
 			private static final long serialVersionUID = -5509580894164954809L;

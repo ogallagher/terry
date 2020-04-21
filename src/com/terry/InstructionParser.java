@@ -10,8 +10,9 @@ public class InstructionParser {
 	private static final char STATE_DONE = 2;
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
-		
+	
 	public static void init() {		
+		InstructionPossibilities.init();
 		Logger.log("instruction parser init success");
 	}
 	
@@ -37,7 +38,9 @@ public class InstructionParser {
 		boolean unresolved = true;
 		boolean unknownAction = false;
 		
-		while (scanner.hasNext() && unresolved) {
+		while (scanner.hasNext()) {
+			unresolved = true;
+			
 			//get next token
 			token = scanner.next();
 			
@@ -56,7 +59,6 @@ public class InstructionParser {
 				}
 				else {
 					unresolved = false;
-					
 					Compiler.enqueue(instruction);
 				}
 			}
@@ -66,7 +68,7 @@ public class InstructionParser {
 		 * If there are multiple remaining possibilities (or none), pick the best.
 		 */
 		if (unresolved) {
-			instruction = possibilities.finish();
+			instruction = possibilities.finish(true);
 			
 			if (instruction == null) { //there were no remaining possibilities
 				unknownAction = true;
@@ -99,7 +101,7 @@ public class InstructionParser {
 	 */
 	private static String spellPunctuation(String string) {
 		char[] in = string.toCharArray();
-		String out = "";
+		StringBuilder out = new StringBuilder();
 		
 		char b = 0; //previous
 		char c = 0; //current
@@ -115,67 +117,75 @@ public class InstructionParser {
 			
 			switch (c) {
 				case ',':
-					out += " comma";
+					if (d != ' ') {
+						out.append(" comma ");
+					}
+					else {
+						out.append(" comma");
+					}
 					break;
 					
 				case '.':
-					if (d == ' ') { //otherwise, 
-						out += " period";
+					if (d == ' ') { //skip periods at the end of sentences
+						//skip
 					}
-					else { //number with a decimal
-						out += c;
+					else { //keep number with a decimal intact
+						out.append(c);
 					}
 					
 					break;
 					
 				case ';':
-					out += " semicolon";
+					out.append(" semicolon");
 					break;
 					
 				case ':':
-					out += " colon";
+					out.append(" colon");
 					break;
 					
 				case '\u201c':
-					out += "begin quote ";
+					out.append("begin quote ");
 					break;
 					
 				case '\u201d':
-					out += " end quote";
+					out.append(" end quote");
 					break;
 					
 				case '"':
 					if (b == ' ') { //previous is space; start string
-						out += "begin quote ";
+						out.append("begin quote ");
 					}
 					else if (c == ' ') { //next is space; end string
-						out += " end quote";
+						out.append(" end quote");
 					}
 					else { //mid-word
-						out += " double quote ";
+						out.append(" double quote ");
 					}
 					
 				case '\'': //single quote
 				case '\u2019': //apostrophe
 					if (b == ' ') { //previous is space; start string
-						out += "begin quote ";
+						out.append("begin quote ");
 					}
 					else if (c == ' ') { //next is space; end string
-						out += " end quote";
+						out.append(" end quote");
 					}
 					else { //mid-word
 						//contraction apostrophe is ignored; don't -> dont
 					}
 					break;
 					
+				case '%':
+					out.append(" percent");
+					
 				default:
-					out += c;
+					out.append(c);
 					break;
 			}
 			
 			b = c;
 		}
 		
-		return out;
+		return out.toString();
 	}
 }
