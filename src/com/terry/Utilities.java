@@ -1,6 +1,5 @@
 package com.terry;
 
-import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -112,6 +111,9 @@ public class Utilities {
 		}
 		else if (alias.equals(Terry.KEY_BACKSPACE)) {
 			keys.add(KeyCode.BACK_SPACE);
+		}
+		else if (alias.equals(Terry.KEY_ENTER_RETURN)) {
+			keys.add(KeyCode.ENTER);
 		}
 		else if (alias.equals(Terry.KEY_DOWN)) {
 			keys.add(KeyCode.DOWN);

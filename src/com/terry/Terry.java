@@ -99,6 +99,7 @@ public class Terry {
 	public static final String KEY_BACKSPACE = "bck";
 	public static final String KEY_SHIFT = "shf";
 	public static final String KEY_CONTROL = "ctl";
+	public static final String KEY_ENTER_RETURN = "ret";
 	public static final String KEY_ALT = "alt";
 	public static final String KEY_FN1 = "fn1";
 	public static final String KEY_CMD = "cmd";
@@ -502,10 +503,10 @@ public class Terry {
 				Driver.captured.addListener(new ChangeListener<Boolean>() {
 					public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
 						if (newValue) {
-							SwingFXUtils.fromFXImage(Driver.capture, capture);
-							
 							//update statecaptureupdated when the capture object contains the data
 							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
+							
+							capture.setData(SwingFXUtils.fromFXImage(Driver.capture, null).getData());
 							captureUpdated.set(true);
 							
 							if (capture != null) {

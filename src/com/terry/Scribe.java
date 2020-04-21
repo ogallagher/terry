@@ -150,13 +150,16 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
-				"set speed to 25 percent and set speaker voice to tessa. then set speed to 0.5",
+				//"dock terminal is a button",
+				//"go to dock terminal",
+				"move the cursor to x 1200 y 899 then go to dock terminal and click then type echo hello there#ret)",
+				//"set speed to 25 percent and set speaker voice to tessa. then set speed to 0.5",
 				//"i want to show you how to type hello in spotlight",
-				"go to 1376,14 and click. then type a hello from too#bck)#bck)erry!",
+				//"go to 1376,14 and click. then type a hello from too#bck)#bck)erry!",
 				//"type a hello from too#bck)#bck)erry!",
-				"go to play",
-				"play is a button",
-				"go to play",
+				//"go to play",
+				//"play is a button",
+				//"go to play",
 				"move mouse to elephant",
 				"go to icecream cone",
 				"look up aardvark",

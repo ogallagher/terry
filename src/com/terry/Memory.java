@@ -260,22 +260,35 @@ public class Memory {
 			try {
 				Scanner dictReader = new Scanner(dictFile);
 				String[] line;
-				String token;
+				String word; //left-hand side of entry, which can have spaces (multiple tokens) if it's a widget
 				int ref;
 				
 				while (dictReader.hasNextLine()) {
 					line = dictReader.nextLine().split(" ");
-					token = line[0];
-					
-					if (token != null && !token.isEmpty()) {
+					word = line[0];
+					boolean beganRefs = false;
+										
+					if (word != null && !word.isEmpty()) {
 						ArrayList<LanguageMapping> refs = new ArrayList<LanguageMapping>();
 						for (int i=1; i<line.length; i++) {
-							ref = Integer.parseInt(line[i]);
-							refs.add(mappings.get(ref));
+							try {
+								ref = Integer.parseInt(line[i]);
+								refs.add(mappings.get(ref));
+								beganRefs = true;
+							}
+							catch (NumberFormatException e) {
+								if (!beganRefs) {
+									word += " " + line[i];
+								}
+								else {
+									dictReader.close();
+									throw new MemoryException("dictionary entry for " + word + " has invalid reference " + line[i]);
+								}
+							}
 						}
 						
 						if (!refs.contains(null)) {
-							dictionary.put(token, refs);
+							dictionary.put(word, refs);
 						}
 					}
 				}
@@ -417,30 +430,47 @@ public class Memory {
 		
 		if (existing == null) {
 			//add new mapping
-			Logger.log("adding mapping " + mapping.id);
+			Logger.log("adding mapping " + mapping.id + " " + mapping.pattern);
 			mappings.put(mapping.id, mapping);
 			
 			if (mapping.type == LanguageMapping.TYPE_WIDGET) {
 				//add new widget
 				widgets.add((Widget) mapping);
-			}
-			
-			//update dictionary
-			LinkedList<String> tokens = mapping.getLeaders();
-			ArrayList<LanguageMapping> entry = null;
-			
-			for (String token : tokens) {
-				entry = dictionary.get(token);
+				
+				//update dictionary with multiword entry
+				String name = mapping.pattern.toString();
+				ArrayList<LanguageMapping> entry = dictionary.get(name);
 				
 				if (entry == null) {
-					//add new word to dictionary
+					//add new widget name
 					entry = new ArrayList<LanguageMapping>();
 					entry.add(mapping);
-					dictionary.put(token, entry);
+					dictionary.put(name, entry);
 				}
 				else {
-					//add mapping to existing word's dictionary entry
+					//add widget to existing name
 					entry.add(mapping);
+				}
+			}
+			
+			else {
+				//update dictionary for actions and lessons
+				LinkedList<String> tokens = mapping.getLeaders();
+				ArrayList<LanguageMapping> entry = null;
+				
+				for (String token : tokens) {
+					entry = dictionary.get(token);
+					
+					if (entry == null) {
+						//add new word to dictionary
+						entry = new ArrayList<LanguageMapping>();
+						entry.add(mapping);
+						dictionary.put(token, entry);
+					}
+					else {
+						//add mapping to existing word's dictionary entry
+						entry.add(mapping);
+					}
 				}
 			}
 		}

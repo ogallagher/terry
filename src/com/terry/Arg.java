@@ -274,7 +274,7 @@ public class Arg implements Serializable {
 				
 			case wigarg:
 				argValue = Arg.getWidget(next);
-				if (argValue != Terry.dummyWidget) {
+				if (argValue != null && argValue != Terry.dummyWidget) {
 					Logger.log("found known widget " + next);
 				}
 				break;

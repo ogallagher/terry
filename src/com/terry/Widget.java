@@ -293,6 +293,8 @@ public class Widget extends LanguageMapping implements Serializable {
 			appearance = null;
 		}
 		
+		state = new CharProperty(STATE_IDLE);
+		
 		Logger.log("deserialized widget " + id + ": " + pattern, Logger.LEVEL_FILE);
 	}
 	
