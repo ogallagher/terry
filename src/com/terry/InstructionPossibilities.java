@@ -7,6 +7,8 @@ import java.util.Scanner;
 import com.terry.LanguageMapping.PatternNode;
 import com.terry.State.StateException;
 
+import javafx.beans.property.SimpleObjectProperty;
+
 public class InstructionPossibilities {
 	public static String[] actionDelimiters;
 	
@@ -576,9 +578,10 @@ public class InstructionPossibilities {
 		 * Only the root possibility should call this method, which follows through
 		 * on the mapped lesson or action.
 		 */
-		public void compile() {
-			System.out.println(diagram());
+		public SimpleObjectProperty<Boolean> compile() {
+			Logger.log(diagram(), Logger.LEVEL_FILE);
 			
+			SimpleObjectProperty<Boolean> compiled = new SimpleObjectProperty<>(false);
 			char mappingType = mapping.getType();
 			String unknownWidget = null;
 			
@@ -628,23 +631,29 @@ public class InstructionPossibilities {
 					
 					if (mappingType == LanguageMapping.TYPE_ACTION) {
 						try {
-							((Action) mapping).execute(argMap);
+							compiled = ((Action) mapping).execute(argMap);
 						}
 						catch (StateException e) {
 							Logger.logError(e.getMessage());
+							compiled.set(true);
 						}
 					}
 					else if (mappingType == LanguageMapping.TYPE_LESSON) {
 						((Lesson) mapping).learn(argMap);
+						compiled.set(true);
 					}
 				}
 				else {
 					Logger.log("no known widgets called " + unknownWidget + ". perhaps you could teach it to me?", Logger.LEVEL_SPEECH);
+					compiled.set(true);
 				}
 			}
 			else {
 				Logger.logError("unknown mapping type");
+				compiled.set(true);
 			}
+			
+			return compiled;
 		}
 		
 		public String diagram() {

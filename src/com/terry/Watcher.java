@@ -1254,7 +1254,10 @@ public class Watcher {
 										}
 										
 										if (removeme) {
-											searched.set(searched.get() + 1);
+											synchronized (searched) {
+												searched.set(searched.get() + 1);
+											}
+											
 											w.state.removeListener(this);
 										}
 									}
@@ -1272,7 +1275,7 @@ public class Watcher {
 				}
 			});
 			
-			Driver.captureScreen(captureZone);
+			Driver.captureScreen(captureZone,null);
 		}
 		
 		@Override
@@ -1312,9 +1315,43 @@ public class Watcher {
 		
 		public Boolean execute(Boolean stateOld, Arg[] args) {
 			if (subStates != null && subArgs != null) {
+				SimpleObjectProperty<Integer> completions = new SimpleObjectProperty<>(0); 
+				this.notifier.set(false);
+				
 				try {
-					for (int i=0; i<subStates.length; i++) {
-						subStates[i].transition(subArgs[i]);
+					int n = subStates.length;
+					
+					for (int i=0; i<n; i++) {
+						SimpleObjectProperty<Boolean> transitioned = subStates[i].transition(subArgs[i]);
+						
+						if (transitioned.get()) {
+							synchronized (completions) {
+								int c = completions.get() + 1;
+								completions.set(c);
+								
+								if (c == n) {
+									notifier.set(true);
+								}
+							}
+						}
+						else {
+							transitioned.addListener(new ChangeListener<Boolean>() {
+								public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+									if (newValue) {
+										observable.removeListener(this);
+										
+										synchronized (completions) {
+											int c = completions.get() + 1;
+											completions.set(c);
+											
+											if (c == n) {
+												notifier.set(true);
+											}
+										}
+									}
+								}
+							});
+						}
 					}
 					
 					return true;

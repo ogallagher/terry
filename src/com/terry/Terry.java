@@ -306,7 +306,7 @@ public class Terry {
 				}
 				
 				//direct driver
-				Driver.point(x.intValue(), y.intValue());
+				Driver.point(x.intValue(), y.intValue(), notifier);
 				
 				//update state
 				return new Point2D.Float(x, y);
@@ -347,13 +347,13 @@ public class Terry {
 		        
 		        //direct driver
 		        if (button == MouseButton.PRIMARY) {
-		            Driver.clickLeft();
+		            Driver.clickLeft(notifier);
 		        }
 		        else if (button == MouseButton.SECONDARY) {
-		            Driver.clickRight();
+		            Driver.clickRight(notifier);
 		        }
 		        else if (button == MouseButton.MIDDLE) {
-		        	Driver.clickMiddle();
+		        	Driver.clickMiddle(notifier);
 		        }
 		        
 		        //update state
@@ -390,7 +390,7 @@ public class Terry {
 				}
 				
 				//direct driver
-				Driver.drag(x.intValue(), y.intValue());
+				Driver.drag(x.intValue(), y.intValue(), notifier);
 				
 				//update state(s)
 				Point2D.Float dest = new Point2D.Float(x, y);
@@ -419,7 +419,7 @@ public class Terry {
 				}
 				
 				//direct driver
-				Driver.type(string);
+				Driver.type(string, notifier);
 				
 				//update state
 				return string;
@@ -494,7 +494,8 @@ public class Terry {
 			public BufferedImage execute(BufferedImage stateOld, Arg[] args) {
 				//no args
 				//direct driver and prompter
-				Prompter.hide();
+				Prompter.hide(null);
+				try {Thread.sleep(500);} catch (InterruptedException e) {} //wait for hide to complete
 				
 				Dimension screen = Driver.getScreen();
 				BufferedImage capture = new BufferedImage(screen.width, screen.height, BufferedImage.TYPE_INT_RGB);
@@ -506,20 +507,19 @@ public class Terry {
 							//update statecaptureupdated when the capture object contains the data
 							SimpleObjectProperty<Boolean> captureUpdated = statecaptureupdated.getProperty();
 							
-							capture.setData(SwingFXUtils.fromFXImage(Driver.capture, null).getData());
+							SwingFXUtils.fromFXImage(Driver.capture, capture);
 							captureUpdated.set(true);
 							
 							if (capture != null) {
 								Utilities.saveImage(capture, Terry.RES_PATH + "vision/", "screen_capture.png");
 							}
 							
-							Prompter.show();
-							
+							Prompter.show(notifier);
 							Driver.captured.removeListener(this);
 						}
 					}
 				});
-				Driver.captureScreen();
+				Driver.captureScreen(notifier);
 				
 				return capture;
 			}
@@ -586,10 +586,10 @@ public class Terry {
 													Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
 													
 													//direct prompter to highlight found widget
-													Prompter.clearOverlay();
-													Prompter.showOverlay();
+													Prompter.clearOverlay(null);
+													Prompter.showOverlay(null);
 													Prompter.colorOverlay(new Color(0.8,0.1,0.6,0.2), Color.MEDIUMVIOLETRED);
-													Prompter.drawOverlay(zone.getPathIterator(null), true, true);
+													Prompter.drawOverlay(zone.getPathIterator(null), true, true, null);
 													
 													//update state(s)
 													location.setLocation(zone.getCenterX(), zone.getCenterY());
@@ -602,6 +602,7 @@ public class Terry {
 												}
 												
 												if (removeme) {
+													notifier.set(true);
 													finalWidget.state.removeListener(this);
 												}
 											}
@@ -672,7 +673,7 @@ public class Terry {
 									int y = (int) location.getY();
 									
 									//direct driver
-									Driver.point(x, y);
+									Driver.point(x, y, notifier);
 									
 									//update mouse location
 									mouseat.getProperty().set(new Point2D.Float(x,y));
@@ -736,7 +737,7 @@ public class Terry {
 									int y = (int) location.getY();
 									
 									//direct driver
-									Driver.drag(x, y);
+									Driver.drag(x, y, notifier);
 									
 									//update mouse location
 									Point2D.Float dest = new Point2D.Float(x,y);
@@ -923,54 +924,54 @@ public class Terry {
 				//no args
 				//direct driver
 				Logger.log("typing in spotlight...");
-				Driver.point(930, 30); //go to eclipse
+				Driver.point(930, 30, null); //go to eclipse
 				
 				try {Thread.sleep(500);} catch (InterruptedException e) {}
 				
-				Driver.clickLeft(); //click window
+				Driver.clickLeft(null); //click window
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for refocus
 				
-				Driver.point(1375, 12); //go to spotlight
+				Driver.point(1375, 12, null); //go to spotlight
 				
 				try {Thread.sleep(500);} catch (InterruptedException e) {}
 				
-				Driver.clickLeft(); //click icon
+				Driver.clickLeft(null); //click icon
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {}
 				
-				Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ");
+				Driver.type("this is a hello torry#lft)#lft)#lft)#bck)e#lft)#lft)from ", null);
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {}
 				
-				Driver.type("#cmd+rgt)#exl)"); //shift to end and add !
+				Driver.type("#cmd+rgt)#exl)", null); //shift to end and add !
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {}
 				
-				Driver.type("#cmd+bck)"); //clear search
+				Driver.type("#cmd+bck)", null); //clear search
 				
 				try {Thread.sleep(500);} catch (InterruptedException e) {}
 				
-				Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)"); //show off punctuation
+				Driver.type("#lpr)#amp) I can use punctuation too#rpr)#tld)", null); //show off punctuation
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {}
 				
-				Driver.type("#cmd+bck)#esc)"); //clear search and exit
+				Driver.type("#cmd+bck)#esc)", null); //clear search and exit
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {}
 				
 				Logger.log("quitting via mouse...");
-				Driver.point(755, 899); //go to dock
+				Driver.point(755, 899, null); //go to dock
 				
 				try {Thread.sleep(500);} catch (InterruptedException e) {}
 				
-				Driver.point(908, 860); //go to java
+				Driver.point(908, 860, null); //go to java
 				
-				Driver.clickRight(); //right-click menu
+				Driver.clickRight(null); //right-click menu
 				
 				try {Thread.sleep(1000);} catch (InterruptedException e) {} //wait for os to show options
 				
-				Driver.point(934, 771); //close option
+				Driver.point(934, 771, notifier); //close option. last action; attach notifier
 				
 				//update state
 				return 1;
@@ -989,7 +990,7 @@ public class Terry {
 			public Integer execute(Integer stateOld, Arg[] args) {
 				//no args
 				//direct prompter
-				Prompter.showOverlay();
+				Prompter.showOverlay(null);
 				Prompter.colorOverlay(Color.MEDIUMPURPLE, Color.PURPLE);
 				
 				Dimension screen = Driver.getScreen();
@@ -1014,8 +1015,8 @@ public class Terry {
 						t.translate(0, vy);
 					}
 					
-					Prompter.clearOverlay();
-					Prompter.drawOverlay(ball.getPathIterator(t), true, true);
+					Prompter.clearOverlay(null);
+					Prompter.drawOverlay(ball.getPathIterator(t), true, true, null);
 					
 					try {
 						Thread.sleep(10);
@@ -1025,9 +1026,10 @@ public class Terry {
 					}
 				}
 				Logger.log("drawing done");
-				Prompter.hideOverlay();
+				Prompter.hideOverlay(null);
 				
 				//update state
+				notifier.set(true);
 				return 1;
 			}
 		});
@@ -1074,12 +1076,14 @@ public class Terry {
 					widget.setLabel(label);
 					
 					//ask for appearance, askYesNo requires fx thread
-					final String finalName = name;
+					String finalName = name;
+					SimpleObjectProperty<Boolean> thisNotifier = this.notifier;
 					Platform.runLater(new Runnable() {
 						public void run() {
 							try {
 								boolean appears = Prompter.askYesNo("Define appearance for " + finalName, null, "Does " + finalName + " have any other visuals/graphics that can help me find it (an icon, for example)?");
 								if (appears) {
+									
 									Prompter.state.addListener(new ChangeListener<Character>() {
 										public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
 											char state = newValue.charValue();
@@ -1088,15 +1092,17 @@ public class Terry {
 												//update memory
 												Memory.addMapping(widget);
 												Prompter.state.removeListener(this);
+												thisNotifier.set(true);
 											}
 										}
 									});
 									
-									Prompter.requestAppearance(widget);
+									Prompter.requestAppearance(widget, null);
 								}
 								else {
 									//update memory
 									Memory.addMapping(widget);
+									thisNotifier.set(true);
 								}
 							}
 							catch (PrompterException e) {
@@ -1108,6 +1114,7 @@ public class Terry {
 				catch (LanguageMappingException e) {
 					Logger.logError(e.getMessage(), Logger.LEVEL_CONSOLE);
 					Logger.logError("i could not create a widget named " + name, Logger.LEVEL_SPEECH);
+					notifier.set(true);
 				}
 			}
 		};
@@ -1152,6 +1159,8 @@ public class Terry {
 							String finalName = name;
 							
 							try {
+								SimpleObjectProperty<Boolean> thisNotifier = this.notifier;
+								
 								//handle demonstration end
 								Watcher.state.addListener(new ChangeListener<Character>() {
 									public void changed(ObservableValue<? extends Character> observable, Character oldValue, Character newValue) {
@@ -1180,6 +1189,7 @@ public class Terry {
 										}
 										
 										if (removeme) {
+											thisNotifier.set(false);
 											Watcher.state.removeListener(this);
 										}
 									}

@@ -24,6 +24,7 @@ public class State<T> implements Serializable {
 	private SimpleObjectProperty<T> value;
 	private String[] argNames;
 	private Execution<T> transition;
+	private SimpleObjectProperty<Boolean> transitioned;
 	
 	public State(String name, T value, String[] args, Execution<T> transition) {
 		this.name = name;
@@ -53,6 +54,9 @@ public class State<T> implements Serializable {
 		}
 		
 		this.transition = transition;
+		
+		transitioned = new SimpleObjectProperty<>(false);
+		this.transition.notifier = transitioned;
 	}
 	
 	public String getName() {
@@ -75,8 +79,10 @@ public class State<T> implements Serializable {
 	 * Updates value and executes transition. 
 	 * Always creates new thread so it can run in parallel to the application thread.
 	 */
-	public void transition(Arg[] args) throws StateException {
+	public SimpleObjectProperty<Boolean> transition(Arg[] args) throws StateException {
 		if (args.length == argNames.length) {
+			transitioned.set(false);
+			
 			new StateTransitionThread() {
 				public void run() {
 					T stateDest = transition.execute(value.get(), args);
@@ -86,6 +92,8 @@ public class State<T> implements Serializable {
 					}
 				}
 			}.start();
+			
+			return transitioned; //this needs to be updated by transition.execute
 		}
 		else {
 			throw new StateException(name + " transition expects " + argNames.length + "args; got " + args.length);
@@ -118,6 +126,8 @@ public class State<T> implements Serializable {
 		transition = (Execution<T>) stream.readObject();
 		argNames = (String[]) stream.readObject();
 		value = new SimpleObjectProperty<T>();
+		transitioned = new SimpleObjectProperty<>(false);
+		transition.notifier = transitioned;
 	}
 	
 	public static abstract class StateTransitionThread extends Thread {
@@ -135,6 +145,8 @@ public class State<T> implements Serializable {
 	
 	public static abstract class Execution<T> implements Serializable {
 		private static final long serialVersionUID = -4703545545934408077L;
+		
+		public transient SimpleObjectProperty<Boolean> notifier = null;
 		
 		public abstract T execute(T stateOld, Arg[] args);
 	}

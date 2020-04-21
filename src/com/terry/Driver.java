@@ -95,10 +95,14 @@ public class Driver {
 		}
 	}
 	
-	public static void point(int x, int y) {	
+	public static void point(int x, int y, SimpleObjectProperty<Boolean> notifier) {	
 		Platform.runLater(new Runnable() {
 			public void run() {
 				pointfx(x,y);
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
@@ -182,15 +186,19 @@ public class Driver {
 		}
 	}
 	
-	public static void type(String str) {
+	public static void type(String str, SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				typefx(str);
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void clickLeft() {
+	public static void clickLeft(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				try {
@@ -202,11 +210,16 @@ public class Driver {
 				catch (InterruptedException e) {
 					//fail quietly
 				}
+				finally {
+					if (notifier != null) {
+						notifier.set(true);
+					}
+				}
 			}
 		});
 	}
 	
-	public static void clickRight() {
+	public static void clickRight(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				try {
@@ -218,11 +231,16 @@ public class Driver {
 				catch (InterruptedException e) {
 					//fail quietly
 				}
+				finally {
+					if (notifier != null) {
+						notifier.set(true);
+					}
+				}
 			}
 		});
 	}
 	
-	public static void clickMiddle() {
+	public static void clickMiddle(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				try {
@@ -234,25 +252,34 @@ public class Driver {
 				catch (InterruptedException e) {
 					//fail quietly
 				}
+				finally {
+					if (notifier != null) {
+						notifier.set(true);
+					}
+				}
 			}
 		});
 	}
 	
-	public static void drag(int x, int y) {
+	public static void drag(int x, int y, SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				robot.mousePress(MouseButton.PRIMARY);
-				point(x, y);
+				point(x, y, null);
 				robot.mouseRelease(MouseButton.PRIMARY);
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void captureScreen() {
-		captureScreen(new Rectangle(screen.width,screen.height));
+	public static void captureScreen(SimpleObjectProperty<Boolean> notifier) {
+		captureScreen(new Rectangle(screen.width,screen.height), notifier);
 	}
 	
-	public static void captureScreen(Rectangle region) {
+	public static void captureScreen(Rectangle region, SimpleObjectProperty<Boolean> notifier) {
 		//positivize region
 		int x=region.x, y=region.y, w=region.width, h=region.height;
 		if (w < 0) {
@@ -275,6 +302,11 @@ public class Driver {
 				}
 				catch (SecurityException e) {
 					Logger.logError("not permitted to view the screen");
+				}
+				finally {
+					if (notifier != null) {
+						notifier.set(true);
+					}
 				}
 			}
 		});

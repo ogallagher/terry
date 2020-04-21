@@ -7,6 +7,8 @@ import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.HashMap;
 
+import javafx.beans.property.SimpleObjectProperty;
+
 public class Lesson extends LanguageMapping implements Serializable {
 	private static final long serialVersionUID = 6905698412940472554L;
 	
@@ -16,6 +18,7 @@ public class Lesson extends LanguageMapping implements Serializable {
 	
 	private char type = TYPE_UNKNOWN;
 	private Definition definition = null;
+	private SimpleObjectProperty<Boolean> defined = new SimpleObjectProperty<>(false);
 	
 	public Lesson(String expr, char typ) throws LanguageMappingException {
 		super(TYPE_LESSON, expr);
@@ -24,10 +27,13 @@ public class Lesson extends LanguageMapping implements Serializable {
 	
 	public void setDefinition(Definition def) {
 		definition = def;
+		definition.notifier = defined;
 	}
 	
-	public void learn(HashMap<String,Arg> allArgs) {
+	public SimpleObjectProperty<Boolean> learn(HashMap<String,Arg> allArgs) {
 		Logger.log("learning " + type + ": " + pattern);
+		
+		defined.set(false);
 		
 		Arg[] args = new Arg[definition.argNames.length];
 		for (int i=0; i<args.length; i++) {
@@ -41,6 +47,8 @@ public class Lesson extends LanguageMapping implements Serializable {
 			args[i] = arg;
 		}
 		definition.learn(args);
+		
+		return defined;
 	}
 	
 	/*
@@ -63,6 +71,8 @@ public class Lesson extends LanguageMapping implements Serializable {
 		}
 		type = stream.readChar();
 		definition = (Definition) stream.readObject();
+		defined = new SimpleObjectProperty<Boolean>(false);
+		definition.notifier = defined;
 		
 		Logger.log("deserialized lesson " + id + ": " + pattern);
 	}
@@ -71,6 +81,7 @@ public class Lesson extends LanguageMapping implements Serializable {
 		private static final long serialVersionUID = 129440776453380438L;
 		
 		private String[] argNames;
+		public transient SimpleObjectProperty<Boolean> notifier;
 		
 		public Definition(String[] args) {
 			argNames = args;

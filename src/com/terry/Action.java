@@ -9,6 +9,10 @@ import java.util.HashMap;
 
 import com.terry.State.StateException;
 
+import javafx.beans.property.SimpleObjectProperty;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
+
 public class Action extends LanguageMapping implements Serializable {
 	private static final long serialVersionUID = -8618425214808650606L;
 	
@@ -47,15 +51,18 @@ public class Action extends LanguageMapping implements Serializable {
 	/*
 	 * Each state accepts an array of objects as arguments.
 	 */
-	public void execute(HashMap<String,Arg> allArgs) throws StateException {
+	public SimpleObjectProperty<Boolean> execute(HashMap<String,Arg> allArgs) throws StateException {
 		Logger.log("executing " + pattern);
 		
-		State<?> state;
 		Arg[] args; //subset of allArgs for each state
 		String[] argNames;
 		
-		for (int s=0; s<states.size(); s++) {
-			state = states.get(s);
+		int n = states.size();
+		SimpleObjectProperty<Integer> completions = new SimpleObjectProperty<>(0); 
+		SimpleObjectProperty<Boolean> executed = new SimpleObjectProperty<>(false);
+		
+		for (int s=0; s<n; s++) {
+			State<?> state = states.get(s);
 			
 			//prep args
 			argNames = state.getArgNames();
@@ -75,8 +82,32 @@ public class Action extends LanguageMapping implements Serializable {
 			}
 			
 			//execute state transition
-			state.transition(args);
+			SimpleObjectProperty<Boolean> transitioned = state.transition(args);
+			transitioned.addListener(new ChangeListener<Boolean>() {
+				public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+					if (newValue) {
+						observable.removeListener(this);
+						
+						synchronized (completions) {
+							int c = completions.get() + 1;
+							completions.set(c);
+							
+							if (c == n) {
+								executed.set(true);
+							}
+						}
+					}
+				}
+			});
+			
+			if (transitioned.get()) {
+				//notify again if too fast
+				transitioned.set(false);
+				transitioned.set(true);
+			}
 		}
+		
+		return executed;
 	}
 	
 	/*

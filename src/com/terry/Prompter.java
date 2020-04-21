@@ -15,6 +15,7 @@ import com.terry.Watcher.WatcherException;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.beans.property.SimpleObjectProperty;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import javafx.collections.FXCollections;
@@ -31,7 +32,6 @@ import javafx.scene.control.ListCell;
 import javafx.scene.control.ListView;
 import javafx.scene.control.SelectionMode;
 import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.Pane;
@@ -78,6 +78,7 @@ public class Prompter extends Application {
 	public static final char STATE_ZONE_COMPLETE = 5;
 	
 	public static CharProperty state = new CharProperty(STATE_IDLE);
+	private static SimpleObjectProperty<Boolean> zoneNotifier = null;
 	
 	public static KeyCode[] keyComboAbort;
 		
@@ -293,7 +294,7 @@ public class Prompter extends Application {
 				overlayZone.height = h;
 				
 				//draw overlay zone in red
-				clearOverlay();
+				clearOverlay(null);
 				colorOverlay(null, Color.ORANGERED);
 				
 				Rectangle positiveZone = new Rectangle();
@@ -314,7 +315,7 @@ public class Prompter extends Application {
 					positiveZone.height = h;
 				}
 				
-				drawOverlay(positiveZone.getPathIterator(null),false,true);
+				drawOverlay(positiveZone.getPathIterator(null),false,true,null);
 			}
 		};
 		EventHandler<MouseEvent> overlayMouseReleasedHandler = new EventHandler<MouseEvent>() {
@@ -329,7 +330,7 @@ public class Prompter extends Application {
 				}
 				
 				//clear overlay
-				clearOverlay();
+				clearOverlay(null);
 			}
 		};
 		
@@ -369,7 +370,7 @@ public class Prompter extends Application {
 						}
 						else if (pendingWidget != null) {
 							//define widget's appearance with screenshot of captured zone
-							hide();
+							hide(null);
 							
 							Driver.captured.addListener(new ChangeListener<Boolean>() {
 								public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
@@ -388,15 +389,20 @@ public class Prompter extends Application {
 									}
 								}
 							});
-							Driver.captureScreen(overlayZone);
+							Driver.captureScreen(overlayZone, null);
 							
-							show();
+							show(null);
 						}
 						else {
 							//should not be possible
 							Logger.logError("a region on screen was improperly defined, or defined for no widget");
 							Prompter.state.set(STATE_ZONE_ABORTED);
 						}
+						
+						if (zoneNotifier != null) {
+							zoneNotifier.set(true);
+						}
+						
 						Prompter.state.set(STATE_IDLE);
 						
 						break;
@@ -527,46 +533,64 @@ public class Prompter extends Application {
 	}
 	
 	// these stage controls must be run on the JavaFX app thread; hence platform.runlater
-	public static void hide() {
+	public static void hide(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				console.toBack();
-				console.setIconified(true);
+				console.close();
+				
 				intercom.toBack();
 				intercom.setIconified(true);
+				
 				overlay.toBack();
-				overlay.setIconified(true);
+				overlay.close();
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void show() {
+	public static void show(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
-				overlay.toFront();
-				overlay.setIconified(false);
+				console.show();
 				console.toFront();
 				console.setIconified(false);
+				
 				intercom.toFront();
 				intercom.setIconified(false);
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void showOverlay() {
+	public static void showOverlay(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				overlay.show();
 				overlay.toFront();
 				intercom.toFront();
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void hideOverlay() {
+	public static void hideOverlay(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				overlay.hide();
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
@@ -576,7 +600,7 @@ public class Prompter extends Application {
 		graphics.setStroke(stroke);
 	}
 	
-	public static void drawOverlay(PathIterator pi, boolean fill, boolean stroke) {
+	public static void drawOverlay(PathIterator pi, boolean fill, boolean stroke, SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				double[] segment = new double[6];
@@ -615,27 +639,36 @@ public class Prompter extends Application {
 				if (fill) {
 					graphics.fill();
 				}
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
-	public static void clearOverlay() {
+	public static void clearOverlay(SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {
 				graphics.clearRect(0, 0, OVERLAY_WIDTH, OVERLAY_HEIGHT);
+				
+				if (notifier != null) {
+					notifier.set(true);
+				}
 			}
 		});
 	}
 	
 	//get widget's appearance from user
-	public static void requestAppearance(Widget widget) {
+	public static void requestAppearance(Widget widget, SimpleObjectProperty<Boolean> notifier) {
 		Logger.log("show me what " + widget.getName() + " looks like");
 		Logger.log("draw a rectangle around " + widget.getName() + " and type ESC to cancel");
 		
 		//show overlay, accept zone
 		overlayZone = null;
 		pendingWidget = widget;
-		showOverlay();
+		showOverlay(null);
+		zoneNotifier = notifier;
 		state.set(STATE_ACCEPTING_ZONE);
 	}
 	
@@ -649,14 +682,14 @@ public class Prompter extends Application {
 										   "The current screen region is invalid. Did you mean to quit drawing it?");
 						
 						if (quit) {
-							clearOverlay();
+							clearOverlay(null);
 							overlayZone = null;
 							state.set(STATE_OVERLAY_INPUT_DONE);
 						}
 					}
 					catch (PrompterException e) {
 						Logger.logError(e.getMessage());
-						clearOverlay();
+						clearOverlay(null);
 						overlayZone = null;
 						state.set(STATE_OVERLAY_INPUT_DONE);
 					}
