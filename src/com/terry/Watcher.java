@@ -18,6 +18,8 @@ import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
 import org.jnativehook.mouse.NativeMouseInputListener;
+import org.jnativehook.mouse.NativeMouseListener;
+import org.jnativehook.mouse.NativeMouseMotionListener;
 
 import com.terry.LanguageMapping.LanguageMappingException;
 import com.terry.State.Execution;
@@ -38,7 +40,8 @@ import javafx.scene.input.MouseEvent;
 
 public class Watcher {	
 	private static NativeKeyListener nativeKeyListener;
-	private static NativeMouseInputListener nativeMouseListener;
+	private static NativeMouseListener nativeMouseListener;
+	private static NativeMouseMotionListener nativeMouseMotionListener;
 	
 	//keys not accounted for by org.jnativehook.keyboard.NativeKeyEvent
 	private static final int VC_SHIFT_R = 3638;
@@ -77,7 +80,7 @@ public class Watcher {
 					
 					if (recording) {
 						//update demonstration
-						demonstration.pressKey(System.currentTimeMillis(), fxKey);
+						demonstration.pressKey(e.getWhen(), fxKey);
 					}
 					
 					//check scribe key combo
@@ -109,7 +112,7 @@ public class Watcher {
 				
 				if (recording) {
 					//update demonstration
-					demonstration.releaseKey(System.currentTimeMillis(), fxKey);
+					demonstration.releaseKey(e.getWhen(), fxKey);
 				}
 			}
 			
@@ -119,7 +122,7 @@ public class Watcher {
 		};
 		
 		//handle mouse input
-		nativeMouseListener = new NativeMouseInputListener() {
+		nativeMouseListener = new NativeMouseListener() {
 			private void handleMouseRelease(NativeMouseEvent e) {
 				if (recording) {
 					//update demonstration
@@ -142,14 +145,14 @@ public class Watcher {
 							button = MouseButton.NONE;
 					}
 					
-					demonstration.releaseMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
+					demonstration.releaseMouse(e.getWhen(), e.getX(), e.getY(), button);
 				}
 			}
 			
 			public void nativeMouseClicked(NativeMouseEvent e) {
 				handleMouseRelease(e);
 			}
-
+			
 			public void nativeMousePressed(NativeMouseEvent e) {
 				if (recording) {
 					//update demonstration
@@ -172,24 +175,24 @@ public class Watcher {
 							button = MouseButton.NONE;
 					}
 					
-					demonstration.pressMouse(System.currentTimeMillis(), e.getX(), e.getY(), button);
+					demonstration.pressMouse(e.getWhen(), e.getX(), e.getY(), button);
 				}
 			}
 
 			public void nativeMouseReleased(NativeMouseEvent e) {
 				handleMouseRelease(e);
 			}
-			
+		};
+		
+		nativeMouseMotionListener = new NativeMouseMotionListener() {
 			public void nativeMouseMoved(NativeMouseEvent e) {
-				Logger.log(e.toString());
 				if (recording) {
 					//update demonstration					
 					demonstration.moveMouse(System.currentTimeMillis(), e.getX(), e.getY());
 				}
 			}
-
+			
 			public void nativeMouseDragged(NativeMouseEvent e) {
-				Logger.log(e.toString());
 				if (recording) {
 					//update demonstration
 					demonstration.dragMouse(System.currentTimeMillis(), e.getX(), e.getY());
@@ -213,8 +216,9 @@ public class Watcher {
 				//add native key listener
 				GlobalScreen.addNativeKeyListener(nativeKeyListener);
 				
-				//add native mouse listener
+				//add native mouse listeners
 				GlobalScreen.addNativeMouseListener(nativeMouseListener);
+				GlobalScreen.addNativeMouseMotionListener(nativeMouseMotionListener);
 				
 				enabled = true;
 				state.set(STATE_ENABLED);
@@ -871,8 +875,6 @@ public class Watcher {
 		}
 		
 		private void addMouse(EventType<MouseEvent> type, long timestamp, int x, int y, MouseButton button) {
-			Logger.log("mouse @" + timestamp + " to " + x + " " + y, Logger.LEVEL_CONSOLE);
-			
 			try {
 				Mouse last = (Mouse) peripherals.getLast();
 				last = last.append(type, timestamp, x, y, button);
@@ -882,7 +884,8 @@ public class Watcher {
 				}
 			}
 			catch (ClassCastException | NoSuchElementException e) {
-				peripherals.add(new Mouse(type, timestamp, x, y, button));
+				Mouse first = new Mouse(type, timestamp, x, y, button);
+				peripherals.add(first);
 			}
 		}
 		
@@ -901,6 +904,7 @@ public class Watcher {
 			
 			//converted increments each time a new state added.
 			SimpleObjectProperty<Integer> progress = new SimpleObjectProperty<Integer>(0);
+			Logger.log("compiling demonstrated action " + actionName, Logger.LEVEL_CONSOLE);
 			
 			LinkedList<KeyCode> keysPressed = new LinkedList<KeyCode>();
 			StringBuilder stringTyped = new StringBuilder();
@@ -916,6 +920,7 @@ public class Watcher {
 								stringTyped.append(Utilities.charTypedFromKeyCodes(key, keysPressed));
 							} 
 							catch (KeyComboException e) {
+								//if the character typed requires a key combination (ex: shf+a), a key combo exception os thrown with the aliases included. Ex: A --> #shf+a)
 								stringTyped.append(e.getMessage());
 							}
 						}
@@ -987,8 +992,8 @@ public class Watcher {
 										}
 										
 										argArrays[ms] = new Arg[] {
-														new Arg("x", m.dest.x, null),
-														new Arg("y", m.dest.y, null)
+														new Arg("x", Float.valueOf(m.dest.x), null),
+														new Arg("y", Float.valueOf(m.dest.y), null)
 														};
 										
 										synchronized (progress) {
@@ -1042,6 +1047,8 @@ public class Watcher {
 			//handle when conversion completes
 			progress.addListener(new ChangeListener<Integer>() {
 				public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
+					Logger.log("demonstration compile progress: " + newValue + " / " + finals, Logger.LEVEL_CONSOLE);
+					
 					if (newValue == finals) {
 						State<?>[] finalStates = new State<?>[finals];
 						Arg[][] finalArgArrays = new Arg[finals][];
@@ -1084,7 +1091,7 @@ public class Watcher {
 			StringBuilder string = new StringBuilder("watcher recording:\n");
 			
 			for (Peripheral p : peripherals) {
-				string.append(p.toString() + "\n");
+				string.append("\t" + p.toString() + "\n");
 			}
 			
 			return string.toString();
@@ -1204,6 +1211,7 @@ public class Watcher {
 		}
 		
 		private void findWidget() {
+			Logger.log("finding widget in " + this.toString(), Logger.LEVEL_FILE);
 			widget = Terry.dummyWidget; //set to dummy while widget search is unresolved
 			
 			//take screen capture
@@ -1226,11 +1234,13 @@ public class Watcher {
 							public void changed(ObservableValue<? extends Integer> observable, Integer oldValue, Integer newValue) {
 								if (searched.get() == widgets.size()) {
 									widget = bestWidget.get();
+									Logger.log("finished widget search; found " + widget, Logger.LEVEL_FILE);
 									defined.set(true);
 								}
 							}	
 						});
 						
+						Logger.log("looking for widgets near dest", Logger.LEVEL_FILE);
 						for (Widget w : widgets) {
 							try {
 								w.state.addListener(new ChangeListener<Character>() {
@@ -1267,6 +1277,14 @@ public class Watcher {
 							} 
 							catch (WidgetException e) {
 								Logger.logError("could not search for widget" + w.getName(), Logger.LEVEL_FILE);
+							}
+						}
+						
+						//in case searches complete too fast (if there are no widgets, for example), notify again
+						synchronized (searched) {
+							if (searched.get() == widgets.size()) {
+								searched.set(searched.get() - 1);
+								searched.set(widgets.size());
 							}
 						}
 						
@@ -1324,33 +1342,27 @@ public class Watcher {
 					for (int i=0; i<n; i++) {
 						SimpleObjectProperty<Boolean> transitioned = subStates[i].transition(subArgs[i]);
 						
-						if (transitioned.get()) {
-							synchronized (completions) {
-								int c = completions.get() + 1;
-								completions.set(c);
-								
-								if (c == n) {
-									notifier.set(true);
-								}
-							}
-						}
-						else {
-							transitioned.addListener(new ChangeListener<Boolean>() {
-								public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
-									if (newValue) {
-										observable.removeListener(this);
+						transitioned.addListener(new ChangeListener<Boolean>() {
+							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {
+								if (newValue) {
+									observable.removeListener(this);
+									
+									synchronized (completions) {
+										int c = completions.get() + 1;
+										completions.set(c);
 										
-										synchronized (completions) {
-											int c = completions.get() + 1;
-											completions.set(c);
-											
-											if (c == n) {
-												notifier.set(true);
-											}
+										if (c == n) {
+											notifier.set(true);
 										}
 									}
 								}
-							});
+							}
+						});
+						
+						//notify again if completed too fast
+						if (transitioned.get()) {
+							transitioned.set(false);
+							transitioned.set(true);
 						}
 					}
 					

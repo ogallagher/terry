@@ -27,7 +27,7 @@ public class Speaker {
 	
 	private static String cmdListVoicesWin = binWin + " --list"; //converted to absolute path later
 	private static String cmdListVoicesMac = binMac + " --voice=?";
-	private static Pattern regexVoiceNameWin = Pattern.compile("^\".+\"");	//"Name Name" - age,gender,language
+	private static Pattern regexVoiceNameWin = Pattern.compile("(?<=\\\").+(?=\\\")");	//"Microsoft Name Device" - age,gender,language
 	private static Pattern regexVoiceNameMac = Pattern.compile("^\\w+");	//Name   language: "message"
 	
 	private static ArrayList<String> voices;
@@ -131,13 +131,17 @@ public class Speaker {
 				cmd = cmd.replace("--name <voice> ", ""); //remove arg
 			}
 			else {
-				
+				//voice.exe needs voice name to be capitalized
+				String voice = "\"" + Utilities.capitalize(Speaker.voice) + "\"";
+				cmd = cmd.replace("<voice>", voice);
 			}
 			
 			//speed=-10..10
 			String speedArg = String.valueOf((int) ((speed*20f) - 10f));
 			cmd = cmd.replace("<speed>", speedArg);
 		}
+		
+		Logger.log("speaker cmd = " + cmd, Logger.LEVEL_FILE);
 	}
 	
 	public static void speak(String transcript) throws SpeakerException {
@@ -169,8 +173,10 @@ public class Speaker {
 	}
 	
 	public static void setVoice(String v) throws SpeakerException {
-		if (voices.contains(v)) {
-			voice = v;
+		int vi = voices.indexOf(v);
+		
+		if (vi != -1) {
+			voice = voices.get(vi);
 			updateCmd();
 		}
 		else {

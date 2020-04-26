@@ -494,7 +494,7 @@ public class Utilities {
 		}
 		else if (modifiable.isLetterKey()) {
 			if (controls.contains(KeyCode.SHIFT)) {
-				throw new KeyComboException(c + "__");
+				throw new KeyComboException("#" + c + "__)");
 			}
 			else {
 				return c;
@@ -651,6 +651,30 @@ public class Utilities {
 					return false;	
 			}
 		}
+	}
+	
+	//capitalize first letter and every letter following whitespace
+	public static String capitalize(String mixed) {
+		StringBuilder capitalized = new StringBuilder();
+		char[] chars = mixed.toCharArray();
+		boolean capitalize = true;
+		
+		for (char c : chars) {
+			if (Character.isWhitespace(c)) {
+				capitalize = true;
+			}
+			else if (capitalize) {
+				if (Character.isAlphabetic(c)) {
+					c = Character.toUpperCase(c);
+				}
+				
+				capitalize = false;
+			}
+			
+			capitalized.append(c);
+		}
+		
+		return capitalized.toString();
 	}
 	
 	public static void saveImage(BufferedImage img, String dirPath, String filePath) {

@@ -452,7 +452,6 @@ public class Memory {
 					entry.add(mapping);
 				}
 			}
-			
 			else {
 				//update dictionary for actions and lessons
 				LinkedList<String> tokens = mapping.getLeaders();
@@ -483,9 +482,11 @@ public class Memory {
 			mapping.id = existing.id;
 			mappings.put(mapping.id, mapping);
 			
-			//replace existing widget
-			widgets.remove(existing);
-			widgets.add((Widget) mapping);
+			if (mapping.type == LanguageMapping.TYPE_WIDGET) {
+				//replace existing widget
+				widgets.remove(existing);
+				widgets.add((Widget) mapping);
+			}
 		}
 		
 		saved = false;

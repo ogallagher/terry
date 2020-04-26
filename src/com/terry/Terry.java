@@ -774,16 +774,19 @@ public class Terry {
 					try {
 						Speaker.setVolume(volume);
 						Logger.log("now i speak this loud", Logger.LEVEL_SPEECH);
-						return volume;
 					}
 					catch (SpeakerException e) {
 						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
-						return null;
+						volume = null;
 					}
+					
+					notifier.set(true);
+					return volume;
 				}
 				else {
 					//no volume specified
 					Logger.logError("volume level " + volume + " not specified or invalid", Logger.LEVEL_CONSOLE);
+					notifier.set(true);
 					return null;
 				}
 			}
@@ -797,7 +800,7 @@ public class Terry {
 		
 		State<Float> speakerspeed = new State<Float>("speakerspeed", 0.5f, new String[] {"speed","percent"}, new Execution<Float>() {
 			private static final long serialVersionUID = -8572398699178191929L;
-
+			
 			public Float execute(Float stateOld, Arg[] args) {
 				//map args
 				Float speed = null;
@@ -827,16 +830,19 @@ public class Terry {
 					try {
 						Speaker.setSpeed(speed);
 						Logger.log("now i speak this fast", Logger.LEVEL_SPEECH);
-						return speed;
 					}
 					catch (SpeakerException e) {
 						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
-						return null;
+						speed = null;
 					}
+					
+					notifier.set(true);
+					return speed;
 				}
 				else {
 					//no volume specified
 					Logger.logError("speech speed " + speed + " not specified or invalid", Logger.LEVEL_CONSOLE);
+					notifier.set(true);
 					return null;
 				}
 			}
@@ -866,15 +872,18 @@ public class Terry {
 					try {
 						Speaker.setVoice(voice);
 						Logger.log("speaker voice changed to " + voice, Logger.LEVEL_SPEECH);
-						return voice;
 					} 
 					catch (SpeakerException e) {
 						Logger.logError(e.getMessage(), Logger.LEVEL_SPEECH);
-						return null;
+						voice = null;
 					}
+					
+					notifier.set(true);
+					return voice;
 				}
 				else {
 					Logger.logError("no voice was specified", Logger.LEVEL_SPEECH);
+					notifier.set(true);
 					return null;
 				}
 			}
@@ -1005,12 +1014,12 @@ public class Terry {
 						go.set(false);
 					}
 				}
-				Logger.log("overlay demo stopped");
+				Logger.log("overlay demo stopped", Logger.LEVEL_CONSOLE);
 				Prompter.clearOverlay(null);
 				Prompter.hideOverlay(null);
+				notifier.set(false);
 				
 				//update state
-				notifier.set(true);
 				return 1;
 			}
 		});
