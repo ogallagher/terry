@@ -173,7 +173,13 @@ public class Speaker {
 	}
 	
 	public static void setVoice(String v) throws SpeakerException {
-		int vi = voices.indexOf(v);
+		int vi = -1;
+		if (Terry.os == Terry.OS_MAC) {
+			vi = voices.indexOf(v.toLowerCase());
+		}
+		else {
+			vi = voices.indexOf(v); //TODO fix this if not correct for windows
+		}
 		
 		if (vi != -1) {
 			voice = voices.get(vi);

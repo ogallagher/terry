@@ -1,4 +1,5 @@
 /*
+ * Title:		Terry
  * Author:		Owen Gallagher
  * Start Date:	December 2019
  * End Date:	May 2020
@@ -91,6 +92,7 @@ public class Terry {
 	public static final String KEY_LESS = "lss";
 	public static final String KEY_GREATER = "gtr";
 	public static final String KEY_QUERY = "qry";
+	public static final String KEY_TAB = "tab";
 	//uppercase letters: X = x__
 	
 	public static KeyCode[] keyComboScribe;

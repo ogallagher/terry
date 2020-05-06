@@ -123,7 +123,7 @@ public class Scribe {
 	}
 	
 	public static void start() throws ScribeException {
-		/*
+		///*
 		try {
 			//open the line
 		    microphone.open(FORMAT_WAV); //opens input stream with default buffer size
@@ -141,16 +141,17 @@ public class Scribe {
 		catch (SecurityException e) {
 			throw new ScribeException("not allowed to use system mic");
 		}
-		*/
+		//*/
 		
 		//testing
-		///*
+		/*
 		state.set(STATE_RECORDING);
 		
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
-				"set speed to 25 percent and set speaker voice to microsoft zira desktop. then set speed to 0.5",
+				"go to 1376, 13 and click then type hello delete delete p",
+				"set speed to 50 percent and set speaker voice to tessa. then set speed to 0.5",
 				"i want to show you how to be awesome",
 				"be awesome",
 				"be awesome again",
@@ -184,7 +185,7 @@ public class Scribe {
 		
 		state.set(STATE_DONE);
 		state.set(STATE_IDLE);
-		//*/
+		*/
 	}
 	
 	public static void stop() {

@@ -17,7 +17,6 @@ import org.jnativehook.NativeHookException;
 import org.jnativehook.keyboard.NativeKeyEvent;
 import org.jnativehook.keyboard.NativeKeyListener;
 import org.jnativehook.mouse.NativeMouseEvent;
-import org.jnativehook.mouse.NativeMouseInputListener;
 import org.jnativehook.mouse.NativeMouseListener;
 import org.jnativehook.mouse.NativeMouseMotionListener;
 
@@ -45,6 +44,7 @@ public class Watcher {
 	
 	//keys not accounted for by org.jnativehook.keyboard.NativeKeyEvent
 	private static final int VC_SHIFT_R = 3638;
+	private static final int VC_META_R = 3676;
 	
 	private static ArrayList<KeyCode> keysPressed; 
 	
@@ -73,6 +73,7 @@ public class Watcher {
 		keysPressed = new ArrayList<>();
 		nativeKeyListener = new NativeKeyListener() {
 			public void nativeKeyPressed(NativeKeyEvent e) {
+				Logger.log(e.paramString());
 				KeyCode fxKey = nativeKeyToFxKey(e.getKeyCode());
 				
 				if (!keysPressed.contains(fxKey)) {
@@ -720,8 +721,9 @@ public class Watcher {
             case NativeKeyEvent.VC_ALT:
                 fxKey = KeyCode.ALT;
                 break;
-
+                
             case NativeKeyEvent.VC_META:
+            case VC_META_R:
                 fxKey = KeyCode.META;
                 break;
 

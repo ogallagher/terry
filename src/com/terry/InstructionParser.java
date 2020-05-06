@@ -28,7 +28,7 @@ public class InstructionParser {
 		 */
 		state.set(STATE_PARSING);
 		
-		tokens = spellPunctuation(tokens);
+		tokens = detectAliases(spellPunctuation(tokens));
 		
 		InstructionPossibilities possibilities = new InstructionPossibilities();
 		
@@ -98,6 +98,8 @@ public class InstructionParser {
 	 * Replace punctuation symbols with names.
 	 * 
 	 * Ex: apple, banana. -> apple comma banana period
+	 * 
+	 * TODO probably remove this method
 	 */
 	private static String spellPunctuation(String string) {
 		char[] in = string.toCharArray();
@@ -161,6 +163,7 @@ public class InstructionParser {
 					else { //mid-word
 						out.append(" double quote ");
 					}
+					break;
 					
 				case '\'': //single quote
 				case '\u2019': //apostrophe
@@ -177,6 +180,7 @@ public class InstructionParser {
 					
 				case '%':
 					out.append(" percent");
+					break;
 					
 				default:
 					out.append(c);
@@ -187,5 +191,15 @@ public class InstructionParser {
 		}
 		
 		return out.toString();
+	}
+	
+	//TODO there's a lot left to do here
+	private static String detectAliases(String string) {
+		return string
+				.replaceAll("\\W?enter\\W?", "#ret)")
+				.replaceAll("\\W?tab\\W?", "#tab)")
+				.replaceAll("\\W?backspace\\W?", "#bck)")
+				.replaceAll("\\W?delete\\W?", "#del)")
+				.replaceAll("\\W?command\\W?", "#cmd)");
 	}
 }

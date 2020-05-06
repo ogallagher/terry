@@ -220,6 +220,9 @@ public class Utilities {
 			keys.add(KeyCode.SHIFT);
 			keys.add(KeyCode.SLASH);
 		}
+		else if (alias.equals(Terry.KEY_TAB)) {
+			keys.add(KeyCode.TAB);
+		}
 		else if (alias.endsWith("__")) { //uppercase letters
 			keys.add(KeyCode.SHIFT);
 			keys.add(KeyCode.getKeyCode(alias.substring(0,1).toUpperCase()));
