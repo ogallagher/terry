@@ -304,6 +304,9 @@ public class Terry {
 		        		else if (direction.equals(Arg.DIRARG_MIDDLE)) {
 		        			button = MouseButton.MIDDLE;
 		        		}
+		        		else if (direction.equals(Arg.DIRARG_DOUBLE)) {
+		        			button = MouseButton.NONE; //double click
+		        		}
 		        		//else, assume button 1
 		        	}
 		        }
@@ -317,6 +320,9 @@ public class Terry {
 		        }
 		        else if (button == MouseButton.MIDDLE) {
 		        	Driver.clickMiddle(notifier);
+		        }
+		        else if (button == MouseButton.NONE) {
+		        	Driver.clickDouble(notifier);
 		        }
 		        
 		        //update state
@@ -548,6 +554,7 @@ public class Terry {
 													
 													Logger.log("widget found at " + zone.getX() + " " + zone.getY() + " " + zone.getWidth() + " " + zone.getHeight());
 													
+													/*
 													//direct prompter to highlight found widget
 													Prompter.clearOverlay(null);
 													Prompter.showOverlay(null);
@@ -562,6 +569,7 @@ public class Terry {
 															Prompter.fadeOverlay(zone.getPathIterator(null), true, true, null);
 														}
 													}, Prompter.WIDGET_HIGHLIGHT_TIME);
+													*/
 													
 													//update state(s)
 													location.setLocation(zone.getCenterX(), zone.getCenterY());
@@ -639,6 +647,7 @@ public class Terry {
 						widgetLocationUpdated.addListener(new ChangeListener<Boolean>() {
 							public void changed(ObservableValue<? extends Boolean> observable, Boolean oldValue, Boolean newValue) {								
 								if (newValue) {
+									System.out.println("widgetlocationupdated is true");
 									//move mouse to widget location
 									Point2D location = widgetlocation.getProperty().get();
 									int x = (int) location.getX();

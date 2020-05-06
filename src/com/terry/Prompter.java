@@ -267,7 +267,8 @@ public class Prompter extends Application {
 						loading.setScaleX(1);
 						loading.setScaleY(1);
 						loading.setVisible(true);
-						loading.animate(-1, -1, -1, 360, -2000);
+						loading.animate(1);
+						//loading.animate(-1, -1, -1, 360, -2000);
 						break;
 						
 					case Scribe.STATE_DONE:

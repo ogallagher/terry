@@ -261,6 +261,26 @@ public class Driver {
 		});
 	}
 	
+	public static void clickDouble(SimpleObjectProperty<Boolean> notifier) {
+		Platform.runLater(new Runnable() {
+			public void run() {
+				try {
+					robot.mouseClick(MouseButton.PRIMARY);
+					Thread.sleep(DELAY_CLICK);
+					robot.mouseClick(MouseButton.PRIMARY);
+				}
+				catch (InterruptedException e) {
+					//fail quietly
+				}
+				finally {
+					if (notifier != null) {
+						notifier.set(true);
+					}
+				}
+			}
+		});
+	}
+	
 	public static void drag(int x, int y, SimpleObjectProperty<Boolean> notifier) {
 		Platform.runLater(new Runnable() {
 			public void run() {

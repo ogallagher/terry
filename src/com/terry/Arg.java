@@ -60,6 +60,7 @@ public class Arg implements Serializable {
 	public static final String DIRARG_DOWN = "down";
 	public static final String DIRARG_LEFT = "left";
 	public static final String DIRARG_MIDDLE = "middle";
+	public static final String DIRARG_DOUBLE = "double";
 	public static ArrayList<String> dirargs;
 	
 	//number word arg values
@@ -350,6 +351,9 @@ public class Arg implements Serializable {
 		}
 		else if (direction.equals(DIRARG_LEFT)) {
 			return DIRARG_LEFT;
+		}
+		else if (direction.equals(DIRARG_DOUBLE)) {
+			return DIRARG_DOUBLE;
 		}
 		else {
 			return null;

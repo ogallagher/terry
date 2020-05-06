@@ -150,6 +150,8 @@ public class Scribe {
 		state.set(STATE_TRANSCRIBING);
 		
 		String[] instructions = new String[] {
+				"email is a button",
+				"go to email and double click",
 				"go to 1376, 13 and click then type hello delete delete p",
 				"set speed to 50 percent and set speaker voice to tessa. then set speed to 0.5",
 				"i want to show you how to be awesome",
